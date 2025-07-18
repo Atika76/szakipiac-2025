@@ -4,136 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin felület – SzakiPiac</title>
+  <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="supabase.js"></script>
-  <style>
-    body { background: #fffde7; }
-    .header-bar {
-      width: 100vw; min-width: 100vw; margin-left: calc(-1 * (100vw - 100%)/2);
-      background: #65ff90; color: #fff; padding: 0; box-sizing: border-box;
-      display: flex; align-items: center; position: relative; height: 70px; z-index: 2;
-    }
-    .header-bar .logo { height: 64px; margin: 3px 20px 3px 10px; }
-    .header-bar nav {
-      display: flex; gap: 18px; font-size: 1.35em; height: 100%; align-items: center;
-    }
-    .header-link {
-      color: #fff; text-decoration: none; font-weight: 500; padding: 17px 18px 15px 18px;
-      border-radius: 0; transition: color .15s;
-      background: none;
-      position: relative;
-    }
-    .header-link.active, .header-link:focus-visible {
-      color: #fff700;
-      background: none;
-    }
-    .header-link:hover {
-      color: #fff700;
-      background: none;
-    }
-    @media (max-width: 800px) {
-      .header-bar nav { font-size: 1em; gap: 0; }
-      .header-link { padding: 14px 8px 13px 8px; }
-    }
-    /* Tartalom box */
-    .content-box {
-      max-width: 900px; margin: 60px auto 0 auto;
-      background: #fff; border-radius: 24px; box-shadow: 0 4px 40px #eee9;
-      padding: 32px 32px 24px 32px;
-    }
-    .reklam-header { position: absolute; top: 9px; right: 30px; }
-    .logout-btn {
-      background: #41e36c; color: #fff; border: none; font-size:1em;
-      font-weight: bold; padding: 7px 22px; border-radius: 10px;
-      margin-left: 14px; cursor: pointer; transition: background .16s;
-    }
-    .logout-btn:hover { background: #2dba51; }
-    @media (max-width: 600px) {
-      .content-box { padding: 10px; }
-    }
-  </style>
 </head>
 <body>
-  <div class="header-bar">
+  <header class="green-header">
     <img src="logo.png" class="logo" alt="SzakiPiac logó">
     <nav>
-      <a href="index.html" class="header-link">Főoldal</a>
-      <a href="rolunk.html" class="header-link">Rólunk</a>
-      <a href="kapcsolat.html" class="header-link">Kapcsolat</a>
-      <a href="feltoltes.html" class="header-link">Hirdetés feltöltés</a>
-      <a href="admin.html" class="header-link active">Admin</a>
-      <a href="auth.html" class="header-link">Bejelentkezés</a>
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+      <a href="auth.html">Bejelentkezés</a>
     </nav>
-    <div class="reklam-header">
-      <img src="reklam.png" alt="Reklám" style="height:42px;">
+  </header>
+
+  <div class="container">
+    <div class="content-box">
+      <div id="admin-panel">
+        <h1>Admin felület</h1>
+        <p>Üdvözlünk az adminisztrációs felületen. Itt tudod kezelni a hirdetéseket.</p>
+        </div>
+      <div id="access-denied" style="display: none; color: red; text-align: center;">
+        <h1>Hozzáférés megtagadva!</h1>
+        <p>Ehhez az oldalhoz nincs jogosultságod. Kérlek, jelentkezz be az admin fiókoddal.</p>
+      </div>
     </div>
   </div>
-  <div class="content-box">
-    <h1>Admin felület</h1>
-    <div id="loginBox" style="display:none;">
-      <input type="email" id="adminEmail" value="atika.76@windowslive.com" disabled>
-      <input type="password" id="adminPassword" placeholder="Jelszó">
-      <button onclick="login()">Bejelentkezés</button>
-      <div id="error" style="color:red;margin-top:10px;"></div>
-    </div>
-    <div id="adminPanel" style="display:none;">
-      <span>Bejelentkezve: <b id="adminMail">-</b></span>
-      <button class="logout-btn" onclick="logout()">Kijelentkezés</button>
-      <div id="adminContent" style="margin-top:22px;">Nem sikerült a hirdetések betöltése.</div>
-    </div>
-  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="header.js"></script>
   <script>
-    // --- HEADER AKTÍV STÍLUS JAVÍTÁS ---
-    document.querySelectorAll('.header-link').forEach(link => {
-      if (link.classList.contains('active')) {
-        link.style.color = '#fff';
-      }
-      link.addEventListener('mouseover', function() {
-        this.style.color = '#fff700';
-      });
-      link.addEventListener('mouseout', function() {
-        this.style.color = this.classList.contains('active') ? '#fff' : '#fff';
-      });
+    // Admin oldal specifikus logika
+    document.addEventListener('DOMContentLoaded', () => {
+        const adminEmail = "atika.76@windowslive.com";
+        const loggedInUserEmail = localStorage.getItem("loggedInUser");
+
+        if (loggedInUserEmail === adminEmail) {
+            // Ha az admin van bejelentkezve, mutatjuk a panelt
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('access-denied').style.display = 'none';
+        } else {
+            // Ha más van bejelentkezve, vagy senki, letiltjuk a hozzáférést
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'block';
+        }
     });
-
-    // --- ADMIN LOGIN LOGIKA ---
-    const ADMIN_EMAIL = "atika.76@windowslive.com";
-    let adminLoggedIn = false;
-
-    async function login() {
-      const password = document.getElementById('adminPassword').value;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: ADMIN_EMAIL, password
-      });
-      if (error) {
-        document.getElementById('error').textContent = "Hibás jelszó vagy e-mail!";
-        return;
-      }
-      adminLoggedIn = true;
-      localStorage.setItem("admin", "1");
-      localStorage.setItem("loggedInUser", ADMIN_EMAIL); // <- EZ FONTOS!
-      renderAdmin();
-    }
-    function logout() {
-      supabase.auth.signOut();
-      adminLoggedIn = false;
-      localStorage.removeItem("admin");
-      localStorage.removeItem("loggedInUser"); // <- EZ FONTOS!
-      renderAdmin();
-    }
-    async function renderAdmin() {
-      if (localStorage.getItem("admin") === "1") {
-        document.getElementById('loginBox').style.display = "none";
-        document.getElementById('adminPanel').style.display = "";
-        document.getElementById('adminMail').textContent = ADMIN_EMAIL;
-        // ide tölthetsz be hirdetéslistát (adminContent)
-      } else {
-        document.getElementById('loginBox').style.display = "";
-        document.getElementById('adminPanel').style.display = "none";
-      }
-    }
-    renderAdmin();
   </script>
 </body>
 </html>
