@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <style>
+    #image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; border: 1px solid #eee; padding: 10px; min-height: 110px; border-radius: 8px; }
+    .preview-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+  </style>
 </head>
 <body>
   <header class="green-header">
@@ -38,14 +42,19 @@
             <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
             <option value="Egyéb">Egyéb</option>
         </select>
+        <label>Telefonszám (opcionális):</label>
+        <input type="tel" id="telefonszam" placeholder="+36 30 123 4567">
         <label>Ár (Ft):</label>
         <input type="number" id="ar" min="0">
         <label>Csomag:</label>
         <select id="csomagValaszto" required>
-          <option value="Alap">Alap (ingyenes, 7 nap)</option>
-          <option value="Prémium">Prémium (1990 Ft, 14 nap)</option>
-          <option value="Extra">Extra (2990 Ft, 30 nap)</option>
+          <option value="Alap">Alap (ingyenes, 2 kép, 7 nap)</option>
+          <option value="Prémium">Prémium (1990 Ft, 3 kép, 14 nap)</option>
+          <option value="Extra">Extra (2990 Ft, 5 kép, 30 nap)</option>
         </select>
+        <label>Képek feltöltése:</label>
+        <input type="file" id="kepek" accept="image/jpeg, image/png" multiple>
+        <div id="image-previews"></div>
         <div id="paypal-container" style="display:none; margin-top: 20px;"></div>
         <button type="submit">Hirdetés feladása</button>
       </form>
@@ -53,7 +62,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=AW9Yc0M2H-I67Dx7boyvil9xg6LIdHcuwgFDpiKshLZx8RHoMfrPNMOrwyBRe589D0YXVk41cjG-TReu&currency=HUF"></script>
   <script src="supabase.js"></script>
   <script src="header.js"></script>
