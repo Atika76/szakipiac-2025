@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Reklám feltöltése</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #FFFEF9;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .reklam-doboz {
+      max-width: 500px;
+      margin: 80px auto;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px #eee8;
+      padding: 48px 36px 32px 36px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 24px;
+      color: #26160a;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    label {
+      font-size: 1.15rem;
+      display: block;
+      margin-bottom: 10px;
+      margin-top: 24px;
+      text-align: left;
+    }
+    input[type="file"],
+    input[type="url"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      margin-bottom: 8px;
+    }
+    #paypal-button-container {
+      margin-top: 28px;
+    }
+    #uzenet {
+      margin-top: 24px;
+      font-size: 1.15rem;
+      color: #108c27;
+      font-weight: 500;
+    }
+  </style>
+  <!-- PAYPAL SDK ÉLES -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AW9Yc0M2H-I67Dx7boyvil9xg6LIdHcuwgFDpiKshLZx8RHoMfrPNMOrwyBRe589D0YXVk41cjG-TReu&currency=HUF"></script>
+</head>
+<body>
+  <div class="reklam-doboz">
+    <h1>Reklám feltöltése</h1>
+    <form id="reklamForm">
+      <label>Kép (JPG/PNG, max 5MB):<br>
+        <input type="file" id="img" accept="image/png,image/jpeg" required>
+      </label>
+      <label>Cél URL (kattintáskor ide vezet):<br>
+        <input type="url" id="url" placeholder="https://példa.hu" required>
+      </label>
+    </form>
+    <div id="paypal-button-container"></div>
+    <div id="uzenet"></div>
+  </div>
+
+  <script>
+    let kepAdat = null;
+
+    // Képméret ellenőrzés (max 5 MB)
+    document.getElementById('img').addEventListener('change', function(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      if (f.size > 5 * 1024 * 1024) {
+        alert('Túl nagy a kép! (max 5 MB)');
+        e.target.value = "";
+        kepAdat = null;
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        kepAdat = ev.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+
+    paypal.Buttons({
+      style: {
+        color: 'gold',
+        shape: 'rect',
+        label: 'pay',
+        height: 45
+      },
+      createOrder: function(data, actions) {
+        return actions.order.create({
+          purchase_units: [{
+            amount: { value: '1490', currency_code: 'HUF' }
+          }]
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          // Ellenőrizd, hogy minden adat megvan-e
+          const url = document.getElementById('url').value.trim();
+          if (!kepAdat || !url) {
+            alert("Adj meg minden adatot és töltsd fel a képet is!");
+            return;
+          }
+          // Mentsd el a reklámot LocalStorage-be (vagy itt hívj API-t, ha backend)
+          localStorage.setItem("aktivreklam", JSON.stringify({
+            img: kepAdat,
+            url: url
+          }));
+          document.getElementById('uzenet').innerHTML = "<span style='color:green;font-weight:bold;'>✔ Sikeres fizetés és feltöltés!</span> A reklámot az admin jóváhagyása után megjelenítjük.";
+        });
+      },
+      onError: function(err) {
+        document.getElementById('uzenet').innerHTML = "<span style='color:red;'>Hiba történt a fizetés során! Próbáld újra.</span>";
+      }
+    }).render('#paypal-button-container');
+  </script>
+</body>
+</html>

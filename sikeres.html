@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Sikeres fizetés</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="logo.png" />
+    <style>
+        body {
+            background: #f8fff1;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        .header {
+            background: #5ab52e;
+            color: #fff;
+            padding: 18px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            margin-left: 40px;
+        }
+        .header img {
+            height: 48px;
+            margin-right: 12px;
+        }
+        .header .title {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 70px auto 0;
+            background: #fff;
+            padding: 44px 28px 34px 28px;
+            border-radius: 18px;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(60,160,80,0.09);
+        }
+        .success-icon {
+            font-size: 76px;
+            color: #38b000;
+            margin-bottom: 16px;
+        }
+        .success-title {
+            font-size: 1.7rem;
+            margin-bottom: 18px;
+            color: #111;
+            font-weight: bold;
+        }
+        .success-text {
+            font-size: 1.1rem;
+            color: #444;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        .btn-home {
+            background: #38b000;
+            color: #fff;
+            font-size: 1.05rem;
+            border: none;
+            border-radius: 7px;
+            padding: 12px 34px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background .22s;
+        }
+        .btn-home:hover {
+            background: #218838;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin-top: 26px;
+                padding: 26px 5vw 22px 5vw;
+            }
+            .header .title {
+                font-size: 1.18rem;
+            }
+            .header .logo {
+                margin-left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="logo.png" alt="SzakiPiac.hu logó">
+            <span class="title">SzakiPiac.hu</span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="success-icon">✔️</div>
+        <div class="success-title">Sikeres fizetés!</div>
+        <div class="success-text">
+            A hirdetésed mentve!<br>
+            Jóváhagyás után hamarosan megjelenik az oldalon.<br>
+            <b>Köszönjük a bizalmat!</b>
+        </div>
+        <a class="btn-home" href="index.html">Vissza a főoldalra</a>
+    </div>
+</body>
+</html>
