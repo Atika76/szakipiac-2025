@@ -1,4 +1,3 @@
-// header.js
 document.addEventListener('DOMContentLoaded', () => {
     const adminEmail = "atika.76@windowslive.com";
     const loggedInUserEmail = localStorage.getItem("loggedInUser");
@@ -9,15 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (loggedInUserEmail && loginLink) {
         loginLink.style.display = 'none';
+
         const userDisplay = document.createElement('div');
-        userDisplay.style.cssText = 'display:flex; align-items:center; gap:15px;';
+        userDisplay.style.display = 'flex';
+        userDisplay.style.alignItems = 'center';
+        userDisplay.style.gap = '15px';
         
-        const adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
+        let adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
+
         userDisplay.innerHTML = `<span style="color: white; font-weight: bold;">${loggedInUserEmail}</span> ${adminLink} <button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button>`;
         nav.appendChild(userDisplay);
 
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            // JAVÍTVA: supaClient használata
             await supaClient.auth.signOut();
             localStorage.removeItem('loggedInUser');
             window.location.href = 'index.html';
