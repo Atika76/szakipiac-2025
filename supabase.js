@@ -1,6 +1,4 @@
-// supabase.js
-const SUPABASE_URL = "https://cvcxdeunzlhcrayutuew.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y3hkZXVuemxoY3JheXV0dWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjgyMTQsImV4cCI6MjA2Nzc0NDIxNH0.mmp-rbNPxoPJmotz5NY5XLAwdhHBkvoDKQxY6V1iSbo";
+const SUPABASE_URL = "https://yvoipikqffeipmkldfdx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInRyaXAiOiJKV1QifQ.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2b2lwaWtxZmZlaXBta2xkZmR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NzEzMzYsImV4cCI6MjA2ODM0NzMzNn0.o00mebj9FaHBb2YrKe8r7JN-fBEyYrnDZhlpAZO-dK0";
 
-// A változó nevét 'supabase'-ről 'supaClient'-re cseréljük a hiba elkerülése érdekében.
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
