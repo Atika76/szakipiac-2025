@@ -14,6 +14,7 @@ async function megjelenitHirdetesek() {
         if (searchTerm) {
             query = query.or(`cim.ilike.%${searchTerm}%,leiras.ilike.%${searchTerm}%`);
         }
+
         const category = categorySelect.value;
         if (category) {
             query = query.eq('kategoria', category);
