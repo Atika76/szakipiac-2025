@@ -5,10 +5,31 @@
   <title>SzakiPiac.hu – Főoldal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="style.css">
   <style>
-    /* ========== Kiegészítő stílusok, hogy minden biztosan jó legyen ========== */
+    /* ========== TELJES STÍLUS BEÉPÍTVE ========== */
+    body {
+      background: #fdfdea; margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: #333;
+    }
+    .green-header {
+      background: linear-gradient(90deg, #41e36c 65%, #3ccc64 100%); color: #fff; display: flex;
+      align-items: center; padding: 0; height: 68px; box-shadow: 0 1px 8px #0000001a;
+    }
+    .green-header .logo { height: 48px; margin-left: 16px; margin-right: 36px; }
+    .green-header nav { flex: 1; display: flex; align-items: center; gap: 18px; }
+    .green-header nav a { color: #fff; text-decoration: none; font-size: 1.13em; font-weight: 500; transition: color 0.18s; padding: 10px; }
+    .green-header nav a:hover { color: #ffeb00; }
+    .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; display: flex; gap: 30px; align-items: flex-start; }
+    .content-box { background: #fff; border-radius: 15px; padding: 38px 40px 30px 40px; box-shadow: 0 4px 22px #41e36c21; flex: 1; }
+    .reklam-doboz { width: 300px; flex-shrink: 0; }
+    .main-title { font-size: 2.2em; color: #2e7d32; font-weight: bold; }
+    .main-leiras { font-size: 1.1em; color: #444; margin-top: -10px; }
     .kiemelt-zold { color: #2e7d32; font-weight: bold; }
+    .filters { display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
+    .filters input, .filters select { padding: 11px 13px; border-radius: 8px; border: 1.3px solid #ccc; font-size: 1em; }
+    .hirdetes-kartya {
+      background: #fff; border-radius: 13px; box-shadow: 0 2px 9px #1e7c1721; margin-top: 22px;
+      padding: 20px 22px 12px 22px; position: relative; border-left: 5px solid #1be92b30;
+    }
     .delete-btn { float: right; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
     .hirdetes-kepek { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px; }
     .hirdetes-kep { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
@@ -83,7 +104,9 @@
                 const adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
                 userDisplay.innerHTML = `<span style="color: white; font-weight: bold;">${loggedInUserEmail}</span> ${adminLink} <button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button>`;
                 nav.appendChild(userDisplay);
-                document.getElementById('logoutBtn').addEventListener('click', async (). => {
+                
+                // JAVÍTVA: A felesleges pont (.) eltávolítva
+                document.getElementById('logoutBtn').addEventListener('click', async () => {
                     await supaClient.auth.signOut();
                     localStorage.removeItem('loggedInUser');
                     window.location.href = 'index.html';
