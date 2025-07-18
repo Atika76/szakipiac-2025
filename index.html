@@ -3,8 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <title>SzakiPiac.hu – Főoldal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* ========== Kiegészítő stílusok, hogy minden biztosan jó legyen ========== */
+    .kiemelt-zold { color: #2e7d32; font-weight: bold; }
+    .delete-btn { float: right; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    .hirdetes-kepek { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px; }
+    .hirdetes-kep { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
+    .contact-buttons { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .contact-btn {
+      display: inline-block; background-color: #2e7d32; color: white !important; padding: 8px 15px;
+      text-decoration: none; border-radius: 5px; font-weight: bold; text-align: center; transition: background-color 0.2s;
+    }
+    .contact-btn:hover { background-color: #1e5e24; }
+    .contact-btn.phone-btn { background-color: #007bff; }
+    .contact-btn.phone-btn:hover { background-color: #0056b3; }
+    .header-logout-btn { background-color: #ff5c5c !important; border:none; color:white; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+  </style>
 </head>
 <body>
   <header class="green-header">
@@ -43,9 +60,114 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="supabase.js"></script>
-  <script src="header.js"></script>
-  <script src="index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ========== TELJES JAVASCRIPT BEÉPÍTVE ==========
+
+    // 1. SUPABASE KAPCSOLAT
+    const SUPABASE_URL = "https://yvoipikqffeipmkldfdx.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2b2lwaWtxZmZlaXBta2xkZmR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NzEzMzYsImV4cCI6MjA2ODM0NzMzNn0.o00mebj9FaHBb2YrKe8r7JN-fBEyYrnDZhlpAZO-dK0";
+    const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 2. FEJLÉC LOGIKA
+        const adminEmail = "atika.76@windowslive.com";
+        const loggedInUserEmail = localStorage.getItem("loggedInUser");
+        const nav = document.querySelector('.green-header nav');
+        if (nav) {
+            const loginLink = nav.querySelector('a[href="auth.html"]');
+            if (loggedInUserEmail && loginLink) {
+                loginLink.style.display = 'none';
+                const userDisplay = document.createElement('div');
+                userDisplay.style.cssText = 'display:flex; align-items:center; gap:15px;';
+                const adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
+                userDisplay.innerHTML = `<span style="color: white; font-weight: bold;">${loggedInUserEmail}</span> ${adminLink} <button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button>`;
+                nav.appendChild(userDisplay);
+                document.getElementById('logoutBtn').addEventListener('click', async (). => {
+                    await supaClient.auth.signOut();
+                    localStorage.removeItem('loggedInUser');
+                    window.location.href = 'index.html';
+                });
+            }
+        }
+        
+        // 3. FŐOLDAL LOGIKA
+        const hirdetesekLista = document.getElementById('hirdetesek-lista');
+        const searchInput = document.getElementById('search');
+        const categorySelect = document.getElementById('category-select');
+
+        async function megjelenitHirdetesek() {
+            hirdetesekLista.innerHTML = "<p>Hirdetések betöltése...</p>";
+            try {
+                let query = supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
+                
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    query = query.or(`cim.ilike.%${searchTerm}%,leiras.ilike.%${searchTerm}%`);
+                }
+                const category = categorySelect.value;
+                if (category) {
+                    query = query.eq('kategoria', category);
+                }
+
+                const { data: hirdetesek, error } = await query;
+                if (error) throw error;
+
+                if (!hirdetesek || hirdetesek.length === 0) {
+                    hirdetesekLista.innerHTML = "<p>Jelenleg nincs a keresésnek megfelelő hirdetés.</p>";
+                    return;
+                }
+
+                hirdetesekLista.innerHTML = "";
+                hirdetesek.forEach(h => {
+                    const deleteButton = loggedInUserEmail === adminEmail ? `<button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>` : '';
+                    
+                    let kepekHTML = '';
+                    if (h.kep_url_tomb && h.kep_url_tomb.length > 0) {
+                        kepekHTML += '<div class="hirdetes-kepek">';
+                        h.kep_url_tomb.forEach(url => {
+                            kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep">`;
+                        });
+                        kepekHTML += '</div>';
+                    }
+                    
+                    let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
+                    if (h.telefonszam) {
+                        contactHTML += `<a href="tel:${h.telefonszam}" class="contact-btn phone-btn">Kapcsolat (Telefon)</a>`;
+                    }
+
+                    const box = document.createElement("div");
+                    box.className = "hirdetes-kartya";
+                    box.innerHTML = `
+                        ${deleteButton}
+                        <h3>${h.cim}</h3>
+                        ${kepekHTML}
+                        <p><b>Kategória:</b> ${h.kategoria}</p>
+                        <p><b>Ár:</b> ${h.ar ? h.ar + ' Ft' : 'Megegyezés szerint'}</p>
+                        <p>${h.leiras}</p>
+                        <div class="contact-buttons">${contactHTML}</div>
+                    `;
+                    hirdetesekLista.appendChild(box);
+                });
+            } catch (error) {
+                hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba történt a hirdetések betöltésekor: ${error.message}</p>`;
+            }
+        }
+
+        window.deleteAd = async function(id) {
+            if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
+            const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
+            if (error) {
+                alert('Hiba a törlés során: ' + error.message);
+            } else {
+                megjelenitHirdetesek();
+            }
+        }
+
+        searchInput.addEventListener('input', megjelenitHirdetesek);
+        categorySelect.addEventListener('change', megjelenitHirdetesek);
+        megjelenitHirdetesek();
+    });
+  </script>
 </body>
 </html>
