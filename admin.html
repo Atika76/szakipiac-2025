@@ -23,11 +23,12 @@
     <div class="content-box">
       <div id="admin-panel">
         <h1>Admin felület</h1>
-        <p>Üdvözlünk az adminisztrációs felületen. Itt tudod kezelni a hirdetéseket.</p>
-        </div>
+        <p>Itt láthatod az összes hirdetést, beleértve a lejártakat is.</p>
+        <div id="admin-hirdetesek-lista"></div>
+      </div>
       <div id="access-denied" style="display: none; color: red; text-align: center;">
         <h1>Hozzáférés megtagadva!</h1>
-        <p>Ehhez az oldalhoz nincs jogosultságod. Kérlek, jelentkezz be az admin fiókoddal.</p>
+        <p>Ehhez az oldalhoz nincs jogosultságod.</p>
       </div>
     </div>
   </div>
@@ -36,21 +37,62 @@
   <script src="supabase.js"></script>
   <script src="header.js"></script>
   <script>
-    // Admin oldal specifikus logika
-    document.addEventListener('DOMContentLoaded', () => {
-        const adminEmail = "atika.76@windowslive.com";
-        const loggedInUserEmail = localStorage.getItem("loggedInUser");
+    const adminEmail = "atika.76@windowslive.com";
+    const loggedInUserEmail = localStorage.getItem("loggedInUser");
+    const adminPanel = document.getElementById('admin-panel');
+    const accessDenied = document.getElementById('access-denied');
+    const hirdetesekLista = document.getElementById('admin-hirdetesek-lista');
 
-        if (loggedInUserEmail === adminEmail) {
-            // Ha az admin van bejelentkezve, mutatjuk a panelt
-            document.getElementById('admin-panel').style.display = 'block';
-            document.getElementById('access-denied').style.display = 'none';
-        } else {
-            // Ha más van bejelentkezve, vagy senki, letiltjuk a hozzáférést
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('access-denied').style.display = 'block';
+    async function loadAdminAds() {
+        try {
+            const { data: hirdetesek, error } = await supaClient
+                .from('hirdetesek')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!hirdetesek || hirdetesek.length === 0) {
+                hirdetesekLista.innerHTML = "<p>Nincsenek hirdetések az adatbázisban.</p>";
+                return;
+            }
+
+            hirdetesekLista.innerHTML = "";
+            hirdetesek.forEach(h => {
+                const box = document.createElement("div");
+                box.className = "hirdetes-kartya";
+                box.innerHTML = `
+                    <button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>
+                    <h3>${h.cim}</h3>
+                    <p><b>Feladó:</b> ${h.email}</p>
+                    <p><b>Lejárat:</b> ${new Date(h.lejárati_datum).toLocaleDateString()}</p>
+                `;
+                hirdetesekLista.appendChild(box);
+            });
+
+        } catch (error) {
+            hirdetesekLista.innerHTML = `<p style="color:red;">Hiba a hirdetések betöltésekor: ${error.message}</p>`;
         }
-    });
+    }
+
+    async function deleteAd(id) {
+        if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
+        const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
+        if (error) {
+            alert('Hiba a törlés során: ' + error.message);
+        } else {
+            loadAdminAds(); // Lista frissítése
+        }
+    }
+
+    if (loggedInUserEmail === adminEmail) {
+        adminPanel.style.display = 'block';
+        accessDenied.style.display = 'none';
+        loadAdminAds();
+    } else {
+        adminPanel.style.display = 'none';
+        accessDenied.style.display = 'block';
+    }
   </script>
 </body>
 </html>
