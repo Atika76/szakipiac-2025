@@ -6,6 +6,7 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 async function megjelenitHirdetesek() {
     hirdetesekLista.innerHTML = "<p>Hirdetések betöltése...</p>";
     const loggedInUser = localStorage.getItem("loggedInUser");
+    
     try {
         let query = supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
         
@@ -51,12 +52,14 @@ async function megjelenitHirdetesek() {
         hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba: ${error.message}</p>`;
     }
 }
+
 async function deleteAd(id) {
     if (!confirm('Biztosan törölni szeretnéd?')) return;
     const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
     if (error) alert('Hiba a törlés során: ' + error.message);
     else megjelenitHirdetesek();
 }
+
 searchInput.addEventListener('input', megjelenitHirdetesek);
 categorySelect.addEventListener('change', megjelenitHirdetesek);
 document.addEventListener('DOMContentLoaded', megjelenitHirdetesek);
