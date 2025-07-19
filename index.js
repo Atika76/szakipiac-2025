@@ -1,3 +1,8 @@
+// Supabase inicializálás (KÖTELEZŐ az index.js elejére!)
+const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const hirdetesekLista = document.getElementById('hirdetesek-lista');
 const searchInput = document.getElementById('search');
 const categorySelect = document.getElementById('category-select');
@@ -7,9 +12,9 @@ async function megjelenitHirdetesek() {
     hirdetesekLista.innerHTML = "<p>Hirdetések betöltése...</p>";
     const loggedInUser = localStorage.getItem("loggedInUser");
     try {
-        let query = supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
+        let query = supabase.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('id', { ascending: false });
         const searchTerm = searchInput.value.trim();
-        if (searchTerm) query = query.or(`cim.ilike.%${searchTerm}%,leiras.ilike.%${searchTerm}%`);
+        if (searchTerm) query = query.ilike('cim', `%${searchTerm}%`);
         const category = categorySelect.value;
         if (category) query = query.eq('kategoria', category);
         const { data: hirdetesek, error } = await query;
@@ -22,10 +27,16 @@ async function megjelenitHirdetesek() {
         hirdetesek.forEach(h => {
             const deleteButton = loggedInUser === ADMIN_EMAIL ? `<button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>` : '';
             let kepekHTML = '';
-            if (h.kep_url_tomb && h.kep_url_tomb.length > 0) {
-                kepekHTML += '<div class="hirdetes-kepek">';
-                h.kep_url_tomb.forEach(url => { kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep">`; });
-                kepekHTML += '</div>';
+            // Egyszerű kép megjelenítés, ha van 'kepek' oszlop (JSON vagy sima szöveg)
+            if (h.kepek) {
+                try {
+                    const kepekArr = JSON.parse(h.kepek);
+                    if (Array.isArray(kepekArr)) {
+                        kepekHTML += '<div class="hirdetes-kepek">';
+                        kepekArr.forEach(url => { kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep">`; });
+                        kepekHTML += '</div>';
+                    }
+                } catch {}
             }
             let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
             if (h.telefonszam) {
@@ -42,7 +53,7 @@ async function megjelenitHirdetesek() {
 }
 async function deleteAd(id) {
     if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
-    const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
+    const { error } = await supabase.from('hirdetesek').delete().eq('id', id);
     if (error) alert('Hiba a törlés során: ' + error.message);
     else megjelenitHirdetesek();
 }
