@@ -1,10 +1,15 @@
-<!-- feltoltes.html -->
 <!DOCTYPE html>
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
   <title>Hirdetés feltöltés</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <style>
+    #image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; border: 1px solid #eee; padding: 10px; min-height: 50px; border-radius: 5px; }
+    .preview-image { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; }
+  </style>
 </head>
 <body>
   <header class="green-header">
@@ -47,15 +52,22 @@
           <option value="Prémium">Prémium (1990 Ft, 3 kép, 14 nap)</option>
           <option value="Extra">Extra (2990 Ft, 5 kép, 30 nap)</option>
         </select>
+        
+        <label>Képek feltöltése:</label>
+        <input type="file" id="kepek" accept="image/jpeg, image/png" multiple>
+        <div id="image-previews"></div>
+        
         <div id="paypal-container" style="display:none; margin-top: 20px;"></div>
         <button type="submit">Hirdetés feladása</button>
       </form>
       <div id="uzenet" style="margin-top:16px; font-weight: bold;"></div>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=AW9Yc0M2H-I67Dx7boyvil9xg6LIdHcuwgFDpiKshLZx8RHoMfrPNMOrwyBRe589D0YXVk41cjG-TReu&currency=HUF"></script>
   <script src="supabase.js"></script>
+  <script src="header.js"></script>
   <script src="feltoltes.js"></script>
 </body>
 </html>
