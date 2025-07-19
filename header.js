@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
         userDisplay.innerHTML = `<span style="color: white; font-weight: bold;">${loggedInUserEmail}</span> ${adminLink} <button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button>`;
         nav.appendChild(userDisplay);
+
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             await supaClient.auth.signOut();
             localStorage.removeItem('loggedInUser');
