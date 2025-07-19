@@ -114,3 +114,20 @@ form button:hover { background-color: #1e5e24; }
   color: #2e7d32;
   font-weight: bold;
 }
+.green-header {
+  background: linear-gradient(90deg, #6fffa0, #61e5ae);
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  min-width: 100vw;
+  box-sizing: border-box;
+}
+body {
+  overflow-x: hidden;
+}
