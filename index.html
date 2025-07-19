@@ -1,50 +1,110 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <title>SzakiPiac.hu – Főoldal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>SzakiPiac.hu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="logo.png">
+    <style>
+        body { background: #fdfdea; margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: #333; }
+        .green-header { background: linear-gradient(90deg, #41e36c 65%, #3ccc64 100%); color: #fff; display: flex; align-items: center; padding: 0; height: 68px; box-shadow: 0 1px 8px #0000001a; }
+        .green-header .logo { height: 48px; margin-left: 16px; margin-right: 36px; }
+        .green-header nav { flex: 1; display: flex; align-items: center; gap: 18px; }
+        .green-header nav a { color: #fff; text-decoration: none; font-size: 1.13em; font-weight: 500; cursor: pointer; padding: 10px; }
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .content-box { background: #fff; border-radius: 15px; padding: 38px 40px 30px 40px; box-shadow: 0 4px 22px #41e36c21; }
+        h1 { font-size: 2.2em; color: #2e7d32; font-weight: bold; }
+        .page { display: none; }
+        .page.active { display: block; }
+        form label { font-weight: bold; display: block; margin-bottom: 5px; margin-top: 15px; }
+        form input, form textarea, form select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1em; }
+        form button { background-color: #2e7d32; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 20px; }
+        .header-logout-btn { background-color: #ff5c5c !important; border:none; color:white; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
 </head>
 <body>
-  <header class="green-header">
-    <img src="logo.png" class="logo" alt="SzakiPiac logó">
-    <nav>
-      <a href="index.html">Főoldal</a>
-      <a href="rolunk.html">Rólunk</a>
-      <a href="kapcsolat.html">Kapcsolat</a>
-      <a href="feltoltes.html">Hirdetés feltöltés</a>
-      <a href="auth.html">Bejelentkezés</a>
-    </nav>
-  </header>
-  <div class="container">
-    <div class="content-box">
-      <h1 class="main-title">Üdvözlünk a <span class="kiemelt">SzakiPiac.hu-n!</span></h1>
-      <p class="main-leiras">Válassz szakembert, böngéssz kategóriák és kulcsszavak szerint, vagy adj fel hirdetést akár <span class="kiemelt-zold">ingyen</span>!</p>
-      <div class="filters">
-        <input type="text" id="search" placeholder="Keresés a hirdetésekben...">
-        <select id="category-select">
-            <option value="">Összes kategória</option>
-            <option value="Építőipar">Építőipar</option>
-            <option value="Villanyszerelés">Villanyszerelés</option>
-            <option value="Gépészet">Gépészet</option>
-            <option value="Festés">Festés</option>
-            <option value="Lakberendezés">Lakberendezés</option>
-            <option value="Számítástechnika">Számítástechnika</option>
-            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
-            <option value="Egyéb">Egyéb</option>
-        </select>
-      </div>
-      <div id="hirdetesek-lista"></div>
-    </div>
-    <div class="reklam-doboz">
-        <b>Szabad reklámhely!</b><br>Itt hirdethet!<br><a href="reklam.html">Reklám feltöltése</a>
-    </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
-  <script src="header.js"></script>
-  <script src="index.js"></script>
+    <header class="green-header"></header>
+    <main class="container">
+        <div id="page-main" class="page content-box">
+            <h1>Üdvözlünk a SzakiPiac.hu-n!</h1>
+            <p>Válassz szakembert, vagy adj fel hirdetést akár ingyen!</p>
+            <div id="hirdetesek-lista"></div>
+        </div>
+        <div id="page-auth" class="page content-box" style="max-width: 400px; margin: 40px auto;">
+            <h1 id="auth-title">Bejelentkezés</h1>
+            <form id="auth-form">
+                <label>Email:</label><input type="email" id="email-input" required>
+                <label id="pwlabel">Jelszó:</label><input type="password" id="password-input" required>
+                <button type="submit" id="auth-btn">Bejelentkezés</button>
+            </form>
+            <div style="margin-top: 15px;"><a href="#" id="switch-link">Nincs fiókod? Regisztrálj!</a></div>
+            <div id="auth-message" style="margin-top:16px; font-weight: bold;"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const supaClient = supabase.createClient("https://yvoipikqffeipmkldfdx.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2b2lwaWtxZmZlaXBta2xkZmR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NzEzMzYsImV4cCI6MjA2ODM0NzMzNn0.o00mebj9FaHBb2YrKe8r7JN-fBEyYrnDZhlpAZO-dK0");
+
+        const header = document.querySelector('.green-header');
+        const pages = {};
+        document.querySelectorAll('.page').forEach(p => pages[p.id.replace('page-', '')] = p);
+        
+        function showPage(pageId) {
+            for (const id in pages) { pages[id].classList.remove('active'); }
+            if (pages[pageId]) pages[pageId].classList.add('active');
+            if (pageId === 'main') megjelenitHirdetesek();
+        }
+
+        function updateHeader() {
+            const loggedInUserEmail = localStorage.getItem("loggedInUser");
+            let navHTML = `<img src="logo.png" class="logo" alt="SzakiPiac logó"><nav><a data-page="main">Főoldal</a><a data-page="feltoltes">Hirdetés feltöltés</a>`;
+            if (loggedInUserEmail) {
+                navHTML += `</nav><div style="display:flex; align-items:center; gap:15px; margin-left: auto; margin-right: 15px;"><span style="color: white;">${loggedInUserEmail}</span><button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button></div>`;
+            } else {
+                navHTML += `<a data-page="auth">Bejelentkezés</a></nav>`;
+            }
+            header.innerHTML = navHTML;
+            header.querySelectorAll('a').forEach(link => {
+                if(link.dataset.page) link.addEventListener('click', () => showPage(link.dataset.page));
+            });
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await supaClient.auth.signOut();
+                    localStorage.removeItem('loggedInUser');
+                    window.location.reload();
+                });
+            }
+        }
+
+        const authForm = document.getElementById("auth-form");
+        document.getElementById("switch-link").addEventListener("click", (e) => { e.preventDefault(); /* ... */ });
+        authForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email-input").value;
+            const password = document.getElementById("password-input").value;
+            const isRegister = document.getElementById("auth-title").textContent === "Regisztráció";
+            if (isRegister) {
+                const { error } = await supaClient.auth.signUp({ email, password });
+                if (error) document.getElementById("auth-message").textContent = "Hiba: " + error.message;
+                else document.getElementById("auth-message").textContent = "Sikeres regisztráció! Erősítsd meg az emailed.";
+            } else {
+                const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
+                if (error) document.getElementById("auth-message").textContent = "Hiba: Hibás email vagy jelszó.";
+                else {
+                    localStorage.setItem("loggedInUser", data.user.email);
+                    window.location.reload();
+                }
+            }
+        });
+
+        async function megjelenitHirdetesek() {
+            // ... (Itt jön a hirdetések megjelenítésének logikája)
+        }
+        
+        updateHeader();
+        showPage('main');
+    </script>
 </body>
 </html>
