@@ -1,22 +1,33 @@
-// feltoltes.js
+// ----------- Supabase kliensnek léteznie kell! -----------
+// supabase.js legyen betöltve előbb! (const supabase = ...)
 
 const adminEmail = "atika.76@windowslive.com";
 const csomagValaszto = document.getElementById("csomagValaszto");
 const paypalContainer = document.getElementById("paypal-container");
 const feltoltesForm = document.getElementById('feltoltesForm');
 const uzenetDiv = document.getElementById('uzenet');
+const kepekInput = document.getElementById('kepek');
 let fizetesSikeres = false;
 
-// Bejelentkezett e-mail lekérése (localStorage alapján)
-function getLoggedInEmail() { 
-    return localStorage.getItem("loggedInUser") || null; 
-}
+const KEP_LIMIT = { "Alap": 2, "Prémium": 3, "Extra": 5 };
+const BUCKET_NAME = "hirdetes_kepek"; // Supabase Storage bucket neve!
 
-// PayPal gombok logikája
+function getLoggedInEmail() { return localStorage.getItem("loggedInUser") || null; }
+
 function handlePackageChange() {
     const email = getLoggedInEmail();
     const isAdmin = (email === adminEmail);
     const csomag = csomagValaszto.value;
+    const maxKep = KEP_LIMIT[csomag] || 2;
+    kepekInput.setAttribute("multiple", true);
+    kepekInput.setAttribute("max", maxKep);
+    kepekInput.onchange = function () {
+        if (this.files.length > maxKep) {
+            uzenetDiv.textContent = `Ehhez a csomaghoz maximum ${maxKep} képet tölthetsz fel!`;
+            uzenetDiv.style.color = "red";
+            this.value = "";
+        }
+    };
 
     if (csomag === 'Alap' || isAdmin) {
         fizetesSikeres = true;
@@ -24,7 +35,6 @@ function handlePackageChange() {
         paypalContainer.innerHTML = "";
         return;
     }
-
     fizetesSikeres = false;
     paypalContainer.style.display = "block";
     paypalContainer.innerHTML = "";
@@ -43,7 +53,6 @@ function handlePackageChange() {
     }).render('#paypal-container');
 }
 
-// FŐ submit eseménykezelő
 feltoltesForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = getLoggedInEmail();
@@ -58,13 +67,32 @@ feltoltesForm.addEventListener('submit', async (e) => {
         return;
     }
     uzenetDiv.textContent = "Feltöltés folyamatban...";
+    uzenetDiv.style.color = "black";
+
+    // Képfeltöltés (csak ha van kép)
+    let kepUrls = [];
+    if (kepekInput.files.length > 0) {
+        for (let i = 0; i < kepekInput.files.length; i++) {
+            const file = kepekInput.files[i];
+            const filename = `${Date.now()}_${Math.floor(Math.random()*100000)}_${file.name}`;
+            let { data, error } = await supabase.storage.from(BUCKET_NAME).upload(filename, file, { cacheControl: '3600', upsert: false });
+            if (error) {
+                uzenetDiv.textContent = "Képfeltöltési hiba: " + error.message;
+                uzenetDiv.style.color = "red";
+                return;
+            }
+            // Publikus URL
+            const url = supabase.storage.from(BUCKET_NAME).getPublicUrl(filename).data.publicUrl;
+            kepUrls.push(url);
+        }
+    }
 
     const csomag = csomagValaszto.value;
     const napok = csomag === 'Alap' ? 7 : (csomag === 'Prémium' ? 14 : 30);
     const lejarat = new Date();
     lejarat.setDate(lejarat.getDate() + napok);
 
-    const { error } = await supaClient.from('hirdetesek').insert([{
+    const { error } = await supabase.from('hirdetesek').insert([{
         cim: document.getElementById('cim').value,
         leiras: document.getElementById('leiras').value,
         kategoria: document.getElementById('kategoria').value,
@@ -72,8 +100,8 @@ feltoltesForm.addEventListener('submit', async (e) => {
         csomag: csomag,
         email: email,
         lejárati_datum: lejarat.toISOString(),
-        telefonszam: document.getElementById('telefonszam')?.value || null
-        // Ha képfeltöltést is akarsz, azt külön oldd meg (Supabase Storage)
+        telefonszam: document.getElementById('telefonszam')?.value || null,
+        kepek: kepUrls // Ezt JSON[] vagy text[] típusú mezőként add hozzá az adatbázisban!
     }]);
 
     if (error) {
@@ -84,6 +112,6 @@ feltoltesForm.addEventListener('submit', async (e) => {
     }
 });
 
-// PayPal logika inicializálása oldal betöltéskor is
+// Inicializálás
 csomagValaszto.addEventListener("change", handlePackageChange);
 document.addEventListener('DOMContentLoaded', handlePackageChange);
