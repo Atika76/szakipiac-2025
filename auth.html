@@ -2,43 +2,45 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <title>Bejelentkezés / Regisztráció</title>
+  <title>Bejelentkezés / Regisztráció – SzakiPiac.hu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <header class="green-header">
-    <img src="logo.png" class="logo" alt="SzakiPiac logó">
-    <nav>
-      <a href="index.html">Főoldal</a>
-      <a href="rolunk.html">Rólunk</a>
-      <a href="kapcsolat.html">Kapcsolat</a>
-      <a href="feltoltes.html">Hirdetés feltöltés</a>
-      <a href="auth.html" style="font-weight:bold;">Bejelentkezés</a>
-    </nav>
+  <header>
+    <!-- Navigáció ... -->
   </header>
-  <div class="container">
-    <div class="content-box">
-      <h1 id="auth-title">Bejelentkezés</h1>
-      <form id="auth-form">
-        <label>Email:</label>
-        <input type="email" id="email-input" required>
-        <label id="pwlabel">Jelszó:</label>
-        <input type="password" id="password-input" required>
-        <button type="submit" id="auth-btn">Bejelentkezés</button>
-      </form>
-      <div style="margin-top: 15px;">
-        <a href="#" id="switch-link">Nincs fiókod? Regisztrálj!</a>
-        <a href="#" id="forgot-pw-link" style="float:right;">Elfelejtett jelszó?</a>
-      </div>
-      <div id="auth-message" style="margin-top:16px; font-weight: bold;"></div>
-    </div>
-  </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="supabase.js"></script>
-  <script src="header.js"></script>
+  <main style="max-width: 500px; margin: 0 auto; background: #fff; border-radius: 24px; padding: 32px; margin-top: 32px;">
+    <h1>Bejelentkezés</h1>
+    <form id="loginForm">
+      <label>Email:<br>
+        <input type="email" id="loginEmail" required>
+      </label><br><br>
+      <label>Jelszó:<br>
+        <input type="password" id="loginPassword" required>
+      </label><br><br>
+      <button type="submit">Bejelentkezés</button>
+      <div id="loginUzenet" style="margin:10px 0;color:#a00"></div>
+    </form>
+
+    <hr style="margin:32px 0;">
+
+    <h2>Regisztráció</h2>
+    <form id="regForm">
+      <label>Email:<br>
+        <input type="email" id="regEmail" required>
+      </label><br><br>
+      <label>Jelszó:<br>
+        <input type="password" id="regPassword" required>
+      </label><br><br>
+      <button type="submit">Regisztráció</button>
+      <div id="regUzenet" style="margin:10px 0;color:#a00"></div>
+    </form>
+    <br>
+    <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+  </main>
   <script src="auth.js"></script>
 </body>
 </html>
