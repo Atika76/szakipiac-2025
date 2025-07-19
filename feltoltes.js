@@ -60,7 +60,8 @@ feltoltesForm.addEventListener('submit', async (e) => {
     const lejarat = new Date();
     lejarat.setDate(lejarat.getDate() + napok);
 
-    const { error } = await supaClient.from('hirdetesek').insert([{
+    // ITT A JAVÍTÁS! 
+    const { error } = await supabase.from('hirdetesek').insert([{
         cim: document.getElementById('cim').value,
         leiras: document.getElementById('leiras').value,
         kategoria: document.getElementById('kategoria').value,
@@ -80,5 +81,5 @@ feltoltesForm.addEventListener('submit', async (e) => {
 
 // Eseménykezelők
 csomagValaszto.addEventListener("change", handlePackageChange);
-// JAVÍTÁS: Lefuttatjuk a logikát az oldal betöltésekor is, hogy alapból megjelenjen a PayPal gomb
+// Lefuttatjuk a logikát az oldal betöltésekor is
 document.addEventListener('DOMContentLoaded', handlePackageChange);
