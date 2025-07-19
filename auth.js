@@ -1,41 +1,46 @@
-const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
-const supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const form = document.getElementById("auth-form");
+const title = document.getElementById("auth-title");
+const btn = document.getElementById("auth-btn");
+const switchLink = document.getElementById("switch-link");
+const message = document.getElementById("auth-message");
+const emailInput = document.getElementById("email-input");
+const passwordInput = document.getElementById("password-input");
+let mode = "login";
 
-// BEJELENTKEZÉS
-document.getElementById("loginForm").onsubmit = async (e) => {
+function setMode(newMode) {
+  mode = newMode;
+  message.textContent = "";
+  title.textContent = mode === 'login' ? 'Bejelentkezés' : 'Regisztráció';
+  btn.textContent = mode === 'login' ? 'Bejelentkezés' : 'Regisztráció';
+  switchLink.textContent = mode === 'login' ? 'Nincs fiókod? Regisztrálj!' : 'Van már fiókod? Bejelentkezés!';
+}
+
+switchLink.addEventListener("click", (e) => { e.preventDefault(); setMode(mode === 'login' ? 'register' : 'login'); });
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
-  const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    document.getElementById("loginUzenet").innerText = "Hiba: Hibás email vagy jelszó.";
-  } else {
-    document.getElementById("loginUzenet").innerText = "Sikeres bejelentkezés!";
-    document.getElementById("logoutBtn").style.display = "";
-    localStorage.setItem("loggedInUser", email);
-    setTimeout(() => { window.location = "index.html"; }, 1000);
-  }
-};
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  message.textContent = "";
 
-// REGISZTRÁCIÓ
-document.getElementById("regForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("regEmail").value;
-  const password = document.getElementById("regPassword").value;
-  const { data, error } = await supaClient.auth.signUp({ email, password });
-  if (error) {
-    document.getElementById("regUzenet").innerText = "Hiba: " + (error.message || "Regisztráció sikertelen!");
-  } else {
-    document.getElementById("regUzenet").innerText = "Sikeres regisztráció! Kérlek, erősítsd meg az emailed!";
-    document.getElementById("logoutBtn").style.display = "";
-    localStorage.setItem("loggedInUser", email);
+  if (mode === "login") {
+    const { error } = await supaClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      message.textContent = "Hiba: Hibás email vagy jelszó.";
+      message.style.color = "red";
+    } else {
+      localStorage.setItem("loggedInUser", email);
+      window.location.href = "index.html";
+    }
+  } else { // Register
+    const { error } = await supaClient.auth.signUp({ email, password });
+    if (error) {
+      message.textContent = "Hiba: " + error.message;
+      message.style.color = "red";
+    } else {
+      message.textContent = "Sikeres regisztráció! Kérlek, erősítsd meg az email címedet a postafiókodban.";
+      message.style.color = "green";
+    }
   }
-};
-
-// KIJELENTKEZÉS
-document.getElementById("logoutBtn").onclick = async () => {
-  await supaClient.auth.signOut();
-  localStorage.removeItem("loggedInUser");
-  window.location.reload();
-};
+});
+setMode("login");
