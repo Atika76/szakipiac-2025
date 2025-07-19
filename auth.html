@@ -2,13 +2,8 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <title>Bejelentkezés – SzakiPiac.hu</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="logo.png">
+  <title>Bejelentkezés</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .content-box { max-width: 540px; margin: 40px auto; background: #fff; border-radius: 20px; box-shadow: 0 2px 16px #0001; padding: 36px 40px;}
-  </style>
 </head>
 <body>
   <header class="green-header">
@@ -18,52 +13,41 @@
       <a href="rolunk.html">Rólunk</a>
       <a href="kapcsolat.html">Kapcsolat</a>
       <a href="feltoltes.html">Hirdetés feltöltés</a>
-      <a href="auth.html" style="font-weight:bold;">Bejelentkezés</a>
+      <a href="regisztracio.html">Regisztráció</a>
     </nav>
   </header>
   <div class="container">
     <div class="content-box">
       <h1>Bejelentkezés</h1>
-      <form id="loginForm" autocomplete="off">
-        <label for="loginEmail">Email:</label>
-        <input type="email" id="loginEmail" required autocomplete="username">
-        <label for="loginPw">Jelszó:</label>
-        <input type="password" id="loginPw" required autocomplete="current-password">
-        <button type="submit" style="margin-top:20px;">Bejelentkezés</button>
+      <form id="loginForm">
+        <label>Email:</label>
+        <input type="email" id="loginEmail" required>
+        <label>Jelszó:</label>
+        <input type="password" id="loginPassword" required>
+        <button type="submit">Bejelentkezés</button>
       </form>
-      <div style="margin-top:18px;">
-        <a href="regisztracio.html">Nincs fiókod? Regisztrálj!</a>
-      </div>
-      <div id="loginUzenet" style="margin-top: 18px; font-weight: bold;"></div>
+      <div id="loginUzenet"></div>
+      <a href="regisztracio.html">Nincs fiókod? Regisztrálj!</a>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script>
-    // Sikeres regisztráció üzenet (redirect után)
-    const url = new URL(window.location);
-    if (url.searchParams.get("regisztracio_sikeres") === "1") {
-      setTimeout(() => {
-        document.getElementById('loginUzenet').textContent = "Sikeres regisztráció, most már bejelentkezhetsz!";
-        document.getElementById('loginUzenet').style.color = "green";
-      }, 400);
-    }
-    // Bejelentkezés
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    const form = document.getElementById('loginForm');
+    const loginUzenet = document.getElementById('loginUzenet');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const pw = document.getElementById('loginPw').value;
-      const uzenet = document.getElementById('loginUzenet');
-      uzenet.style.color = 'black';
-      uzenet.textContent = 'Bejelentkezés...';
-
-      const { data, error } = await supaClient.auth.signInWithPassword({ email, password: pw });
+      loginUzenet.textContent = "Bejelentkezés...";
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+      });
       if (error) {
-        uzenet.textContent = "Hibás email vagy jelszó.";
-        uzenet.style.color = "red";
+        loginUzenet.textContent = "Hiba: " + error.message;
+        loginUzenet.style.color = "red";
       } else {
-        // Mentjük a bejelentkezett felhasználót
-        localStorage.setItem("loggedInUser", email);
+        // Localstorage-ban mentjük az emailt
+        localStorage.setItem("loggedInUser", document.getElementById('loginEmail').value);
         window.location.href = "index.html";
       }
     });
