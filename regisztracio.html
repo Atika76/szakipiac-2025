@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Regisztráció – SzakiPiac.hu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .content-box { max-width: 550px; margin: 32px auto; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px #0001; padding: 36px 40px 36px 40px;}
+    .pw-eye { cursor: pointer; position: absolute; right: 16px; top: 12px; width: 22px; }
+    .pw-wrap { position: relative; }
+  </style>
+</head>
+<body>
+  <header class="green-header">
+    <img src="logo.png" class="logo" alt="SzakiPiac logó">
+    <nav>
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+      <a href="auth.html">Bejelentkezés</a>
+    </nav>
+  </header>
+  <div class="container">
+    <div class="content-box">
+      <h1>Regisztráció</h1>
+      <form id="regForm" autocomplete="off">
+        <label for="regEmail">Email:</label>
+        <input type="email" id="regEmail" required autocomplete="username">
+        <label for="regPw">Jelszó:</label>
+        <div class="pw-wrap">
+          <input type="password" id="regPw" required minlength="6" autocomplete="new-password">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static/icons/eye.svg" id="pwEye" class="pw-eye" alt="Jelszó megjelenítése">
+        </div>
+        <button type="submit" style="margin-top:20px;">Regisztráció</button>
+      </form>
+      <div style="margin-top:18px;"><a href="auth.html">Van már fiókod? Bejelentkezés!</a></div>
+      <div id="regUzenet" style="margin-top: 18px; font-weight: bold;"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    // Jelszó szem ikon funkció
+    const pwInput = document.getElementById('regPw');
+    const pwEye = document.getElementById('pwEye');
+    pwEye.addEventListener('mousedown', () => { pwInput.type = "text"; });
+    pwEye.addEventListener('mouseup', () => { pwInput.type = "password"; });
+    pwEye.addEventListener('mouseleave', () => { pwInput.type = "password"; });
+
+    // Regisztráció
+    document.getElementById('regForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('regEmail').value.trim();
+      const pw = document.getElementById('regPw').value;
+      const uzenet = document.getElementById('regUzenet');
+      uzenet.style.color = 'black';
+      uzenet.textContent = 'Feldolgozás...';
+
+      const { error } = await supaClient.auth.signUp({
+        email: email,
+        password: pw
+      });
+
+      if (error) {
+        uzenet.textContent = "Hiba: " + error.message;
+        uzenet.style.color = "red";
+      } else {
+        uzenet.textContent = "Sikeres regisztráció! Kérjük, erősítsd meg az emailed a postafiókodban.";
+        uzenet.style.color = "green";
+      }
+    });
+  </script>
+</body>
+</html>
