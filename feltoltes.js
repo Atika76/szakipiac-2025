@@ -1,6 +1,4 @@
-// ----------- Supabase kliensnek itt már léteznie kell! -----------
-// (feltételezi, hogy supabase.js betöltött a globális "supabase" változót!)
-// Ha nem így lenne, a script sorrend a hibás!
+// feltoltes.js
 
 const adminEmail = "atika.76@windowslive.com";
 const csomagValaszto = document.getElementById("csomagValaszto");
@@ -66,7 +64,7 @@ feltoltesForm.addEventListener('submit', async (e) => {
     const lejarat = new Date();
     lejarat.setDate(lejarat.getDate() + napok);
 
-    const { error } = await supabase.from('hirdetesek').insert([{
+    const { error } = await supaClient.from('hirdetesek').insert([{
         cim: document.getElementById('cim').value,
         leiras: document.getElementById('leiras').value,
         kategoria: document.getElementById('kategoria').value,
