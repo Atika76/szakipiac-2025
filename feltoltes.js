@@ -1,9 +1,10 @@
+// ----------- Supabase kliensnek itt már léteznie kell! -----------
+
 const adminEmail = "atika.76@windowslive.com";
 const csomagValaszto = document.getElementById("csomagValaszto");
 const paypalContainer = document.getElementById("paypal-container");
 const feltoltesForm = document.getElementById('feltoltesForm');
 const uzenetDiv = document.getElementById('uzenet');
-const kepekInput = document.getElementById('kepek');
 let fizetesSikeres = false;
 
 // Bejelentkezett e-mail lekérése (localStorage alapján)
@@ -63,25 +64,6 @@ feltoltesForm.addEventListener('submit', async (e) => {
     const lejarat = new Date();
     lejarat.setDate(lejarat.getDate() + napok);
 
-    // KEPEK FELTÖLTÉSE STORAGE-BA
-    let kepekUrlTomb = [];
-    if (kepekInput.files.length > 0) {
-        for (let i = 0; i < kepekInput.files.length; i++) {
-            const file = kepekInput.files[i];
-            // Egyedi fájlnév (időbélyeg + email + eredeti név)
-            const filename = `${Date.now()}_${email}_${file.name}`;
-            let { data, error } = await supabase.storage.from('hirdeteskepek').upload(filename, file);
-            if (error) {
-                uzenetDiv.textContent = "Hiba a képfeltöltés során: " + error.message;
-                uzenetDiv.style.color = "red";
-                return;
-            }
-            // Teljes elérési út
-            kepekUrlTomb.push(filename);
-        }
-    }
-
-    // HIRDETÉS FELVITELE ADATBÁZISBA
     const { error } = await supabase.from('hirdetesek').insert([{
         cim: document.getElementById('cim').value,
         leiras: document.getElementById('leiras').value,
@@ -90,8 +72,7 @@ feltoltesForm.addEventListener('submit', async (e) => {
         csomag: csomag,
         email: email,
         lejárati_datum: lejarat.toISOString(),
-        telefonszam: document.getElementById('telefonszam')?.value || null,
-        kepek: kepekUrlTomb.join(';')
+        telefonszam: document.getElementById('telefonszam')?.value || null
     }]);
 
     if (error) {
