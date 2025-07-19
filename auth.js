@@ -24,12 +24,12 @@ form.addEventListener("submit", async (e) => {
   message.textContent = "";
 
   if (mode === "login") {
-    const { error } = await supaClient.auth.signInWithPassword({ email, password });
+    const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
     if (error) {
       message.textContent = "Hiba: Hibás email vagy jelszó.";
       message.style.color = "red";
     } else {
-      localStorage.setItem("loggedInUser", email);
+      localStorage.setItem("loggedInUser", data.user.email);
       window.location.href = "index.html";
     }
   } else { // Register
