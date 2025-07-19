@@ -7,8 +7,8 @@
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
   <style>
-    .content-box { max-width: 550px; margin: 32px auto; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px #0001; padding: 36px 40px 36px 40px;}
-    .pw-eye { cursor: pointer; position: absolute; right: 16px; top: 12px; width: 22px; }
+    .content-box { max-width: 540px; margin: 40px auto; background: #fff; border-radius: 20px; box-shadow: 0 2px 16px #0001; padding: 36px 40px;}
+    .pw-eye { cursor: pointer; position: absolute; right: 16px; top: 12px; width: 22px; opacity:.8; }
     .pw-wrap { position: relative; }
   </style>
 </head>
@@ -40,11 +40,10 @@
       <div id="regUzenet" style="margin-top: 18px; font-weight: bold;"></div>
     </div>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script>
-    // Jelszó szem ikon funkció
+    // Szem ikon
     const pwInput = document.getElementById('regPw');
     const pwEye = document.getElementById('pwEye');
     pwEye.addEventListener('mousedown', () => { pwInput.type = "text"; });
@@ -60,17 +59,14 @@
       uzenet.style.color = 'black';
       uzenet.textContent = 'Feldolgozás...';
 
-      const { error } = await supaClient.auth.signUp({
-        email: email,
-        password: pw
-      });
-
+      const { error } = await supaClient.auth.signUp({ email, password: pw });
       if (error) {
         uzenet.textContent = "Hiba: " + error.message;
         uzenet.style.color = "red";
       } else {
         uzenet.textContent = "Sikeres regisztráció! Kérjük, erősítsd meg az emailed a postafiókodban.";
         uzenet.style.color = "green";
+        setTimeout(()=>location.href="auth.html?regisztracio_sikeres=1", 3000);
       }
     });
   </script>
