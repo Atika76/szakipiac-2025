@@ -1,22 +1,31 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const adminEmail = "atika.76@windowslive.com";
-    const loggedInUserEmail = localStorage.getItem("loggedInUser");
-    const nav = document.querySelector('.green-header nav');
-    if (!nav) return;
+// header.js
 
-    const loginLink = nav.querySelector('a[href="auth.html"]');
-    
-    if (loggedInUserEmail && loginLink) {
-        loginLink.style.display = 'none';
-        const userDisplay = document.createElement('div');
-        userDisplay.style.cssText = 'display:flex; align-items:center; gap:15px;';
-        const adminLink = loggedInUserEmail === adminEmail ? `<a href="admin.html" style="color: #fff700; text-decoration: underline; font-weight: bold;">Admin</a>` : '';
-        userDisplay.innerHTML = `<span style="color: white; font-weight: bold;">${loggedInUserEmail}</span> ${adminLink} <button id="logoutBtn" class="header-logout-btn">Kijelentkezés</button>`;
-        nav.appendChild(userDisplay);
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            await supaClient.auth.signOut();
-            localStorage.removeItem('loggedInUser');
-            window.location.href = 'index.html';
-        });
+// -- Menühöz szükséges --
+const NAV_EMAIL = localStorage.getItem('loggedInUser');
+const ADMIN_EMAIL = "atika.76@windowslive.com";
+const nav = document.querySelector("header nav");
+
+function createNav() {
+    let html = `
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+    `;
+    if (NAV_EMAIL) {
+        html += `<span style="color:#fff;font-weight:bold; margin-left:16px">${NAV_EMAIL}</span>`;
+        if (NAV_EMAIL === ADMIN_EMAIL) html += `<a href="admin.html" style="color:yellow; font-weight:bold; margin-left:8px;">Admin</a>`;
+        html += `<button id="logout-btn" style="margin-left:8px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; padding:4px 14px; font-weight:bold; cursor:pointer;">Kijelentkezés</button>`;
+    } else {
+        html += `<a href="auth.html">Bejelentkezés</a>`;
+    }
+    nav.innerHTML = html;
+}
+createNav();
+
+document.addEventListener('click', (e) => {
+    if (e.target.id === "logout-btn") {
+        localStorage.removeItem("loggedInUser");
+        window.location.href = "index.html";
     }
 });
