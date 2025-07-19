@@ -131,3 +131,5 @@ form button:hover { background-color: #1e5e24; }
 body {
   overflow-x: hidden;
 }
+.hirdetes-kepek { display: flex; gap: 10px; margin-bottom: 10px; }
+.hirdetes-kep { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; }
