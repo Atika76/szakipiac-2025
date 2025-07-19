@@ -1,8 +1,3 @@
-// Supabase inicializálás (KÖTELEZŐ az index.js elejére!)
-const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const hirdetesekLista = document.getElementById('hirdetesek-lista');
 const searchInput = document.getElementById('search');
 const categorySelect = document.getElementById('category-select');
@@ -27,7 +22,6 @@ async function megjelenitHirdetesek() {
         hirdetesek.forEach(h => {
             const deleteButton = loggedInUser === ADMIN_EMAIL ? `<button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>` : '';
             let kepekHTML = '';
-            // Egyszerű kép megjelenítés, ha van 'kepek' oszlop (JSON vagy sima szöveg)
             if (h.kepek) {
                 try {
                     const kepekArr = JSON.parse(h.kepek);
