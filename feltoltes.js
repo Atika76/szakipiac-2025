@@ -1,7 +1,4 @@
 // ----------- Supabase kliensnek itt már léteznie kell! -----------
-// (feltételezi, hogy supabase.js betöltött a globális "supabase" változót!)
-// Ha nem így lenne, a script sorrend a hibás!
-
 const adminEmail = "atika.76@windowslive.com";
 const csomagValaszto = document.getElementById("csomagValaszto");
 const paypalContainer = document.getElementById("paypal-container");
@@ -75,7 +72,6 @@ feltoltesForm.addEventListener('submit', async (e) => {
         email: email,
         lejárati_datum: lejarat.toISOString(),
         telefonszam: document.getElementById('telefonszam')?.value || null
-        // Ha képfeltöltést is akarsz, azt külön oldd meg (Supabase Storage)
     }]);
 
     if (error) {
