@@ -6,11 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
+  <!-- FONTOS: Először a supabase-js-t töltsd be! -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <header>
-    <!-- Navigáció ... -->
+  <header class="green-header">
+    <img src="logo.png" class="logo" alt="SzakiPiac logó">
+    <nav>
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+      <a href="auth.html" style="font-weight:bold;">Bejelentkezés</a>
+    </nav>
   </header>
   <main style="max-width: 500px; margin: 0 auto; background: #fff; border-radius: 24px; padding: 32px; margin-top: 32px;">
     <h1>Bejelentkezés</h1>
@@ -41,6 +49,7 @@
     <br>
     <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
   </main>
+  <!-- FONTOS: a saját JS-ed legyen legvégül! -->
   <script src="auth.js"></script>
 </body>
 </html>
