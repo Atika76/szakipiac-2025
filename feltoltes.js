@@ -1,3 +1,7 @@
+// ----------- Supabase kliensnek itt már léteznie kell! -----------
+// (feltételezi, hogy supabase.js betöltött a globális "supabase" változót!)
+// Ha nem így lenne, a script sorrend a hibás!
+
 const adminEmail = "atika.76@windowslive.com";
 const csomagValaszto = document.getElementById("csomagValaszto");
 const paypalContainer = document.getElementById("paypal-container");
@@ -5,10 +9,12 @@ const feltoltesForm = document.getElementById('feltoltesForm');
 const uzenetDiv = document.getElementById('uzenet');
 let fizetesSikeres = false;
 
+// Bejelentkezett e-mail lekérése (localStorage alapján)
 function getLoggedInEmail() { 
     return localStorage.getItem("loggedInUser") || null; 
 }
 
+// PayPal gombok logikája
 function handlePackageChange() {
     const email = getLoggedInEmail();
     const isAdmin = (email === adminEmail);
@@ -17,14 +23,13 @@ function handlePackageChange() {
     if (csomag === 'Alap' || isAdmin) {
         fizetesSikeres = true;
         paypalContainer.style.display = "none";
-        paypalContainer.innerHTML = ""; // Töröljük a gombokat, ha voltak
+        paypalContainer.innerHTML = "";
         return;
     }
 
-    // Ha nem admin és fizetős a csomag, megjelenítjük a gombokat
     fizetesSikeres = false;
     paypalContainer.style.display = "block";
-    paypalContainer.innerHTML = ""; // Előző gombok törlése
+    paypalContainer.innerHTML = "";
     paypal.Buttons({
         createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: csomag === "Prémium" ? "1990" : "2990", currency_code: "HUF" } }] }),
         onApprove: (data, actions) => actions.order.capture().then(details => {
@@ -40,6 +45,7 @@ function handlePackageChange() {
     }).render('#paypal-container');
 }
 
+// FŐ submit eseménykezelő
 feltoltesForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = getLoggedInEmail();
@@ -49,7 +55,7 @@ feltoltesForm.addEventListener('submit', async (e) => {
         return;
     }
     if (!fizetesSikeres) {
-        uzenetDiv.textContent = "A fizetős csomagoknál a feltöltés előtt fizetned kell!";
+        uzenetDiv.textContent = "A fizetős csomagoknál először fizess!";
         uzenetDiv.style.color = "red";
         return;
     }
@@ -60,7 +66,6 @@ feltoltesForm.addEventListener('submit', async (e) => {
     const lejarat = new Date();
     lejarat.setDate(lejarat.getDate() + napok);
 
-    // ITT A JAVÍTÁS! 
     const { error } = await supabase.from('hirdetesek').insert([{
         cim: document.getElementById('cim').value,
         leiras: document.getElementById('leiras').value,
@@ -68,7 +73,9 @@ feltoltesForm.addEventListener('submit', async (e) => {
         ar: document.getElementById('ar').value || null,
         csomag: csomag,
         email: email,
-        lejárati_datum: lejarat.toISOString()
+        lejárati_datum: lejarat.toISOString(),
+        telefonszam: document.getElementById('telefonszam')?.value || null
+        // Ha képfeltöltést is akarsz, azt külön oldd meg (Supabase Storage)
     }]);
 
     if (error) {
@@ -79,7 +86,6 @@ feltoltesForm.addEventListener('submit', async (e) => {
     }
 });
 
-// Eseménykezelők
+// PayPal logika inicializálása oldal betöltéskor is
 csomagValaszto.addEventListener("change", handlePackageChange);
-// Lefuttatjuk a logikát az oldal betöltésekor is
 document.addEventListener('DOMContentLoaded', handlePackageChange);
