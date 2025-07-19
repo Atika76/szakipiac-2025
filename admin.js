@@ -1,16 +1,10 @@
-// Kliens inicializálás
-const SUPABASE_URL = "https://cvcxdeunzlhcrayutuew.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2Y3hkZXVuemxoY3JheXV0dWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjgyMTQsImV4cCI6MjA2Nzc0NDIxNH0.mmp-rbNPxoPJmotz5NY5XLAwdhHBkvoDKQxY6V1iSbo";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 let adminLoggedIn = false;
 
 async function login() {
   const pw = prompt("Add meg az admin jelszót:");
   if (!pw) return;
-  // Admin bejelentkezés – csak saját email-cím/jelszóval!
-  const { error, data } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: ADMIN_EMAIL, password: pw
   });
   if (error) {
@@ -23,7 +17,6 @@ async function login() {
 
 async function renderAdmin() {
   if (!adminLoggedIn) return;
-  // Hirdetések lekérése
   const { data, error } = await supabase
     .from("hirdetesek")
     .select("*")
@@ -47,7 +40,6 @@ function logout() {
   document.getElementById("adminContent").innerHTML = `<button onclick="login()">Admin bejelentkezés</button>`;
 }
 
-// Alapból az adminContent-be tegyél egy gombot:
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("adminContent").innerHTML = `<button onclick="login()">Admin bejelentkezés</button>`;
 });
