@@ -36,7 +36,15 @@
         <label>Leírás:</label><textarea id="leiras" rows="4" required></textarea>
         <label>Kategória:</label>
         <select id="kategoria" required>
-            <option value="">Válassz...</option><option value="Építőipar">Építőipar</option><option value="Festés">Festés</option>
+            <option value="">Válassz kategóriát...</option>
+            <option value="Építőipar">Építőipar</option>
+            <option value="Villanyszerelés">Villanyszerelés</option>
+            <option value="Gépészet">Gépészet</option>
+            <option value="Festés">Festés</option>
+            <option value="Lakberendezés">Lakberendezés</option>
+            <option value="Számítástechnika">Számítástechnika</option>
+            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
+            <option value="Egyéb">Egyéb</option>
         </select>
         <label>Telefonszám (opcionális):</label><input type="tel" id="telefonszam" placeholder="+36...">
         <label>Ár (Ft):</label><input type="number" id="ar" min="0">
@@ -65,7 +73,7 @@
     const previewsContainer = document.getElementById('image-previews');
     const csomagValaszto = document.getElementById("csomagValaszto");
 
-    let kivalasztottKepek = []; // Ide gyűjtjük a képeket
+    let kivalasztottKepek = [];
     const packageLimits = { 'Alap': 2, 'Prémium': 3, 'Extra': 5 };
 
     function renderPreviews() {
