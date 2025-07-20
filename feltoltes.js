@@ -1,4 +1,3 @@
-// feltoltes.js (Javított a több kép feltöltéséhez)
 const feltoltesForm = document.getElementById('feltoltesForm');
 const uzenetDiv = document.getElementById('uzenet');
 const kepekInput = document.getElementById('kepek');
@@ -16,7 +15,7 @@ function handlePackageChange() {
     const email = getLoggedInEmail();
     const isAdmin = (email === adminEmail);
     const csomag = csomagValaszto.value;
-    if (csomag === 'Alap' || isAdmin) {
+    if (csomag === 'Alap' || isAdmin || !email) {
         fizetesSikeres = true;
         paypalContainer.style.display = "none";
         paypalContainer.innerHTML = "";
@@ -51,8 +50,13 @@ kepekInput.addEventListener('change', () => {
         previewsContainer.appendChild(img);
     }
 });
-csomagValaszto.addEventListener('change', handlePackageChange);
-handlePackageChange(); // Lefuttatjuk az oldal betöltésekor is
+
+csomagValaszto.addEventListener('change', () => {
+    kepekInput.value = '';
+    previewsContainer.innerHTML = '';
+    handlePackageChange();
+});
+document.addEventListener('DOMContentLoaded', handlePackageChange);
 
 feltoltesForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -70,14 +74,11 @@ feltoltesForm.addEventListener('submit', async (e) => {
 
     try {
         const imageFiles = kepekInput.files;
-        const imageUrls = []; // Ebbe gyűjtjük az összes kép URL-jét
-
-        // Végigmegyünk az összes kiválasztott fájlon és feltöltjük őket
+        const imageUrls = [];
         for (const file of imageFiles) {
             const filePath = `${user.id}/${Date.now()}-${file.name}`;
             const { data, error } = await supaClient.storage.from('hirdetes-kepek').upload(filePath, file);
             if (error) throw new Error('Képfeltöltési hiba: ' + error.message);
-            
             const { data: { publicUrl } } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(filePath);
             imageUrls.push(publicUrl);
         }
@@ -96,9 +97,9 @@ feltoltesForm.addEventListener('submit', async (e) => {
             csomag: csomag,
             email: user.email,
             lejárati_datum: lejarat.toISOString(),
-            kep_url_tomb: imageUrls // Itt már az összes kép URL-jét mentjük
+            kep_url_tomb: imageUrls
         }]);
-        
+
         if (insertError) throw insertError;
         window.location.href = 'sikeres.html';
     } catch (error) {
