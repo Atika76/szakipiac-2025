@@ -7,8 +7,14 @@
   <link rel="icon" href="logo.png">
   <link rel="stylesheet" href="style.css">
   <style>
-    #image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; border: 1px solid #eee; padding: 10px; min-height: 50px; border-radius: 5px; }
-    .preview-image { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; }
+    #image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; border: 1px solid #eee; padding: 10px; min-height: 100px; border-radius: 5px; }
+    .preview-container { position: relative; }
+    .preview-image { width: 90px; height: 90px; object-fit: cover; border-radius: 5px; }
+    .remove-btn {
+      position: absolute; top: -5px; right: -5px; background: red; color: white; border: 1px solid white;
+      border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold;
+      line-height: 20px; text-align: center; padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -26,36 +32,23 @@
     <div class="content-box">
       <h1>Hirdetés feltöltés</h1>
       <form id="feltoltesForm">
-        <label>Cím:</label>
-        <input type="text" id="cim" required>
-        <label>Leírás:</label>
-        <textarea id="leiras" rows="4" required></textarea>
+        <label>Cím:</label><input type="text" id="cim" required>
+        <label>Leírás:</label><textarea id="leiras" rows="4" required></textarea>
         <label>Kategória:</label>
         <select id="kategoria" required>
-            <option value="">Válassz kategóriát...</option>
-            <option value="Építőipar">Építőipar</option>
-            <option value="Villanyszerelés">Villanyszerelés</option>
-            <option value="Gépészet">Gépészet</option>
-            <option value="Festés">Festés</option>
-            <option value="Lakberendezés">Lakberendezés</option>
-            <option value="Számítástechnika">Számítástechnika</option>
-            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
-            <option value="Egyéb">Egyéb</option>
+            <option value="">Válassz...</option><option value="Építőipar">Építőipar</option><option value="Festés">Festés</option>
         </select>
-        <label>Telefonszám (opcionális):</label>
-        <input type="tel" id="telefonszam" placeholder="+36...">
-        <label>Ár (Ft):</label>
-        <input type="number" id="ar" min="0">
+        <label>Telefonszám (opcionális):</label><input type="tel" id="telefonszam" placeholder="+36...">
+        <label>Ár (Ft):</label><input type="number" id="ar" min="0">
         <label>Csomag:</label>
         <select id="csomagValaszto" required>
           <option value="Alap">Alap (ingyenes, 2 kép, 7 nap)</option>
           <option value="Prémium">Prémium (1990 Ft, 3 kép, 14 nap)</option>
           <option value="Extra">Extra (2990 Ft, 5 kép, 30 nap)</option>
         </select>
-        <label>Képek feltöltése:</label>
-        <input type="file" id="kepek" accept="image/jpeg, image/png" multiple>
+        <label>Képek hozzáadása (egyenként):</label>
+        <input type="file" id="kepek" accept="image/jpeg, image/png">
         <div id="image-previews"></div>
-        <div id="paypal-container" style="display:none; margin-top: 20px;"></div>
         <button type="submit">Hirdetés feladása</button>
       </form>
       <div id="uzenet" style="margin-top:16px; font-weight: bold;"></div>
@@ -63,9 +56,99 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://www.paypal.com/sdk/js?client-id=AW9Yc0M2H-I67Dx7boyvil9xg6LIdHcuwgFDpiKshLZx8RHoMfrPNMOrwyBRe589D0YXVk41cjG-TReu&currency=HUF"></script>
   <script src="supabase.js"></script>
   <script src="header.js"></script>
-  <script src="feltoltes.js"></script>
+  <script>
+    const feltoltesForm = document.getElementById('feltoltesForm');
+    const uzenetDiv = document.getElementById('uzenet');
+    const kepekInput = document.getElementById('kepek');
+    const previewsContainer = document.getElementById('image-previews');
+    const csomagValaszto = document.getElementById("csomagValaszto");
+
+    let kivalasztottKepek = []; // Ide gyűjtjük a képeket
+    const packageLimits = { 'Alap': 2, 'Prémium': 3, 'Extra': 5 };
+
+    function renderPreviews() {
+        previewsContainer.innerHTML = '';
+        kivalasztottKepek.forEach((file, index) => {
+            const container = document.createElement('div');
+            container.className = 'preview-container';
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'preview-image';
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'X';
+            removeBtn.className = 'remove-btn';
+            removeBtn.type = 'button';
+            removeBtn.onclick = () => {
+                kivalasztottKepek.splice(index, 1);
+                renderPreviews();
+            };
+            container.appendChild(img);
+            container.appendChild(removeBtn);
+            previewsContainer.appendChild(container);
+        });
+    }
+
+    kepekInput.addEventListener('change', (e) => {
+        const limit = packageLimits[csomagValaszto.value];
+        if (kivalasztottKepek.length >= limit) {
+            alert(`Már elérted a maximum (${limit} db) feltölthető képet.`);
+            e.target.value = '';
+            return;
+        }
+        if (e.target.files.length > 0) {
+            kivalasztottKepek.push(e.target.files[0]);
+            renderPreviews();
+        }
+        e.target.value = '';
+    });
+
+    csomagValaszto.addEventListener('change', () => {
+        kivalasztottKepek = [];
+        renderPreviews();
+    });
+
+    feltoltesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const { data: { user } } = await supaClient.auth.getUser();
+        if (!user) {
+            uzenetDiv.textContent = "A feltöltéshez be kell jelentkezned!";
+            return;
+        }
+        uzenetDiv.textContent = "Feltöltés folyamatban...";
+        document.querySelector('button[type="submit"]').disabled = true;
+        try {
+            const imageUrls = [];
+            for (const file of kivalasztottKepek) {
+                const filePath = `${user.id}/${Date.now()}-${file.name}`;
+                const { data, error } = await supaClient.storage.from('hirdetes-kepek').upload(filePath, file);
+                if (error) throw new Error('Képfeltöltési hiba: ' + error.message);
+                const { data: { publicUrl } } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(filePath);
+                imageUrls.push(publicUrl);
+            }
+            const csomag = csomagValaszto.value;
+            const napok = packageLimits[csomag] || 7;
+            const lejarat = new Date();
+            lejarat.setDate(lejarat.getDate() + napok);
+            const { error: insertError } = await supaClient.from('hirdetesek').insert([{
+                cim: document.getElementById('cim').value,
+                leiras: document.getElementById('leiras').value,
+                kategoria: document.getElementById('kategoria').value,
+                ar: parseInt(document.getElementById('ar').value) || null,
+                telefonszam: document.getElementById('telefonszam').value || null,
+                csomag: csomag,
+                email: user.email,
+                lejárati_datum: lejarat.toISOString(),
+                kep_url_tomb: imageUrls
+            }]);
+            if (insertError) throw insertError;
+            window.location.href = 'sikeres.html';
+        } catch (error) {
+            uzenetDiv.textContent = "Hiba történt: " + error.message;
+            document.querySelector('button[type="submit"]').disabled = false;
+        }
+    });
+  </script>
 </body>
 </html>
