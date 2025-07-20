@@ -1,3 +1,4 @@
+// feltoltes.js (Javított a több kép feltöltéséhez)
 const feltoltesForm = document.getElementById('feltoltesForm');
 const uzenetDiv = document.getElementById('uzenet');
 const kepekInput = document.getElementById('kepek');
@@ -7,12 +8,7 @@ const paypalContainer = document.getElementById('paypal-container');
 const adminEmail = "atika.76@windowslive.com";
 let fizetesSikeres = false;
 
-// Csomagokhoz tartozó képkorlátok
-const packageLimits = { 
-    'Alap': 2, 
-    'Prémium': 3, 
-    'Extra': 5 
-};
+const packageLimits = { 'Alap': 2, 'Prémium': 3, 'Extra': 5 };
 
 function getLoggedInEmail() { return localStorage.getItem("loggedInUser") || null; }
 
@@ -20,14 +16,12 @@ function handlePackageChange() {
     const email = getLoggedInEmail();
     const isAdmin = (email === adminEmail);
     const csomag = csomagValaszto.value;
-
-    if (csomag === 'Alap' || isAdmin || !email) {
+    if (csomag === 'Alap' || isAdmin) {
         fizetesSikeres = true;
         paypalContainer.style.display = "none";
         paypalContainer.innerHTML = "";
         return;
     }
-
     fizetesSikeres = false;
     paypalContainer.style.display = "block";
     paypalContainer.innerHTML = "";
@@ -42,36 +36,23 @@ function handlePackageChange() {
     }).render('#paypal-container');
 }
 
-// ÚJ FUNKCIÓ: Képek ellenőrzése és előnézet generálása
-function handleImageSelection() {
-    previewsContainer.innerHTML = ''; // Előző előnézetek törlése
+kepekInput.addEventListener('change', () => {
+    previewsContainer.innerHTML = '';
     const limit = packageLimits[csomagValaszto.value];
-    const files = kepekInput.files;
-
-    if (files.length > limit) {
-        alert(`A kiválasztott "${csomagValaszto.value}" csomaghoz maximum ${limit} képet tölthetsz fel!`);
-        kepekInput.value = ''; // A kiválasztott fájlok törlése
+    if (kepekInput.files.length > limit) {
+        alert(`A kiválasztott csomaghoz maximum ${limit} képet tölthetsz fel!`);
+        kepekInput.value = '';
         return;
     }
-
-    for (const file of files) {
+    for (const file of kepekInput.files) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
         img.classList.add('preview-image');
         previewsContainer.appendChild(img);
     }
-}
-
-// Eseménykezelők
-kepekInput.addEventListener('change', handleImageSelection);
-csomagValaszto.addEventListener('change', () => {
-    // Ha a felhasználó csomagot vált, töröljük a korábban kiválasztott képeket,
-    // hogy az új limitnek megfelelően tudjon választani.
-    kepekInput.value = '';
-    previewsContainer.innerHTML = '';
-    handlePackageChange();
 });
-document.addEventListener('DOMContentLoaded', handlePackageChange);
+csomagValaszto.addEventListener('change', handlePackageChange);
+handlePackageChange(); // Lefuttatjuk az oldal betöltésekor is
 
 feltoltesForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -89,11 +70,14 @@ feltoltesForm.addEventListener('submit', async (e) => {
 
     try {
         const imageFiles = kepekInput.files;
-        const imageUrls = [];
+        const imageUrls = []; // Ebbe gyűjtjük az összes kép URL-jét
+
+        // Végigmegyünk az összes kiválasztott fájlon és feltöltjük őket
         for (const file of imageFiles) {
             const filePath = `${user.id}/${Date.now()}-${file.name}`;
             const { data, error } = await supaClient.storage.from('hirdetes-kepek').upload(filePath, file);
             if (error) throw new Error('Képfeltöltési hiba: ' + error.message);
+            
             const { data: { publicUrl } } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(filePath);
             imageUrls.push(publicUrl);
         }
@@ -112,9 +96,9 @@ feltoltesForm.addEventListener('submit', async (e) => {
             csomag: csomag,
             email: user.email,
             lejárati_datum: lejarat.toISOString(),
-            kep_url_tomb: imageUrls
+            kep_url_tomb: imageUrls // Itt már az összes kép URL-jét mentjük
         }]);
-
+        
         if (insertError) throw insertError;
         window.location.href = 'sikeres.html';
     } catch (error) {
