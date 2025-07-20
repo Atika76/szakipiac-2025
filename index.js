@@ -9,7 +9,17 @@ async function megjelenitHirdetesek() {
     
     try {
         let query = supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
-        // ... (szűrési logika) ...
+        
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm) {
+            query = query.or(`cim.ilike.%${searchTerm}%,leiras.ilike.%${searchTerm}%`);
+        }
+
+        const category = categorySelect.value;
+        if (category) {
+            query = query.eq('kategoria', category);
+        }
+
         const { data: hirdetesek, error } = await query;
         if (error) throw error;
 
@@ -20,27 +30,57 @@ async function megjelenitHirdetesek() {
 
         hirdetesekLista.innerHTML = "";
         hirdetesek.forEach(h => {
-            // JAVÍTVA: A törlés gomb megjelenik, ha admin vagy, VAGY ha a hirdetés a tiéd
+            // Törlés gomb megjelenítése, ha admin vagy, VAGY ha a hirdetés a tiéd
             let deleteButton = '';
             if (loggedInUserEmail === ADMIN_EMAIL || loggedInUserEmail === h.email) {
                 deleteButton = `<button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>`;
             }
             
-            // ... (a többi HTML generálás) ...
+            // Képek HTML kódjának generálása
+            let kepekHTML = '';
+            if (h.kep_url_tomb && h.kep_url_tomb.length > 0) {
+                kepekHTML += '<div class="hirdetes-kepek">';
+                h.kep_url_tomb.forEach(url => {
+                    kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep">`;
+                });
+                kepekHTML += '</div>';
+            }
+            
+            // Kapcsolati gombok generálása
+            let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
+            if (h.telefonszam) {
+                contactHTML += `<a href="tel:${h.telefonszam}" class="contact-btn phone-btn">Kapcsolat (Telefon)</a>`;
+            }
+
             const box = document.createElement("div");
             box.className = "hirdetes-kartya";
-            box.innerHTML = `${deleteButton}<h3>${h.cim}</h3><p><b>Kategória:</b> ${h.kategoria}</p><p><b>Ár:</b> ${h.ar ? h.ar + ' Ft' : 'Megegyezés szerint'}</p><p>${h.leiras}</p>`;
+            box.innerHTML = `
+                ${deleteButton}
+                <h3>${h.cim}</h3>
+                ${kepekHTML}
+                <p><b>Kategória:</b> ${h.kategoria}</p>
+                <p><b>Ár:</b> ${h.ar ? h.ar + ' Ft' : 'Megegyezés szerint'}</p>
+                <p>${h.leiras}</p>
+                <div class="contact-buttons">${contactHTML}</div>
+            `;
             hirdetesekLista.appendChild(box);
         });
     } catch (error) {
-        hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba: ${error.message}</p>`;
+        hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba a hirdetések betöltésekor: ${error.message}</p>`;
     }
 }
+
 async function deleteAd(id) {
     if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
     const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
-    if (error) alert('Hiba a törlés során: ' + error.message);
-    else megjelenitHirdetesek();
+    if (error) {
+        alert('Hiba a törlés során: ' + error.message);
+    } else {
+        megjelenitHirdetesek();
+    }
 }
 
+// Eseménykezelők
+if(searchInput) searchInput.addEventListener('input', megjelenitHirdetesek);
+if(categorySelect) categorySelect.addEventListener('change', megjelenitHirdetesek);
 document.addEventListener('DOMContentLoaded', megjelenitHirdetesek);
