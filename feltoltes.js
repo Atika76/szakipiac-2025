@@ -75,6 +75,8 @@ feltoltesForm.addEventListener('submit', async (e) => {
     try {
         const imageFiles = kepekInput.files;
         const imageUrls = [];
+
+        // JAVÍTVA: Ciklussal végigmegyünk az összes képen
         for (const file of imageFiles) {
             const filePath = `${user.id}/${Date.now()}-${file.name}`;
             const { data, error } = await supaClient.storage.from('hirdetes-kepek').upload(filePath, file);
@@ -97,7 +99,7 @@ feltoltesForm.addEventListener('submit', async (e) => {
             csomag: csomag,
             email: user.email,
             lejárati_datum: lejarat.toISOString(),
-            kep_url_tomb: imageUrls
+            kep_url_tomb: imageUrls // Itt már az összes kép URL-jét mentjük
         }]);
 
         if (insertError) throw insertError;
