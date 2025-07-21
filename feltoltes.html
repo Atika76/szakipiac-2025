@@ -57,6 +57,9 @@
         <label>Képek hozzáadása (egyenként):</label>
         <input type="file" id="kepek" accept="image/jpeg, image/png">
         <div id="image-previews"></div>
+        
+        <div id="paypal-container" style="margin-top: 20px;"></div>
+        
         <button type="submit">Hirdetés feladása</button>
       </form>
       <div id="uzenet" style="margin-top:16px; font-weight: bold;"></div>
@@ -64,6 +67,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AaFUbbJ4zg7c2f0vWXPtUSJ0ePAs--FAjnc2Ms2bo1J7EVfppDITfh34J_vfGQc8v0sF-YR1o5vEfIV-&currency=HUF"></script>
+  
   <script src="supabase.js"></script>
   <script src="header.js"></script>
   <script>
@@ -72,8 +77,11 @@
     const kepekInput = document.getElementById('kepek');
     const previewsContainer = document.getElementById('image-previews');
     const csomagValaszto = document.getElementById("csomagValaszto");
+    const paypalContainer = document.getElementById("paypal-container"); // PayPal konténer
+    const adminEmail = "atika.76@windowslive.com";
 
     let kivalasztottKepek = [];
+    let fizetesSikeres = false; // Új változó a fizetés állapotának követésére
     const packageLimits = { 'Alap': 2, 'Prémium': 3, 'Extra': 5 };
 
     function renderPreviews() {
@@ -98,6 +106,33 @@
         });
     }
 
+    // PAYPAL LOGIKA
+    function handlePackageChange() {
+        const email = localStorage.getItem("loggedInUser");
+        const isAdmin = (email === adminEmail);
+        const csomag = csomagValaszto.value;
+
+        if (csomag === 'Alap' || isAdmin) {
+            fizetesSikeres = true;
+            paypalContainer.style.display = "none";
+            paypalContainer.innerHTML = "";
+            return;
+        }
+
+        fizetesSikeres = false;
+        paypalContainer.style.display = "block";
+        paypalContainer.innerHTML = ""; // Előző gombok törlése
+        paypal.Buttons({
+            createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: csomag === "Prémium" ? "1990" : "2990", currency_code: "HUF" } }] }),
+            onApprove: (data, actions) => actions.order.capture().then(details => {
+                uzenetDiv.textContent = "Sikeres fizetés!";
+                uzenetDiv.style.color = "green";
+                paypalContainer.style.display = "none";
+                fizetesSikeres = true;
+            })
+        }).render('#paypal-container');
+    }
+
     kepekInput.addEventListener('change', (e) => {
         const limit = packageLimits[csomagValaszto.value];
         if (kivalasztottKepek.length >= limit) {
@@ -115,13 +150,21 @@
     csomagValaszto.addEventListener('change', () => {
         kivalasztottKepek = [];
         renderPreviews();
+        handlePackageChange(); // Csomagváltáskor a PayPal logikát is frissítjük
     });
+
+    // Oldal betöltésekor is lefut a PayPal logika
+    document.addEventListener('DOMContentLoaded', handlePackageChange);
 
     feltoltesForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const { data: { user } } = await supaClient.auth.getUser();
         if (!user) {
             uzenetDiv.textContent = "A feltöltéshez be kell jelentkezned!";
+            return;
+        }
+        if (!fizetesSikeres) {
+            uzenetDiv.textContent = "A fizetős csomagoknál a feltöltés előtt fizetned kell!";
             return;
         }
         uzenetDiv.textContent = "Feltöltés folyamatban...";
