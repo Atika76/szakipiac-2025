@@ -32,8 +32,10 @@
     <div class="content-box">
       <h1>Hirdetés feltöltés</h1>
       <form id="feltoltesForm">
-        <label>Cím:</label><input type="text" id="cim" required>
-        <label>Leírás:</label><textarea id="leiras" rows="4" required></textarea>
+        <label>Cím:</label>
+        <input type="text" id="cim" required>
+        <label>Leírás:</label>
+        <textarea id="leiras" rows="4" required></textarea>
         <label>Kategória:</label>
         <select id="kategoria" required>
             <option value="">Válassz kategóriát...</option>
@@ -46,8 +48,10 @@
             <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
             <option value="Egyéb">Egyéb</option>
         </select>
-        <label>Telefonszám (opcionális):</label><input type="tel" id="telefonszam" placeholder="+36...">
-        <label>Ár (Ft):</label><input type="number" id="ar" min="0">
+        <label>Telefonszám (opcionális):</label>
+        <input type="tel" id="telefonszam" placeholder="+36 30 123 4567">
+        <label>Ár (Ft):</label>
+        <input type="number" id="ar" min="0">
         <label>Csomag:</label>
         <select id="csomagValaszto" required>
           <option value="Alap">Alap (ingyenes, 2 kép, 7 nap)</option>
@@ -57,9 +61,7 @@
         <label>Képek hozzáadása (egyenként):</label>
         <input type="file" id="kepek" accept="image/jpeg, image/png">
         <div id="image-previews"></div>
-        
         <div id="paypal-container" style="margin-top: 20px;"></div>
-        
         <button type="submit">Hirdetés feladása</button>
       </form>
       <div id="uzenet" style="margin-top:16px; font-weight: bold;"></div>
@@ -68,7 +70,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.paypal.com/sdk/js?client-id=AaFUbbJ4zg7c2f0vWXPtUSJ0ePAs--FAjnc2Ms2bo1J7EVfppDITfh34J_vfGQc8v0sF-YR1o5vEfIV-&currency=HUF"></script>
-  
   <script src="supabase.js"></script>
   <script src="header.js"></script>
   <script src="feltoltes.js"></script>
