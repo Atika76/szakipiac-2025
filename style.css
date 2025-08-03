@@ -20,7 +20,25 @@ body {
   margin-left: 16px;
   margin-right: 36px;
 }
+/* A feltöltő űrlap elrendezésének javítása */
+#feltoltesForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Két egyenlő szélességű oszlop */
+    gap: 20px; /* Térköz az elemek között */
+}
 
+/* Azok az elemek, amik a teljes szélességet foglalják el */
+#feltoltesForm label[for="cim"],
+#feltoltesForm input#cim,
+#feltoltesForm label[for="leiras"],
+#feltoltesForm textarea#leiras,
+#feltoltesForm label[for="kepek"],
+#feltoltesForm div#image-previews,
+#feltoltesForm div#paypal-container,
+#feltoltesForm button[type="submit"],
+#feltoltesForm #uzenet {
+    grid-column: 1 / -1; /* Átfogja mindkét oszlopot */
+}
 .green-header nav {
   flex: 1;
   display: flex;
