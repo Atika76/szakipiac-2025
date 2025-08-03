@@ -1,54 +1,58 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <title>SzakiPiac.hu – Főoldal</title>
-  <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>SzakiPiac.hu – Főoldal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Találj megbízható szakembert, vagy hirdesd szolgáltatásaidat Magyarország új online piacterén!">
+  
+  <meta property="og:title" content="SzakiPiac.hu - Hirdess, találj, dolgozz!">
+  <meta property="og:description" content="Találj megbízható szakembert, vagy hirdesd szolgáltatásaidat Magyarország új online piacterén!">
+  <meta property="og:image" content="https://atika76.github.io/szakipiac-2025/icon-512.jpg">
+  <meta property="og:url" content="https://atika76.github.io/szakipiac-2025/">
+  <meta property="og:type" content="website">
+  
+  <link rel="icon" href="logo.png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="green-header">
-    <img src="logo.png" class="logo" alt="SzakiPiac logó">
-    <nav>
-      <a href="index.html">Főoldal</a>
-      <a href="rolunk.html">Rólunk</a>
-      <a href="kapcsolat.html">Kapcsolat</a>
-      <a href="feltoltes.html">Hirdetés feltöltés</a>
-      <a href="auth.html">Bejelentkezés</a>
-    </nav>
-  </header>
-  <div class="container">
-    <div class="content-box">
-      <h1 class="main-title">Üdvözlünk a <span class="kiemelt">SzakiPiac.hu-n!</span></h1>
-      <p class="main-leiras">Válassz szakembert, böngéssz kategóriák és kulcsszavak szerint, vagy adj fel hirdetést akár <span class="kiemelt-zold">ingyen</span>!</p>
-      <div class="filters">
-        <input type="text" id="search" placeholder="Keresés a hirdetésekben...">
-        <select id="category-select">
-            <option value="">Összes kategória</option>
-            <option value="Építőipar">Építőipar</option>
-            <option value="Villanyszerelés">Villanyszerelés</option>
-            <option value="Gépészet">Gépészet</option>
-            <option value="Festés">Festés</option>
-            <option value="Lakberendezés">Lakberendezés</option>
-            <option value="Számítástechnika">Számítástechnika</option>
-            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
-            <option value="Egyéb">Egyéb</option>
-        </select>
-      </div>
-      <div id="hirdetesek-lista"></div>
-    </div>
-    <div class="reklam-doboz">
-        <b>Szabad reklámhely!</b><br>Itt hirdethet!<br><a href="reklam.html">Reklám feltöltése</a>
-    </div>
-  </div>
-
-  <div id="lightbox" class="lightbox">
-    <span class="lightbox-close">&times;</span>
-    <img class="lightbox-content" id="lightbox-img">
+  <header class="green-header">
+    <img src="logo.png" class="logo" alt="SzakiPiac logó">
+    <nav>
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+      <a href="auth.html">Bejelentkezés</a>
+    </nav>
+  </header>
+  <div class="container">
+    <div class="content-box">
+      <h1 class="main-title">Üdvözlünk a <span class="kiemelt">SzakiPiac.hu-n!</span></h1>
+      <p class="main-leiras">Válassz szakembert, böngéssz kategóriák és kulcsszavak szerint, vagy adj fel hirdetést akár <span class="kiemelt-zold">ingyen</span>!</p>
+      <div class="filters">
+        <input type="text" id="search" placeholder="Keresés a hirdetésekben...">
+        <select id="category-select">
+            <option value="">Összes kategória</option>
+            <option value="Építőipar">Építőipar</option>
+            <option value="Villanyszerelés">Villanyszerelés</option>
+            <option value="Gépészet">Gépészet</option>
+            <option value="Festés">Festés</option>
+            <option value="Lakberendezés">Lakberendezés</option>
+            <option value="Számítástechnika">Számítástechnika</option>
+            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
+            <option value="Egyéb">Egyéb</option>
+        </select>
+      </div>
+      <div id="hirdetesek-lista"></div>
+    </div>
+    <div class="reklam-doboz">
+        <b>Szabad reklámhely!</b><br>Itt hirdethet!<br><a href="reklam.html">Reklám feltöltése</a>
+    </div>
   </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
-  <script src="header.js"></script>
-  <script src="index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="header.js"></script>
+  <script src="index.js"></script>
 </body>
 </html>
