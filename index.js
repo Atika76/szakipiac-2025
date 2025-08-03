@@ -29,6 +29,7 @@ if (lightbox) {
         }
     });
 }
+// Globálissá tesszük, hogy a HTML-ből (onclick) elérhető legyen
 window.openLightbox = openLightbox;
 
 async function megjelenitHirdetesek() {
@@ -57,26 +58,43 @@ async function megjelenitHirdetesek() {
             if (h.kep_url_tomb && h.kep_url_tomb.length > 0) {
                 kepekHTML += '<div class="hirdetes-kepek">';
                 h.kep_url_tomb.forEach(url => {
-                    kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep" onclick="openLightbox('${url}')">`;
+                    kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep" style="cursor: zoom-in;" onclick="openLightbox('${url}')">`;
                 });
                 kepekHTML += '</div>';
             }
             
+            // JAVÍTVA: A kapcsolati gombok visszakerültek
+            let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
+            if (h.telefonszam) {
+                contactHTML += `<a href="tel:${h.telefonszam}" class="contact-btn phone-btn">Kapcsolat (Telefon)</a>`;
+            }
+
             const box = document.createElement("div");
             box.className = "hirdetes-kartya";
-            box.innerHTML = `${deleteButton}<h3>${h.cim}</h3>${kepekHTML}<p><b>Kategória:</b> ${h.kategoria}</p><p>${h.leiras}</p>`;
+            box.innerHTML = `
+                ${deleteButton}
+                <h3>${h.cim}</h3>
+                ${kepekHTML}
+                <p><b>Kategória:</b> ${h.kategoria}</p>
+                <p><b>Ár:</b> ${h.ar ? h.ar + ' Ft' : 'Megegyezés szerint'}</p>
+                <p>${h.leiras}</p>
+                <div class="contact-buttons">${contactHTML}</div>
+            `;
             hirdetesekLista.appendChild(box);
         });
     } catch (error) {
-        hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba: ${error.message}</p>`;
+        hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba a hirdetések betöltésekor: ${error.message}</p>`;
     }
 }
 
 async function deleteAd(id) {
-    if (!confirm('Biztosan törölni szeretnéd?')) return;
+    if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
     const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
-    if (error) alert('Hiba a törlés során: ' + error.message);
-    else megjelenitHirdetesek();
+    if (error) {
+        alert('Hiba a törlés során: ' + error.message);
+    } else {
+        megjelenitHirdetesek();
+    }
 }
 
 if(searchInput) searchInput.addEventListener('input', megjelenitHirdetesek);
