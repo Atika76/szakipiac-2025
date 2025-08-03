@@ -7,8 +7,8 @@
 </head>
 <body>
   <div class="content-box" style="max-width: 500px; margin: 40px auto;">
-    <h1>Reklám feladása (2990 Ft / 30 nap)</h1>
-    <p>A reklám az adminisztrátor jóváhagyása után jelenik meg a főoldalon és a kapcsolódó aloldalakon.</p>
+    <h1>Reklám feladása</h1>
+    <p id="reklam-leiras">A reklám díja 2990 Ft / 30 nap. A hirdetés az adminisztrátor jóváhagyása után jelenik meg.</p>
     <form id="reklamForm">
       <label>Reklámkép (JPG/PNG):</label>
       <input type="file" id="img" accept="image/png,image/jpeg" required>
@@ -16,6 +16,7 @@
       <input type="url" id="url" placeholder="https://..." required>
     </form>
     <div id="paypal-button-container" style="margin-top: 20px;"></div>
+    <button id="admin-upload-btn" style="display:none;">Feltöltés (Admin)</button>
     <div id="uzenet" style="margin-top: 16px; font-weight: bold;"></div>
     <a href="index.html" style="display: block; margin-top: 20px;">Vissza a főoldalra</a>
   </div>
@@ -24,11 +25,12 @@
   <script src="https://www.paypal.com/sdk/js?client-id=AaFUbbJ4zg7c2f0vWXPtUSJ0ePAs--FAjnc2Ms2bo1J7EVfppDITfh34J_vfGQc8v0sF-YR1o5vEfIV-&currency=HUF"></script>
   <script src="supabase.js"></script>
   <script>
-    paypal.Buttons({
-      createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: '2990', currency_code: 'HUF' } }] }),
-      onApprove: (data, actions) => actions.order.capture().then(async (details) => {
-        const uzenetDiv = document.getElementById('uzenet');
-        uzenetDiv.textContent = "Fizetés sikeres, feltöltés folyamatban...";
+    const uzenetDiv = document.getElementById('uzenet');
+    const adminEmail = "atika.76@windowslive.com";
+    const loggedInUserEmail = localStorage.getItem("loggedInUser");
+
+    async function uploadAd() {
+        uzenetDiv.textContent = "Feltöltés folyamatban...";
         try {
             const { data: { user } } = await supaClient.auth.getUser();
             if (!user) throw new Error("A feltöltéshez be kell jelentkezned!");
@@ -47,16 +49,32 @@
                 image_url: publicUrl,
                 target_url: document.getElementById('url').value,
                 expires_at: lejarat.toISOString(),
-                is_active: false // Adminnak kell jóváhagynia
+                is_active: true // Admin feltöltése azonnal aktív
             }]);
             if (insertError) throw insertError;
             
-            uzenetDiv.innerHTML = "<span style='color:green;'>Sikeres feltöltés! A reklám az adminisztrátor jóváhagyása után jelenik meg.</span>";
+            uzenetDiv.innerHTML = "<span style='color:green;'>Sikeres feltöltés! A reklám azonnal megjelent.</span>";
         } catch (error) {
             uzenetDiv.innerHTML = `<span style='color:red;'>Hiba: ${error.message}</span>`;
         }
-      })
-    }).render('#paypal-button-container');
+    }
+
+    if (loggedInUserEmail === adminEmail) {
+        // Ha admin van bejelentkezve
+        document.getElementById('paypal-button-container').style.display = 'none';
+        document.getElementById('admin-upload-btn').style.display = 'block';
+        document.getElementById('reklam-leiras').textContent = "Adminisztrátorként a reklámfeltöltés ingyenes és a hirdetés azonnal megjelenik.";
+        document.getElementById('admin-upload-btn').onclick = uploadAd;
+    } else {
+        // Ha normál felhasználó van bejelentkezve
+        paypal.Buttons({
+          createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: '2990', currency_code: 'HUF' } }] }),
+          onApprove: (data, actions) => actions.order.capture().then(async (details) => {
+            uzenetDiv.textContent = "Fizetés sikeres, feltöltés...";
+            await uploadAd(); // Fizetés után feltöltjük
+          })
+        }).render('#paypal-button-container');
+    }
   </script>
 </body>
 </html>
