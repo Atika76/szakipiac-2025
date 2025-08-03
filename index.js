@@ -63,7 +63,6 @@ async function megjelenitHirdetesek() {
                 kepekHTML += '</div>';
             }
             
-            // JAVÍTVA: A kapcsolati gombok visszakerültek
             let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
             if (h.telefonszam) {
                 contactHTML += `<a href="tel:${h.telefonszam}" class="contact-btn phone-btn">Kapcsolat (Telefon)</a>`;
