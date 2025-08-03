@@ -39,7 +39,10 @@
       regUzenet.textContent = "Regisztráció folyamatban...";
       const { error } = await supabase.auth.signUp({
         email: document.getElementById('regEmail').value,
-        password: document.getElementById('regPassword').value
+        password: document.getElementById('regPassword').value,
+        options: {
+          emailRedirectTo: 'https://atika76.github.io/szakipiac-2025/auth.html'
+        }
       });
       if (error) {
         regUzenet.textContent = "Hiba: " + error.message;
