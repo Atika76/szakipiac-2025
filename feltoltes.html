@@ -2,76 +2,59 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <title>Hirdetés feltöltés</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="logo.png">
+  <title>Hirdetés feltöltése – SzakiPiac</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    #image-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; border: 1px solid #eee; padding: 10px; min-height: 100px; border-radius: 5px; }
-    .preview-container { position: relative; }
-    .preview-image { width: 90px; height: 90px; object-fit: cover; border-radius: 5px; }
-    .remove-btn {
-      position: absolute; top: -5px; right: -5px; background: red; color: white; border: 1px solid white;
-      border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold;
-      line-height: 20px; text-align: center; padding: 0;
-    }
-  </style>
 </head>
 <body>
-  <header class="green-header">
-    <img src="logo.png" class="logo" alt="SzakiPiac logó">
+  <header>
+    <img src="logo.png" alt="SzakiPiac logó" class="logo">
+    <h1>SzakiPiac</h1>
     <nav>
       <a href="index.html">Főoldal</a>
-      <a href="rolunk.html">Rólunk</a>
+      <a href="feltoltes.html" class="active">Hirdetés feltöltés</a>
       <a href="kapcsolat.html">Kapcsolat</a>
-      <a href="feltoltes.html" style="font-weight:bold;">Hirdetés feltöltés</a>
-      <a href="auth.html">Bejelentkezés</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="admin.html">Admin</a>
     </nav>
   </header>
-  <div class="container">
-    <div class="content-box">
-      <h1>Hirdetés feltöltés</h1>
-      <form id="feltoltesForm">
-        <label>Cím:</label>
-        <input type="text" id="cim" required>
-        <label>Leírás:</label>
-        <textarea id="leiras" rows="4" required></textarea>
-        <label>Kategória:</label>
-        <select id="kategoria" required>
-            <option value="">Válassz kategóriát...</option>
-            <option value="Építőipar">Építőipar</option>
-            <option value="Villanyszerelés">Villanyszerelés</option>
-            <option value="Gépészet">Gépészet</option>
-            <option value="Festés">Festés</option>
-            <option value="Lakberendezés">Lakberendezés</option>
-            <option value="Számítástechnika">Számítástechnika</option>
-            <option value="Kertépítés, karbantartás">Kertépítés, karbantartás</option>
-            <option value="Egyéb">Egyéb</option>
+  <main>
+    <h2>Új hirdetés feltöltése</h2>
+    <form id="hirdetesForm" autocomplete="off">
+      <label>
+        Cím:
+        <input type="text" name="cim" id="cim" required maxlength="60" placeholder="Pl. Gipszkarton szerelés">
+      </label>
+      <label>
+        Kategória:
+        <select name="kategoria" id="kategoria" required>
+          <option value="">Válassz kategóriát</option>
+          <option value="Építőipar">Építőipar</option>
+          <option value="Lakásfelújítás">Lakásfelújítás</option>
+          <option value="Szolgáltatás">Szolgáltatás</option>
+          <option value="Anyag">Anyag</option>
         </select>
-        <label>Telefonszám (opcionális):</label>
-        <input type="tel" id="telefonszam" placeholder="+36 30 123 4567">
-        <label>Ár (Ft):</label>
-        <input type="number" id="ar" min="0">
-        <label>Csomag:</label>
-        <select id="csomagValaszto" required>
-          <option value="Alap">Alap (ingyenes, 2 kép, 7 nap)</option>
-          <option value="Prémium">Prémium (1990 Ft, 3 kép, 14 nap)</option>
-          <option value="Extra">Extra (2990 Ft, 5 kép, 30 nap)</option>
-        </select>
-        <label>Képek hozzáadása (egyenként):</label>
-        <input type="file" id="kepek" accept="image/jpeg, image/png">
-        <div id="image-previews"></div>
-        <div id="paypal-container" style="margin-top: 20px;"></div>
-        <button type="submit">Hirdetés feladása</button>
-      </form>
-      <div id="uzenet" style="margin-top:16px; font-weight: bold;"></div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://www.paypal.com/sdk/js?client-id=AaFUbbJ4zg7c2f0vWXPtUSJ0ePAs--FAjnc2Ms2bo1J7EVfppDITfh34J_vfGQc8v0sF-YR1o5vEfIV-&currency=HUF"></script>
-  <script src="supabase.js"></script>
-  <script src="header.js"></script>
+      </label>
+      <label>
+        Leírás:
+        <textarea name="leiras" id="leiras" maxlength="600" rows="4" placeholder="Add meg a részleteket..."></textarea>
+      </label>
+      <label>
+        Ár (Ft):
+        <input type="number" name="ar" id="ar" min="0" max="100000000" placeholder="(Nem kötelező)">
+      </label>
+      <label>
+        Kép feltöltése:
+        <input type="file" id="kep" accept="image/*">
+      </label>
+      <div id="kepElonezet"></div>
+      <button type="submit">Hirdetés beküldése</button>
+      <div id="uzenet"></div>
+    </form>
+  </main>
+  <footer>
+    <p>© 2025 SzakiPiac.hu – Minden jog fenntartva.</p>
+  </footer>
   <script src="feltoltes.js"></script>
 </body>
 </html>
