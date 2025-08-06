@@ -1,124 +1,96 @@
-body {
-  background: #fdfdea;
+/* --- Alap stílusok, Google Fonts, reset --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+html, body {
   margin: 0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #333;
-}
-
-.green-header {
-  background: linear-gradient(90deg, #41e36c 65%, #3ccc64 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
   padding: 0;
-  height: 68px;
-  box-shadow: 0 1px 8px #0000001a;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #f4f6fb;
+  color: #202634;
+  min-height: 100vh;
 }
 
-.green-header .logo {
-  height: 48px;
-  margin-left: 16px;
-  margin-right: 36px;
-}
-/* A feltöltő űrlap elrendezésének javítása */
-#feltoltesForm {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Két egyenlő szélességű oszlop */
-    gap: 20px; /* Térköz az elemek között */
-}
-
-/* Azok az elemek, amik a teljes szélességet foglalják el */
-#feltoltesForm label[for="cim"],
-#feltoltesForm input#cim,
-#feltoltesForm label[for="leiras"],
-#feltoltesForm textarea#leiras,
-#feltoltesForm label[for="kepek"],
-#feltoltesForm div#image-previews,
-#feltoltesForm div#paypal-container,
-#feltoltesForm button[type="submit"],
-#feltoltesForm #uzenet {
-    grid-column: 1 / -1; /* Átfogja mindkét oszlopot */
-}
-.green-header nav {
-  flex: 1;
+header {
+  background: #2563eb;
+  color: #fff;
+  padding: 1.2rem 0.8rem;
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-
-.green-header nav a {
+header .logo {
+  height: 44px;
+  margin-right: 18px;
+}
+header h1 {
+  font-size: 2.1rem;
+  margin: 0 16px 0 0;
+  letter-spacing: 1px;
+  font-weight: 600;
+  flex: 1;
+}
+nav {
+  display: flex;
+  gap: 1rem;
+}
+nav a {
   color: #fff;
   text-decoration: none;
-  font-size: 1.13em;
-  font-weight: 500;
-  padding: 10px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 2rem;
+  transition: background .18s;
+}
+nav a.active, nav a:hover {
+  background: #3b82f6;
 }
 
-.container {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 20px;
+main {
+  max-width: 850px;
+  margin: 2rem auto 1rem auto;
+  padding: 1.2rem;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+}
+.kereso-resz {
   display: flex;
-  gap: 30px;
-  align-items: flex-start;
-}
-
-.content-box {
-  background: #fff;
-  border-radius: 15px;
-  padding: 38px 40px 30px 40px;
-  box-shadow: 0 4px 22px #41e36c21;
-  flex: 1;
-}
-
-.reklam-doboz {
-  width: 300px;
-  flex-shrink: 0;
-}
-
-.hirdetes-kartya {
-  background: #fff;
-  border-radius: 13px;
-  box-shadow: 0 2px 9px #1e7c1721;
-  margin-top: 22px;
-  padding: 20px;
-  position: relative;
-}
-
-.hirdetes-kep {
-  width: 70px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 4px;
-  cursor: zoom-in;
-}
-
-/* Képnagyító (Lightbox) Stílusai */
-.lightbox {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
-  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
   align-items: center;
+  margin-bottom: 1.2rem;
 }
-.lightbox.active {
-  display: flex;
+.kereso-resz input[type="text"] {
+  flex: 2;
+  min-width: 180px;
+  padding: 8px 10px;
+  border: 1px solid #b4c1dd;
+  border-radius: 8px;
+  font-size: 1rem;
 }
-.lightbox-content {
-  max-width: 90%;
-  max-height: 80%;
-}
-.lightbox-close {
-  position: absolute;
-  top: 20px;
-  right: 35px;
-  color: #f1f1f1;
-  font-size: 40px;
-  font-weight: bold;
+.kereso-resz button {
+  padding: 8px 18px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .16s;
 }
+.kereso-resz button:hover {
+  background: #1e40af;
+}
+.kereso-resz select {
+  min-width: 140px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #b4c1dd;
+}
+
+.hirdetesek-lista {
+  display: grid;
+  grid-temp
