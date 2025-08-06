@@ -93,4 +93,172 @@ main {
 
 .hirdetesek-lista {
   display: grid;
-  grid-temp
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1.2rem;
+}
+.hirdetes-kartya {
+  background: #f9fafb;
+  border-radius: 15px;
+  padding: 1.1rem 1rem 0.7rem 1rem;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.09);
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  transition: box-shadow .2s;
+}
+.hirdetes-kartya:hover {
+  box-shadow: 0 6px 18px rgba(37,99,235,0.16);
+  border-color: #2563eb33;
+}
+.hirdetes-kartya h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.14rem;
+  color: #2563eb;
+  font-weight: 600;
+}
+.hirdetes-kartya .leiras {
+  color: #374151;
+  margin: 0 0 12px 0;
+  font-size: 0.97rem;
+}
+.hirdetes-kartya .info {
+  color: #6b7280;
+  font-size: 0.93rem;
+  margin-bottom: 5px;
+}
+.hirdetes-kartya .kategoria {
+  font-weight: 500;
+  color: #047857;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-right: 7px;
+}
+.hirdetes-kartya .datum {
+  color: #2563eb;
+  margin-left: 6px;
+}
+.hirdetes-kartya .ar {
+  font-weight: 600;
+  color: #f59e42;
+  font-size: 1.03rem;
+  margin-bottom: 8px;
+}
+.hirdetes-kartya .hirdetes-kep {
+  margin-top: 8px;
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 6px #2563eb11;
+}
+
+.hiba {
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 7px 15px;
+  border-radius: 8px;
+  margin: 1rem 0;
+  font-weight: 500;
+}
+
+.reklam-sav {
+  position: fixed;
+  right: 0;
+  top: 70px;
+  width: 180px;
+  min-height: 240px;
+  z-index: 50;
+  background: #fff;
+  border-radius: 1.5rem 0 0 1.5rem;
+  box-shadow: 0 0 14px #2563eb18;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.reklam-sav iframe {
+  width: 100%;
+  height: 380px;
+  border: none;
+  border-radius: 1.3rem;
+}
+@media (max-width: 900px) {
+  .reklam-sav {
+    display: none;
+  }
+}
+
+footer {
+  text-align: center;
+  padding: 18px 0 10px 0;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  margin-top: 1.2rem;
+  border-radius: 0 0 12px 12px;
+}
+
+/* --- Mobilbarát reszponzivitás --- */
+@media (max-width: 650px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 18px 7px 10px 7px;
+  }
+  main {
+    margin: 1.1rem 2.5vw;
+    padding: 8px 4vw 15px 4vw;
+  }
+  .hirdetesek-lista {
+    grid-template-columns: 1fr;
+    gap: 0.95rem;
+  }
+  nav {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .kereso-resz {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.7rem;
+  }
+}
+
+/* --- Gombok egységesítése --- */
+button, input[type="submit"] {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.07rem;
+  cursor: pointer;
+  transition: background .19s;
+}
+button:hover, input[type="submit"]:hover {
+  background: #1e40af;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  border-radius: 8px;
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #f0f4ff;
+}
+::-webkit-scrollbar-thumb {
+  background: #bfd2fd;
+  border-radius: 8px;
+}
