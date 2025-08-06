@@ -1,68 +1,101 @@
-// Supabase inicializálás (supabase.js szükséges!)
-import { supabase } from './supabase.js'; // Ha nincs import, csak hagyd ki ezt a sort!
+const hirdetesekLista = document.getElementById('hirdetesek-lista');
+const searchInput = document.getElementById('search');
+const categorySelect = document.getElementById('category-select');
+const ADMIN_EMAIL = "atika.76@windowslive.com";
 
-document.addEventListener("DOMContentLoaded", () => {
-  const listaElem = document.getElementById("hirdetesek-lista");
-  const kereso = document.getElementById("kereso");
-  const keresGomb = document.getElementById("keresesGomb");
-  const kategoriak = document.getElementById("kategoriak");
+// Lightbox elemek
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+const lightboxClose = document.querySelector('.lightbox-close');
 
-  let hirdetesek = [];
-
-  // Hirdetések betöltése az induláskor
-  async function betoltHirdetesek() {
-    listaElem.innerHTML = "<p>Betöltés...</p>";
-    let { data, error } = await supabase.from("hirdetesek").select("*").eq("status", "jóváhagyott").order("created_at", { ascending: false });
-    if (error) {
-      listaElem.innerHTML = `<p class="hiba">Hiba történt a hirdetések betöltésekor!</p>`;
-      return;
+function openLightbox(imageUrl) {
+    if (lightbox && lightboxImg) {
+        lightboxImg.src = imageUrl;
+        lightbox.classList.add('active');
     }
-    hirdetesek = data || [];
-    renderHirdetesek(hirdetesek);
-  }
+}
 
-  // Keresés és szűrés logika
-  function keresHirdetesek() {
-    const keresSzoveg = kereso.value.trim().toLowerCase();
-    const kategoria = kategoriak.value;
-    let szurt = hirdetesek.filter(h => {
-      const szoveg = `${h.cim} ${h.leiras || ""} ${h.kategoria || ""}`.toLowerCase();
-      const kategoriaOK = !kategoria || h.kategoria === kategoria;
-      return szoveg.includes(keresSzoveg) && kategoriaOK;
+function closeLightbox() {
+    if (lightbox) {
+        lightbox.classList.remove('active');
+    }
+}
+
+if (lightbox) {
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
     });
-    renderHirdetesek(szurt);
-  }
+}
+// Globálissá tesszük, hogy a HTML-ből (onclick) elérhető legyen
+window.openLightbox = openLightbox;
 
-  // Hirdetések megjelenítése modern kártyákkal
-  function renderHirdetesek(lista) {
-    if (!lista.length) {
-      listaElem.innerHTML = "<p>Nincs találat a megadott feltételekre.</p>";
-      return;
+async function megjelenitHirdetesek() {
+    hirdetesekLista.innerHTML = "<p>Hirdetések betöltése...</p>";
+    const loggedInUserEmail = localStorage.getItem("loggedInUser");
+    
+    try {
+        let query = supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
+        
+        const { data: hirdetesek, error } = await query;
+        if (error) throw error;
+
+        if (!hirdetesek || hirdetesek.length === 0) {
+            hirdetesekLista.innerHTML = "<p>Jelenleg nincs megjeleníthető hirdetés.</p>";
+            return;
+        }
+
+        hirdetesekLista.innerHTML = "";
+        hirdetesek.forEach(h => {
+            let deleteButton = '';
+            if (loggedInUserEmail === ADMIN_EMAIL || loggedInUserEmail === h.email) {
+                deleteButton = `<button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>`;
+            }
+            
+            let kepekHTML = '';
+            if (h.kep_url_tomb && h.kep_url_tomb.length > 0) {
+                kepekHTML += '<div class="hirdetes-kepek">';
+                h.kep_url_tomb.forEach(url => {
+                    kepekHTML += `<img src="${url}" alt="Hirdetés kép" class="hirdetes-kep" style="cursor: zoom-in;" onclick="openLightbox('${url}')">`;
+                });
+                kepekHTML += '</div>';
+            }
+            
+            let contactHTML = `<a href="mailto:${h.email}" class="contact-btn">Kapcsolat (Email)</a>`;
+            if (h.telefonszam) {
+                contactHTML += `<a href="tel:${h.telefonszam}" class="contact-btn phone-btn">Kapcsolat (Telefon)</a>`;
+            }
+
+            const box = document.createElement("div");
+            box.className = "hirdetes-kartya";
+            box.innerHTML = `
+                ${deleteButton}
+                <h3>${h.cim}</h3>
+                ${kepekHTML}
+                <p><b>Kategória:</b> ${h.kategoria}</p>
+                <p><b>Ár:</b> ${h.ar ? h.ar + ' Ft' : 'Megegyezés szerint'}</p>
+                <p>${h.leiras}</p>
+                <div class="contact-buttons">${contactHTML}</div>
+            `;
+            hirdetesekLista.appendChild(box);
+        });
+    } catch (error) {
+        hirdetesekLista.innerHTML = `<p style='color:red;'>Hiba a hirdetések betöltésekor: ${error.message}</p>`;
     }
-    listaElem.innerHTML = lista.map(h => `
-      <article class="hirdetes-kartya">
-        <h3>${h.cim}</h3>
-        <p class="leiras">${h.leiras || ''}</p>
-        <p class="info">
-          <span class="kategoria">${h.kategoria || '-'}</span> |
-          <span class="datum">${new Date(h.created_at).toLocaleDateString('hu-HU')}</span>
-        </p>
-        <p class="ar">${h.ar ? `${h.ar} Ft` : ''}</p>
-        ${h.kep_url ? `<img src="${h.kep_url}" alt="Hirdetés képe" class="hirdetes-kep">` : ''}
-      </article>
-    `).join("");
-  }
+}
 
-  // Események bekötése
-  keresGomb.addEventListener("click", keresHirdetesek);
-  kategoriak.addEventListener("change", keresHirdetesek);
-  kereso.addEventListener("input", () => { if (!kereso.value) keresHirdetesek(); });
+async function deleteAd(id) {
+    if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
+    const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
+    if (error) {
+        alert('Hiba a törlés során: ' + error.message);
+    } else {
+        megjelenitHirdetesek();
+    }
+}
 
-  // Enterrel is működjön a keresés
-  kereso.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") keresHirdetesek();
-  });
-
-  // Alap betöltés
-  betoltHirdetesek();
-});
+if(searchInput) searchInput.addEventListener('input', megjelenitHirdetesek);
+if(categorySelect) categorySelect.addEventListener('change', megjelenitHirdetesek);
+document.addEventListener('DOMContentLoaded', megjelenitHirdetesek);

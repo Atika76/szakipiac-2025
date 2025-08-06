@@ -1,113 +1,82 @@
-// admin.js – Magyar kereső/szűrő, gyors jóváhagyás, törlés
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin felület – SzakiPiac</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="green-header">
+    <img src="logo.png" class="logo" alt="SzakiPiac logó">
+    <nav>
+      <a href="index.html">Főoldal</a>
+      <a href="rolunk.html">Rólunk</a>
+      <a href="kapcsolat.html">Kapcsolat</a>
+      <a href="feltoltes.html">Hirdetés feltöltés</a>
+      <a href="auth.html">Bejelentkezés</a>
+    </nav>
+  </header>
+  <div class="container">
+    <div class="content-box">
+      <div id="admin-panel">
+        <h1>Admin felület</h1>
+        <p>Itt láthatod az összes hirdetést, beleértve a lejártakat is.</p>
+        <div id="admin-hirdetesek-lista"></div>
+      </div>
+      <div id="access-denied" style="display: none;">
+        <h1>Hozzáférés megtagadva!</h1>
+      </div>
+    </div>
+  </div>
 
-// Supabase inicializálás (supabase.js szükséges!)
-import { supabase } from './supabase.js'; // Ha nincs import, csak hagyd el ezt a sort!
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="header.js"></script>
+  <script>
+    const adminEmail = "atika.76@windowslive.com";
+    const loggedInUserEmail = localStorage.getItem("loggedInUser");
+    const hirdetesekLista = document.getElementById('admin-hirdetesek-lista');
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const listaElem = document.getElementById("admin-hirdetesek-lista");
-  const kereso = document.getElementById("admin-kereso");
-  const kategoria = document.getElementById("admin-kategoria");
-  const statusz = document.getElementById("admin-statusz");
-  const keresGomb = document.getElementById("adminKeresGomb");
-  const uzenet = document.getElementById("admin-uzenet");
-
-  let hirdetesek = [];
-
-  // Hirdetések betöltése (összes!)
-  async function betoltAdminHirdetesek() {
-    listaElem.innerHTML = "<p>Betöltés...</p>";
-    let { data, error } = await supabase.from("hirdetesek").select("*").order("created_at", { ascending: false });
-    if (error) {
-      listaElem.innerHTML = `<p class="hiba">Hiba történt a hirdetések betöltésekor!</p>`;
-      return;
+    async function loadAdminAds() {
+        try {
+            const { data, error } = await supaClient.from('hirdetesek').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                hirdetesekLista.innerHTML = "<p>Nincsenek hirdetések az adatbázisban.</p>";
+                return;
+            }
+            hirdetesekLista.innerHTML = "";
+            data.forEach(h => {
+                const box = document.createElement("div");
+                box.className = "hirdetes-kartya";
+                const isExpired = new Date(h.lejárati_datum) < new Date();
+                box.style.borderLeft = isExpired ? '5px solid #e74c3c' : '5px solid #2ecc71';
+                box.innerHTML = `
+                    <button class="delete-btn" onclick="deleteAd(${h.id})">Törlés</button>
+                    <h3>${h.cim}</h3>
+                    <p><b>Feladó:</b> ${h.email}</p>
+                    <p><b>Lejárat:</b> ${new Date(h.lejárati_datum).toLocaleDateString()} ${isExpired ? '(Lejárt)' : ''}</p>
+                `;
+                hirdetesekLista.appendChild(box);
+            });
+        } catch (error) {
+            hirdetesekLista.innerHTML = `<p style="color:red;">Hiba: ${error.message}</p>`;
+        }
     }
-    hirdetesek = data || [];
-    adminRenderHirdetesek(hirdetesek);
-  }
 
-  // Keresés/szűrés logika
-  function adminKeres() {
-    const keresSzoveg = kereso.value.trim().toLowerCase();
-    const kat = kategoria.value;
-    const stat = statusz.value;
-    let szurt = hirdetesek.filter(h => {
-      const szoveg = `${h.cim} ${h.leiras || ""} ${h.kategoria || ""} ${h.status || ""} ${h.email || ""}`.toLowerCase();
-      const katOK = !kat || h.kategoria === kat;
-      const statOK = !stat || h.status === stat;
-      return szoveg.includes(keresSzoveg) && katOK && statOK;
-    });
-    adminRenderHirdetesek(szurt);
-  }
-
-  // Hirdetések listázása, admin gombokkal
-  function adminRenderHirdetesek(lista) {
-    if (!lista.length) {
-      listaElem.innerHTML = "<p>Nincs találat.</p>";
-      return;
+    async function deleteAd(id) {
+        if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést?')) return;
+        const { error } = await supaClient.from('hirdetesek').delete().eq('id', id);
+        if (error) alert('Hiba a törlés során: ' + error.message);
+        else loadAdminAds();
     }
-    listaElem.innerHTML = lista.map(h => `
-      <article class="hirdetes-kartya">
-        <h3>${h.cim}</h3>
-        <p class="leiras">${h.leiras || ''}</p>
-        <p class="info">
-          <span class="kategoria">${h.kategoria || '-'}</span> |
-          <span class="datum">${new Date(h.created_at).toLocaleDateString('hu-HU')}</span> |
-          <span class="statusz" style="color:${h.status==='jóváhagyott' ? '#059669' : h.status==='függőben' ? '#eab308' : '#b91c1c'};">
-            ${h.status}
-          </span>
-        </p>
-        <p class="ar">${h.ar ? `${h.ar} Ft` : ''}</p>
-        ${h.kep_url ? `<img src="${h.kep_url}" alt="Hirdetés képe" class="hirdetes-kep">` : ''}
-        <div style="display:flex;gap:7px;margin-top:10px;">
-          ${h.status !== 'jóváhagyott' ? `<button class="btn-jovahagy" data-id="${h.id}">Jóváhagy</button>` : ''}
-          <button class="btn-torles" data-id="${h.id}">Törlés</button>
-        </div>
-      </article>
-    `).join("");
-  }
 
-  // Gombok eseményei
-  listaElem.addEventListener("click", async function (e) {
-    if (e.target.classList.contains("btn-jovahagy")) {
-      const id = e.target.getAttribute("data-id");
-      await adminAllapotValt(id, "jóváhagyott");
-    }
-    if (e.target.classList.contains("btn-torles")) {
-      const id = e.target.getAttribute("data-id");
-      await adminTorles(id);
-    }
-  });
-
-  async function adminAllapotValt(id, ujStatusz) {
-    uzenet.innerHTML = "";
-    let { error } = await supabase.from("hirdetesek").update({ status: ujStatusz }).eq("id", id);
-    if (error) {
-      uzenet.innerHTML = `<div class="hiba">Hiba: ${error.message}</div>`;
+    if (loggedInUserEmail === adminEmail) {
+        document.getElementById('admin-panel').style.display = 'block';
+        loadAdminAds();
     } else {
-      uzenet.innerHTML = `<div style="color:#047857; background:#dcfce7; padding:7px 12px; border-radius:8px;margin:0.5rem 0;">Sikeresen jóváhagyva!</div>`;
-      await betoltAdminHirdetesek();
+        document.getElementById('access-denied').style.display = 'block';
     }
-  }
-
-  async function adminTorles(id) {
-    if (!confirm("Biztosan törlöd ezt a hirdetést?")) return;
-    uzenet.innerHTML = "";
-    let { error } = await supabase.from("hirdetesek").delete().eq("id", id);
-    if (error) {
-      uzenet.innerHTML = `<div class="hiba">Hiba: ${error.message}</div>`;
-    } else {
-      uzenet.innerHTML = `<div style="color:#b91c1c; background:#fee2e2; padding:7px 12px; border-radius:8px;margin:0.5rem 0;">Törölve.</div>`;
-      await betoltAdminHirdetesek();
-    }
-  }
-
-  // Események
-  keresGomb.addEventListener("click", adminKeres);
-  kategoria.addEventListener("change", adminKeres);
-  statusz.addEventListener("change", adminKeres);
-  kereso.addEventListener("input", () => { if (!kereso.value) adminKeres(); });
-  kereso.addEventListener("keydown", (e) => { if (e.key === "Enter") adminKeres(); });
-
-  // Alap betöltés
-  await betoltAdminHirdetesek();
-});
+  </script>
+</body>
+</html>
