@@ -1,124 +1,87 @@
-const feltoltesForm = document.getElementById('feltoltesForm');
-const uzenetDiv = document.getElementById('uzenet');
-const kepekInput = document.getElementById('kepek');
-const previewsContainer = document.getElementById('image-previews');
-const csomagValaszto = document.getElementById("csomagValaszto");
-const paypalContainer = document.getElementById("paypal-container");
-const adminEmail = "atika.76@windowslive.com";
+// feltoltes.js – Modern, előnézetes, magyar hibakezeléssel
 
-let kivalasztottKepek = [];
-let fizetesSikeres = false;
-const packageLimits = { 'Alap': 2, 'Prémium': 3, 'Extra': 5 };
+// Supabase inicializálás (KÖTELEZŐ!)
+import { supabase } from './supabase.js'; // Ha nincs import, hagyd el ezt a sort!
 
-function renderPreviews() {
-    previewsContainer.innerHTML = '';
-    kivalasztottKepek.forEach((file, index) => {
-        const container = document.createElement('div');
-        container.className = 'preview-container';
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.className = 'preview-image';
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'X';
-        removeBtn.className = 'remove-btn';
-        removeBtn.type = 'button';
-        removeBtn.onclick = () => {
-            kivalasztottKepek.splice(index, 1);
-            renderPreviews();
-        };
-        container.appendChild(img);
-        container.appendChild(removeBtn);
-        previewsContainer.appendChild(container);
-    });
-}
+document.addEventListener("DOMContentLoaded", async function () {
+  const form = document.getElementById("hirdetesForm");
+  const cim = document.getElementById("cim");
+  const kategoria = document.getElementById("kategoria");
+  const leiras = document.getElementById("leiras");
+  const ar = document.getElementById("ar");
+  const kep = document.getElementById("kep");
+  const kepElonezet = document.getElementById("kepElonezet");
+  const uzenet = document.getElementById("uzenet");
 
-function handlePackageChange() {
-    const email = localStorage.getItem("loggedInUser");
-    const isAdmin = (email === adminEmail);
-    const csomag = csomagValaszto.value;
-    if (csomag === 'Alap' || isAdmin || !email) {
-        fizetesSikeres = true;
-        paypalContainer.style.display = "none";
-        paypalContainer.innerHTML = "";
+  let kepFile = null;
+
+  // Kép előnézet
+  kep.addEventListener("change", function () {
+    kepElonezet.innerHTML = "";
+    if (kep.files && kep.files[0]) {
+      const file = kep.files[0];
+      if (!file.type.startsWith('image/')) {
+        uzenet.innerHTML = `<div class="hiba">Csak képfájl tölthető fel!</div>`;
+        kep.value = "";
         return;
-    }
-    fizetesSikeres = false;
-    paypalContainer.style.display = "block";
-    paypalContainer.innerHTML = "";
-    paypal.Buttons({
-        createOrder: (data, actions) => actions.order.create({ purchase_units: [{ amount: { value: csomag === "Prémium" ? "1990" : "2990", currency_code: "HUF" } }] }),
-        onApprove: (data, actions) => actions.order.capture().then(details => {
-            uzenetDiv.textContent = "Sikeres fizetés!";
-            uzenetDiv.style.color = "green";
-            paypalContainer.style.display = "none";
-            fizetesSikeres = true;
-        })
-    }).render('#paypal-container');
-}
-
-kepekInput.addEventListener('change', (e) => {
-    const limit = packageLimits[csomagValaszto.value];
-    if (kivalasztottKepek.length >= limit) {
-        alert(`Már elérted a maximum (${limit} db) feltölthető képet.`);
-        e.target.value = '';
+      }
+      if (file.size > 2 * 1024 * 1024) { // 2 MB limit
+        uzenet.innerHTML = `<div class="hiba">A kép mérete maximum 2 MB lehet!</div>`;
+        kep.value = "";
         return;
+      }
+      kepFile = file;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        kepElonezet.innerHTML = `<img src="${e.target.result}" alt="Előnézet" style="max-width:180px;max-height:130px;border-radius:10px;margin-top:7px;border:1px solid #ddd;">`;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      kepFile = null;
     }
-    if (e.target.files.length > 0) {
-        kivalasztottKepek.push(e.target.files[0]);
-        renderPreviews();
-    }
-    e.target.value = '';
-});
+  });
 
-csomagValaszto.addEventListener('change', () => {
-    kivalasztottKepek = [];
-    renderPreviews();
-    handlePackageChange();
-});
-
-document.addEventListener('DOMContentLoaded', handlePackageChange);
-
-feltoltesForm.addEventListener('submit', async (e) => {
+  // Hirdetés beküldése
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const { data: { user } } = await supaClient.auth.getUser();
-    if (!user) {
-        uzenetDiv.textContent = "A feltöltéshez be kell jelentkezned!";
+    uzenet.innerHTML = "";
+
+    // Alap validáció
+    if (!cim.value.trim() || !kategoria.value) {
+      uzenet.innerHTML = `<div class="hiba">A cím és kategória megadása kötelező!</div>`;
+      return;
+    }
+
+    let kep_url = "";
+    if (kepFile) {
+      // Kép feltöltése Supabase storage-ba
+      const fileName = `hirdetesek/${Date.now()}_${kepFile.name.replace(/\s/g,'_')}`;
+      let { data, error } = await supabase.storage.from('kepek').upload(fileName, kepFile);
+      if (error) {
+        uzenet.innerHTML = `<div class="hiba">Hiba a kép feltöltésekor: ${error.message}</div>`;
         return;
+      }
+      // Lekérjük az elérési utat
+      const { data: urlData } = supabase.storage.from('kepek').getPublicUrl(fileName);
+      kep_url = urlData.publicUrl;
     }
-    if (!fizetesSikeres) {
-        uzenetDiv.textContent = "A fizetős csomagoknál a feltöltés előtt fizetned kell!";
-        return;
+
+    // Hirdetés mentése
+    const { data, error } = await supabase.from('hirdetesek').insert([{
+      cim: cim.value.trim(),
+      kategoria: kategoria.value,
+      leiras: leiras.value.trim(),
+      ar: ar.value ? parseInt(ar.value) : null,
+      kep_url,
+      status: "függőben",
+      created_at: new Date().toISOString()
+    }]);
+    if (error) {
+      uzenet.innerHTML = `<div class="hiba">Hiba történt a mentés során: ${error.message}</div>`;
+      return;
     }
-    uzenetDiv.textContent = "Feltöltés folyamatban...";
-    document.querySelector('button[type="submit"]').disabled = true;
-    try {
-        const imageUrls = [];
-        for (const file of kivalasztottKepek) {
-            const filePath = `${user.id}/${Date.now()}-${file.name}`;
-            const { data, error } = await supaClient.storage.from('hirdetes-kepek').upload(filePath, file);
-            if (error) throw new Error('Képfeltöltési hiba: ' + error.message);
-            const { data: { publicUrl } } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(filePath);
-            imageUrls.push(publicUrl);
-        }
-        const csomag = csomagValaszto.value;
-        const napok = packageLimits[csomag] || 7;
-        const lejarat = new Date();
-        lejarat.setDate(lejarat.getDate() + napok);
-        const { error: insertError } = await supaClient.from('hirdetesek').insert([{
-            cim: document.getElementById('cim').value,
-            leiras: document.getElementById('leiras').value,
-            kategoria: document.getElementById('kategoria').value,
-            ar: parseInt(document.getElementById('ar').value) || null,
-            telefonszam: document.getElementById('telefonszam').value || null,
-            csomag: csomag,
-            email: user.email,
-            lejárati_datum: lejarat.toISOString(),
-            kep_url_tomb: imageUrls
-        }]);
-        if (insertError) throw insertError;
-        window.location.href = 'sikeres.html';
-    } catch (error) {
-        uzenetDiv.textContent = "Hiba történt: " + error.message;
-        document.querySelector('button[type="submit"]').disabled = false;
-    }
+    form.reset();
+    kepElonezet.innerHTML = "";
+    uzenet.innerHTML = `<div style="color: #047857; background:#dcfce7; padding: 8px 13px; border-radius:8px; margin:1rem 0;">Hirdetésed sikeresen elküldve, jóváhagyás után megjelenik az oldalon!</div>`;
+  });
 });
