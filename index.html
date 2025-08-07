@@ -110,8 +110,8 @@
                 </div>
                 <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input type="text" id="search-input" placeholder="Keresés a hirdetésekben..." class="md:col-span-2 w-full px-4 py-2 border border-gray-300 rounded-md">
-                        <select id="category-select" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <input type="text" id="search-input" placeholder="Keresés a hirdetésekben..." class="md:col-span-2 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                        <select id="category-select" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
                             <option value="">Összes kategória</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option>
                         </select>
                     </div>
@@ -138,7 +138,7 @@
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
                     <li>Gyors és biztonságos hirdetéskezelés</li>
                     <li>Egyszerűen használható felület</li>
-                    <li>Segítőkész ügyfélszolgalat</li>
+                    <li>Segítőkész ügyfélszolgálat</li>
                     <li>Folyamatos fejlesztés, új funkciók</li>
                 </ul>
             </div>`;
@@ -207,7 +207,7 @@
                                 <div id="kep-elonezetek" class="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-4"></div>
                             </div>
                             <div id="payment-section" class="border-t pt-6">
-                                <div id="free-submit-section"><button type="submit" class="w-full bg-green-600 text-white py-3 rounded-md shadow-sm">Hirdetés feladása</button></div>
+                                <div id="free-submit-section"><button type="submit" class="w-full bg-green-600 text-white py-3 rounded-md shadow-sm hover:bg-green-700">Hirdetés feladása</button></div>
                                 <div id="paypal-button-container" class="hidden"></div>
                                 <p id="payment-error" class="text-red-500 text-sm mt-2 text-center"></p>
                             </div>
@@ -222,11 +222,10 @@
             const hash = window.location.hash || '#home';
             const renderer = pageRenderers[hash] || pageRenderers['#home'];
             const container = document.getElementById(hash.substring(1));
-
             document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
             if (container) {
                 container.classList.add('active');
-                if (!container.innerHTML.trim() || hash === '#home') {
+                if (!container.innerHTML.trim() || hash === '#home' || hash === '#feltoltes') {
                     renderer(container);
                 }
             }
@@ -238,10 +237,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.nav-link, .nav-link-logo').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    const hash = new URL(e.currentTarget.href).hash;
-                    window.location.hash = hash;
-                });
+                link.addEventListener('click', (e) => { window.location.hash = new URL(e.currentTarget.href).hash; });
             });
             window.addEventListener('hashchange', updateActiveContent);
              document.getElementById('mobile-menu-button').addEventListener('click', () => {
@@ -252,57 +248,171 @@
         });
 
         // ===== HIRDETÉSEK =====
-        async function loadHirdetesek() {
-            const hirdetesekLista = document.getElementById('hirdetesek-lista');
-            try {
-                const { data, error } = await supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
-                if (error) throw error;
-                renderHirdetesek(data);
-            } catch (error) {
-                console.error("Hiba a hirdetések betöltésekor:", error);
-                if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor. Ellenőrizd a Supabase adatbázis-szabályokat (RLS).</p>`;
-            }
-        }
-
-        function renderHirdetesek(hirdetesek) {
-            const hirdetesekLista = document.getElementById('hirdetesek-lista');
-            if (!hirdetesekLista) return;
-            if (!hirdetesek || hirdetesek.length === 0) {
-                hirdetesekLista.innerHTML = "<p class='text-center text-gray-500'>Jelenleg nincsenek hirdetések.</p>";
-                return;
-            }
-            hirdetesekLista.innerHTML = hirdetesek.map(h => {
-                const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0
-                    ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>`
-                    : '';
-                return `<div class="bg-white p-6 rounded-lg shadow-sm">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="text-sm font-medium text-green-600">${h.kategoria || 'Nincs kategória'}</p>
-                                    <h3 class="text-xl font-bold text-gray-900 mt-1">${h.cim}</h3>
-                                </div>
-                                <p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p>
-                            </div>
-                            <p class="text-gray-600 my-4">${h.leiras}</p>
-                            ${kepekHTML}
-                            <div class="flex flex-wrap gap-2 pt-4 border-t">
-                                <a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
-                                ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}
-                            </div>
-                        </div>`;
-            }).join('');
-        }
-
+        async function loadHirdetesek() { /*...*/ }
+        function renderHirdetesek(hirdetesek) { /*...*/ }
         function szuresAlkalmazasa() { /*...*/ }
         
         // ===== HIRDETÉS FELTÖLTÉS =====
-        function setupFeltoltesListeners() { /*...*/ }
-        function handleImagePreviews() { /*...*/ }
-        function getAdData() { /*...*/ }
-        async function uploadKepek(files) { /*...*/ }
-        async function saveAdToDatabase(adData, csomagNev, kepUrlTomb = []) { /*...*/ }
-        function renderPayPalButton() { /*...*/ }
-        async function generateAdContent() { /*...*/ }
+        function setupFeltoltesListeners() {
+            document.getElementById('generate-ad-btn')?.addEventListener('click', generateAdContent);
+            const form = document.getElementById('feltoltesForm');
+            if (!form) return;
+            const csomagSelect = document.getElementById('csomag');
+            const kepInput = document.getElementById('kep-input');
+            const paypalContainer = document.getElementById('paypal-button-container');
+            const freeSubmitSection = document.getElementById('free-submit-section');
+            
+            csomagSelect.addEventListener('change', () => {
+                const [,, maxKepek] = csomagSelect.value.split('_');
+                const price = csomagSelect.value.split('_')[1];
+                document.getElementById('max-kepek-szama').textContent = maxKepek;
+                
+                freeSubmitSection.style.display = price === '0' ? 'block' : 'none';
+                paypalContainer.style.display = price !== '0' ? 'block' : 'none';
+
+                if (price !== '0') {
+                    paypalContainer.innerHTML = '';
+                    if (typeof paypal !== 'undefined') {
+                        renderPayPalButton();
+                    } else {
+                        paypalContainer.innerText = "Hiba a fizetési modul betöltésekor.";
+                    }
+                }
+                handleImagePreviews();
+            });
+            kepInput.addEventListener('change', handleImagePreviews);
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const adData = getAdData();
+                if (!adData) return;
+                showToast('Hirdetés feltöltése...', 'info');
+                const kepUrlTomb = await uploadKepek(kivalasztottKepek);
+                await saveAdToDatabase(adData, 'Alap', kepUrlTomb);
+            });
+            csomagSelect.dispatchEvent(new Event('change'));
+        }
+
+        function handleImagePreviews() {
+            const kepInput = document.getElementById('kep-input');
+            const elonezetekDiv = document.getElementById('kep-elonezetek');
+            const [,, maxKepek] = document.getElementById('csomag').value.split('_');
+            kivalasztottKepek = Array.from(kepInput.files).slice(0, maxKepek);
+            if (kepInput.files.length > maxKepek) {
+                showToast(`Túl sok képet választottál! A maximum ${maxKepek} db.`, 'error');
+            }
+            elonezetekDiv.innerHTML = '';
+            kivalasztottKepek.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    elonezetekDiv.innerHTML += `<div class="relative"><img src="${e.target.result}" class="h-24 w-full object-cover rounded-md"></div>`;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function getAdData() {
+            const cim = document.getElementById('cim').value;
+            const leiras = document.getElementById('leiras').value;
+            if (!cim || !leiras) {
+                showToast("A Cím és Leírás mezők kitöltése kötelező!", "error");
+                return null;
+            }
+            return { cim, leiras, kategoria: document.getElementById('kategoria').value, ar: document.getElementById('ar').value || null, telefonszam: document.getElementById('telefonszam').value || null };
+        }
+
+        async function uploadKepek(files) {
+            const { data: { session } } = await supaClient.auth.getSession();
+            if (!session || files.length === 0) return [];
+            showToast(`${files.length} kép feltöltése...`);
+            const uploadPromises = files.map(file => {
+                const fileName = `${session.user.id}/${Date.now()}_${file.name}`;
+                return supaClient.storage.from('hirdetes-kepek').upload(fileName, file);
+            });
+            const results = await Promise.all(uploadPromises);
+            const urls = [];
+            for (const result of results) {
+                if (result.error) { console.error('Hiba a kép feltöltésekor:', result.error.message); continue; }
+                const { data } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(result.data.path);
+                urls.push(data.publicUrl);
+            }
+            return urls;
+        }
+
+        async function saveAdToDatabase(adData, csomagNev, kepUrlTomb = []) {
+            const { data: { session } } = await supaClient.auth.getSession();
+            if (!session) { showToast("Hiba: nem vagy bejelentkezve!", "error"); return; }
+            let napok = 7;
+            if (csomagNev === 'Prémium') napok = 14;
+            if (csomagNev === 'Extra') napok = 30;
+            const lejaratiDatum = new Date();
+            lejaratiDatum.setDate(lejaratiDatum.getDate() + napok);
+            const { error } = await supaClient.from('hirdetesek').insert({
+                ...adData, user_id: session.user.id, email: session.user.email,
+                csomag: csomagNev, kep_url_tomb: kepUrlTomb,
+                lejárati_datum: lejaratiDatum.toISOString()
+            });
+            if (error) {
+                showToast(`Hiba a mentéskor: ${error.message}`, 'error');
+            } else {
+                showToast('Hirdetés sikeresen feladva!', 'success');
+                window.location.hash = '#home';
+            }
+        }
+
+        function renderPayPalButton() {
+            const selectedPackage = document.getElementById('csomag').value;
+            const [packageName, price] = selectedPackage.split('_');
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    const adData = getAdData();
+                    if (!adData) return Promise.reject(new Error("Form data invalid"));
+                    return actions.order.create({ purchase_units: [{ description: `SzakiPiac csomag: ${packageName}`, amount: { currency_code: 'HUF', value: price } }] });
+                },
+                onApprove: function(data, actions) {
+                    return actions.order.capture().then(async function(details) {
+                        const adData = getAdData();
+                        const csomagNev = `${packageName.charAt(0).toUpperCase() + packageName.slice(1)}`;
+                        showToast('Fizetés sikeres! Képek feltöltése...', 'info');
+                        const kepUrlTomb = await uploadKepek(kivalasztottKepek);
+                        await saveAdToDatabase(adData, csomagNev, kepUrlTomb);
+                    });
+                },
+                onError: function(err) { showToast('Hiba a PayPal fizetés során.', 'error'); }
+            }).render('#paypal-button-container');
+        }
+
+        // ===== GEMINI AI LOGIKA =====
+        async function generateAdContent() {
+            const keywords = document.getElementById('gemini-keywords').value;
+            if (!keywords.trim() || !GEMINI_API_KEY) {
+                showToast("Kérlek, adj meg kulcsszavakat!", 'error');
+                return;
+            }
+            const generateBtn = document.getElementById('generate-ad-btn');
+            const originalBtnContent = generateBtn.innerHTML;
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>';
+            const prompt = `Írj egy magyar nyelvű, professzionális hirdetési címet és egy részletes, 3-4 bekezdéses leírást a SzakiPiac.hu oldalra a következő kulcsszavak alapján: "${keywords}". A válaszod JSON formátumú legyen: {"cim": "...", "leiras": "..."}`;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                });
+                if (!response.ok) throw new Error(`API hiba: ${response.status}`);
+                const result = await response.json();
+                const content = JSON.parse(result.candidates[0].content.parts[0].text);
+                document.getElementById('cim').value = content.cim;
+                document.getElementById('leiras').value = content.leiras;
+                showToast("Sikeres generálás!", 'success');
+            } catch (error) {
+                showToast("Hiba a generálás során. Ellenőrizd az API kulcsot.", 'error');
+                console.error("Gemini Hiba:", error);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalBtnContent;
+            }
+        }
         
         // ===== EGYÉB SEGÉDFÜGGVÉNYEK =====
         function showToast(message, type = 'success') { /*...*/ }
