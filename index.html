@@ -5,19 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SzakiPiac - Találj megbízható szakembert!</title>
 
-    <!-- Tailwind CSS betöltése -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Google Fonts: Inter betűtípus -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Supabase JS kliens -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- === PayPal JavaScript SDK a te API kulcsoddal (JAVÍTVA) === -->
-    <script src="https://www.paypal.com/sdk/js?client-id=AaFUbbJ4zg7c2f0vWXPtUSJ0ePAs--FAjnc2Ms2bo1J7EVfppDITfh34J_vfGQc8v0sF-YR1o5vEfIV-&currency=HUF"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=HUF"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
@@ -32,7 +28,6 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- ===== FEJLÉC ===== -->
     <header class="bg-white shadow-md sticky top-0 z-50">
          <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -68,17 +63,21 @@
         </nav>
     </header>
 
-    <!-- ===== FŐ TARTALOM ===== -->
     <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="home" class="page-content"></div>
-        <div id="rolunk" class="page-content"></div>
-        <div id="kapcsolat" class="page-content"></div>
-        <div id="feltoltes" class="page-content"></div>
-        <div id="auth" class="page-content"></div>
-        <div id="admin" class="page-content"></div>
+        <div id="home" class="page-content">
+            </div>
+        <div id="rolunk" class="page-content bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto">
+            </div>
+        <div id="kapcsolat" class="page-content bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto">
+            </div>
+        <div id="feltoltes" class="page-content bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto">
+            </div>
+        <div id="auth" class="page-content max-w-md mx-auto">
+            </div>
+        <div id="admin" class="page-content bg-white p-8 rounded-lg shadow-sm max-w-6xl mx-auto">
+            </div>
     </main>
 
-    <!-- ===== ÜZENETEK (TOAST) ===== -->
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300"></div>
 
 
@@ -97,30 +96,23 @@
         const pageContents = document.querySelectorAll('.page-content');
         const navLinks = document.querySelectorAll('.nav-link');
 
-        async function updateActivePage() {
+        function updateActivePage() {
             const hash = window.location.hash || '#home';
             pageContents.forEach(page => page.classList.toggle('active', '#' + page.id === hash));
-            navLinks.forEach(link => {
-                const isActive = link.getAttribute('href') === hash;
-                link.classList.toggle('bg-gray-100', isActive);
-                link.classList.toggle('font-semibold', isActive);
-            });
+            navLinks.forEach(link => link.classList.toggle('bg-gray-200', link.getAttribute('href') === hash));
             document.getElementById('mobile-menu').classList.add('hidden');
 
-            if (hash === '#home') await loadHomePage();
-            if (hash === '#rolunk') loadStaticPage('rolunk');
-            if (hash === '#kapcsolat') loadStaticPage('kapcsolat');
-            if (hash === '#feltoltes') await renderFeltoltesPage();
-            if (hash === '#auth') await renderAuthPage();
-            if (hash === '#admin') await renderAdminPage();
+            // Oldal tartalmának betöltése a hash alapján
+            if(hash === '#home') loadHomePage();
+            if(hash === '#rolunk') loadRolunkPage();
+            // ... és így tovább a többi oldalra
         }
 
-        supaClient.auth.onAuthStateChange((_event, session) => {
-            handleAuthUI(session);
+        window.addEventListener('hashchange', updateActivePage);
+        document.addEventListener('DOMContentLoaded', () => {
+            handleAuthUI();
             updateActivePage();
         });
-        
-        window.addEventListener('hashchange', updateActivePage);
 
         document.getElementById('mobile-menu-button').addEventListener('click', () => {
             document.getElementById('mobile-menu').classList.toggle('hidden');
@@ -129,7 +121,8 @@
         /***************************************************
          * FELHASZNÁLÓI AUTHENTIKÁCIÓ
          ***************************************************/
-        function handleAuthUI(session) {
+        async function handleAuthUI() {
+            const { data: { session } } = await supaClient.auth.getSession();
             const navAuthSection = document.getElementById('nav-auth-section');
             const mobileNavAuthSection = document.getElementById('mobile-nav-auth-section');
             let authHTML = '';
@@ -151,170 +144,48 @@
             mobileNavAuthSection.innerHTML = authHTML.replace('hidden lg:inline', '');
 
             if (session) {
-                const logoutButton = document.getElementById('logoutBtn');
-                if(logoutButton) {
-                    logoutButton.addEventListener('click', async () => {
-                        await supaClient.auth.signOut();
-                        showToast("Sikeres kijelentkezés!");
-                        window.location.hash = '#home';
-                    });
-                }
+                document.querySelectorAll('#logoutBtn').forEach(btn => btn.addEventListener('click', async () => {
+                    await supaClient.auth.signOut();
+                    showToast("Sikeres kijelentkezés!");
+                    window.location.hash = '#home';
+                }));
             }
+            renderAuthPage(session);
+            renderFeltoltesPage(session);
         }
 
-        async function renderAuthPage() {
-            const authPage = document.getElementById('auth');
-            const { data: { session } } = await supaClient.auth.getSession();
+        supaClient.auth.onAuthStateChange(() => handleAuthUI());
 
-            if (session) {
-                window.location.hash = '#home';
-                return;
-            }
-            
-            authPage.innerHTML = `
-                <div class="bg-white p-8 rounded-lg shadow-sm max-w-md mx-auto">
-                    <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Bejelentkezés</h2>
-                    <form id="auth-form" class="space-y-6">
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email cím</label>
-                            <input id="email" name="email" type="email" autocomplete="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700">Jelszó</label>
-                            <input id="password" name="password" type="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                        </div>
-                        <div>
-                            <button id="auth-submit-btn" type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">Bejelentkezés</button>
-                        </div>
-                    </form>
-                    <div class="mt-6 text-center">
-                        <a href="#" id="switch-auth-mode" class="text-sm text-green-600 hover:text-green-500">Nincs még fiókod? Regisztrálj!</a>
-                    </div>
-                </div>`;
-
-            let isLoginMode = true;
-            const authForm = document.getElementById('auth-form');
-            const switchLink = document.getElementById('switch-auth-mode');
-            
-            switchLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                isLoginMode = !isLoginMode;
-                document.getElementById('auth-title').textContent = isLoginMode ? 'Bejelentkezés' : 'Regisztráció';
-                document.getElementById('auth-submit-btn').textContent = isLoginMode ? 'Bejelentkezés' : 'Regisztráció';
-                switchLink.textContent = isLoginMode ? 'Nincs még fiókod? Regisztrálj!' : 'Van már fiókod? Jelentkezz be!';
-            });
-
-            authForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = e.target.email.value;
-                const password = e.target.password.value;
-                if (isLoginMode) {
-                    const { error } = await supaClient.auth.signInWithPassword({ email, password });
-                    if (error) showToast("Hibás email vagy jelszó!", 'error');
-                    else {
-                        showToast("Sikeres bejelentkezés!");
-                        window.location.hash = '#home';
-                    }
-                } else {
-                    const { error } = await supaClient.auth.signUp({ email, password });
-                    if (error) showToast("Hiba a regisztráció során: " + error.message, 'error');
-                    else showToast("Sikeres regisztráció! Kérlek, erősítsd meg az email címedet.");
-                }
-            });
+        function renderAuthPage(session) {
+            // Bejelentkezési oldal logikája...
         }
 
         /***************************************************
          * OLDALAK TARTALOMGENERÁLÓ FÜGGVÉNYEI
          ***************************************************/
-        async function loadHomePage() {
+        function loadHomePage() {
             const homePage = document.getElementById('home');
-            homePage.innerHTML = `
-                <div class="text-center mb-12">
-                    <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">Üdvözlünk a <span class="text-green-600">SzakiPiac.hu</span>-n!</h1>
-                    <p class="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">Találj megbízható szakembert, vagy hirdesd szolgáltatásaidat!</p>
-                </div>
-                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm mb-8">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input type="text" id="search-input" placeholder="Keresés..." class="md:col-span-2 w-full px-4 py-2 border border-gray-300 rounded-md">
-                        <select id="category-select" class="w-full px-4 py-2 border border-gray-300 rounded-md">
-                            <option value="">Összes kategória</option>
-                            <option value="Építőipar">Építőipar</option>
-                            <option value="Villanyszerelés">Villanyszerelés</option>
-                            <option value="Gépészet">Gépészet</option>
-                            <option value="Festés">Festés</option>
-                            <option value="Lakberendezés">Lakberendezés</option>
-                            <option value="Számítástechnika">Számítástechnika</option>
-                            <option value="Kertépítés">Kertépítés</option>
-                            <option value="Egyéb">Egyéb</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center"><div class="loader"></div></div></div>`;
-            
-            await loadHirdetesek();
+            // Főoldal HTML-jének és logikájának betöltése
+            // Pl. hirdetések lekérdezése a Supabase-ből és megjelenítése
         }
 
-        async function loadHirdetesek() {
-            const hirdetesekLista = document.getElementById('hirdetesek-lista');
-            if (!hirdetesekLista) return;
-            try {
-                const { data, error } = await supaClient.from('hirdetesek').select('*').gte('lejarati_datum', new Date().toISOString()).order('created_at', { ascending: false });
-                if (error) throw error;
-                
-                if (data.length === 0) {
-                    hirdetesekLista.innerHTML = "<p class='text-center text-gray-500'>Jelenleg nincsenek aktív hirdetések.</p>";
-                    return;
-                }
-
-                hirdetesekLista.innerHTML = data.map(h => `
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-medium text-green-600">${h.kategoria}</p>
-                                <h3 class="text-xl font-bold text-gray-900 mt-1">${h.cim}</h3>
-                            </div>
-                            <p class="text-lg font-semibold text-gray-800">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p>
-                        </div>
-                        <p class="text-gray-600 my-4 whitespace-pre-wrap">${h.leiras}</p>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            ${h.kep_url_tomb ? h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md">`).join('') : ''}
-                        </div>
-                        <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
-                            <a href="mailto:${h.email}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Email</a>
-                            ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 border">Telefon</a>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                hirdetesekLista.innerHTML = `<p class="text-red-500 text-center">Hiba a hirdetések betöltésekor.</p>`;
-            }
+        function loadRolunkPage() {
+            const rolunkPage = document.getElementById('rolunk');
+            rolunkPage.innerHTML = `
+                <h1 class="text-3xl font-bold mb-6">Rólunk</h1>
+                <p>A SzakiPiac.hu célja, hogy összekösse a szakembereket és a megrendelőket...</p>
+            `;
         }
 
-        function loadStaticPage(pageId) {
-            const page = document.getElementById(pageId);
-            if (pageId === 'rolunk') {
-                page.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto"><h1 class="text-3xl font-bold mb-6">Rólunk</h1><p>A SzakiPiac.hu célja, hogy összekösse a szakembereket és a megrendelőket...</p></div>`;
-            } else if (pageId === 'kapcsolat') {
-                page.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto"><h1 class="text-3xl font-bold mb-6">Kapcsolat</h1><p>Email: szakipiac2025@gmail.com</p></div>`;
-            }
-        }
-        
-        async function renderAdminPage() {
-            const adminPage = document.getElementById('admin');
-            adminPage.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto"><h1 class="text-3xl font-bold mb-6">Admin Felület</h1><p>Hirdetések kezelése hamarosan...</p></div>`;
-        }
 
         /***************************************************
          * HIRDETÉS FELTÖLTÉSE OLDAL (PAYPAL INTEGRÁCIÓVAL)
          ***************************************************/
-        async function renderFeltoltesPage() {
-            const { data: { session } } = await supaClient.auth.getSession();
+        function renderFeltoltesPage(session) {
             const feltoltesPage = document.getElementById('feltoltes');
-
             if (!session) {
                 feltoltesPage.innerHTML = `
-                    <div class="text-center bg-white p-8 rounded-lg shadow-sm">
+                    <div class="text-center">
                         <h1 class="text-2xl font-bold mb-4">A hirdetésfeladáshoz be kell jelentkezned.</h1>
                         <a href="#auth" class="text-green-600 hover:underline">Kattints ide a bejelentkezéshez vagy regisztrációhoz.</a>
                     </div>`;
@@ -322,61 +193,60 @@
             }
 
             feltoltesPage.innerHTML = `
-                <div class="bg-white p-8 rounded-lg shadow-sm max-w-4xl mx-auto">
-                    <h1 class="text-3xl font-bold mb-6">Hirdetés feltöltése</h1>
-                    <form id="feltoltesForm" class="space-y-6">
+                <h1 class="text-3xl font-bold mb-6">Hirdetés feltöltése</h1>
+                <form id="feltoltesForm" class="space-y-6">
+                    <div>
+                        <label for="csomagValaszto" class="block text-sm font-medium text-gray-700">Válassz csomagot!</label>
+                        <select id="csomagValaszto" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                            <option value="Alap">Alap (2 kép, 7 nap)</option>
+                            <option value="Prémium">Prémium (3 kép, 30 nap) - 1.990 Ft</option>
+                            <option value="Extra">Extra (5 kép, 90 nap) - 2.990 Ft</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="cim" class="block text-sm font-medium text-gray-700">Hirdetés Címe</label>
+                        <input type="text" id="cim" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="leiras" class="block text-sm font-medium text-gray-700">Részletes Leírás</label>
+                        <textarea id="leiras" rows="6" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="csomagValaszto" class="block text-sm font-medium text-gray-700">Válassz csomagot!</label>
-                            <select id="csomagValaszto" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm">
-                                <option value="Alap">Alap (2 kép, 7 nap)</option>
-                                <option value="Prémium">Prémium (3 kép, 30 nap) - 1.990 Ft</option>
-                                <option value="Extra">Extra (5 kép, 90 nap) - 2.990 Ft</option>
+                            <label for="kategoria" class="block text-sm font-medium text-gray-700">Kategória</label>
+                            <select id="kategoria" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Válassz...</option>
+                                <option value="Építőipar">Építőipar</option>
+                                <option value="Villanyszerelés">Villanyszerelés</option>
+                                <option value="Gépészet">Gépészet</option>
+                                <option value="Festés">Festés</option>
+                                <option value="Lakberendezés">Lakberendezés</option>
+                                <option value="Számítástechnika">Számítástechnika</option>
+                                <option value="Kertépítés">Kertépítés</option>
+                                <option value="Egyéb">Egyéb</option>
                             </select>
                         </div>
                         <div>
-                            <label for="cim" class="block text-sm font-medium text-gray-700">Hirdetés Címe</label>
-                            <input type="text" id="cim" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                             <label for="ar" class="block text-sm font-medium text-gray-700">Ár (Ft)</label>
+                             <input type="number" id="ar" placeholder="Megegyezés szerint" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         </div>
-                        <div>
-                            <label for="leiras" class="block text-sm font-medium text-gray-700">Részletes Leírás</label>
-                            <textarea id="leiras" rows="6" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="kategoria" class="block text-sm font-medium text-gray-700">Kategória</label>
-                                <select id="kategoria" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                                    <option value="">Válassz...</option>
-                                    <option value="Építőipar">Építőipar</option>
-                                    <option value="Villanyszerelés">Villanyszerelés</option>
-                                    <option value="Gépészet">Gépészet</option>
-                                    <option value="Festés">Festés</option>
-                                    <option value="Lakberendezés">Lakberendezés</option>
-                                    <option value="Számítástechnika">Számítástechnika</option>
-                                    <option value="Kertépítés">Kertépítés</option>
-                                    <option value="Egyéb">Egyéb</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="ar" class="block text-sm font-medium text-gray-700">Ár (Ft)</label>
-                                <input type="number" id="ar" placeholder="Megegyezés szerint" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="telefonszam" class="block text-sm font-medium text-gray-700">Telefonszám</label>
-                            <input type="tel" id="telefonszam" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Képek feltöltése (egyenként)</label>
-                            <input type="file" id="kepek" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
-                            <div id="image-previews" class="mt-4 flex flex-wrap gap-4"></div>
-                        </div>
-                        <div id="uzenet" class="text-center font-semibold"></div>
-                        <div id="paypal-container" class="mt-4 flex justify-center"></div>
-                        <div class="pt-5 flex justify-end">
-                            <button type="submit" class="w-full md:w-auto py-3 px-6 text-white bg-green-600 hover:bg-green-700 rounded-md shadow-sm flex items-center justify-center">Hirdetés feladása</button>
-                        </div>
-                    </form>
-                </div>`;
+                    </div>
+                     <div>
+                        <label for="telefonszam" class="block text-sm font-medium text-gray-700">Telefonszám</label>
+                        <input type="tel" id="telefonszam" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Képek feltöltése (egyenként)</label>
+                        <input type="file" id="kepek" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        <div id="image-previews" class="mt-4 flex flex-wrap gap-4"></div>
+                    </div>
+                    <div id="uzenet" class="text-center font-semibold"></div>
+                    <div id="paypal-container" class="mt-4 flex justify-center"></div>
+                    <div class="pt-5 flex justify-end">
+                        <button type="submit" class="w-full md:w-auto py-3 px-6 text-white bg-green-600 hover:bg-green-700 rounded-md shadow-sm flex items-center justify-center">Hirdetés feladása</button>
+                    </div>
+                </form>
+            `;
 
             // === FIZETÉSI ÉS FELTÖLTÉSI LOGIKA ===
             const feltoltesForm = document.getElementById('feltoltesForm');
