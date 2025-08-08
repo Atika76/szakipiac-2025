@@ -96,12 +96,7 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_EMAIL = "atika.76@windowslive.com";
-        
-        // FONTOS: Az AI segéd működéséhez cseréld le ezt a helyőrzőt a saját, ingyenesen generálható Google AI Studio API kulcsodra!
-        // 1. Látogass el ide: https://aistudio.google.com/app/apikey
-        // 2. Hozz létre egy új API kulcsot.
-        // 3. Másold be a kapott kulcsot az alábbi idézőjelek közé.
-        const GEMINI_API_KEY = "AIzaSyCeFYjUWF1F-jvmeJmZ5V_PYaFVhbMMpNU";
+        const GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";
 
         // ===== GLOBÁLIS VÁLTOZÓK =====
         let kivalasztottKepek = [];
@@ -206,8 +201,6 @@
             });
         }
         
-        async function showAdminPage() { /* ... Admin oldal később ... */ }
-        
         // ===== HIRDETÉSEK LOGIKÁJA =====
         async function loadHirdetesek() {
             const hirdetesekLista = document.getElementById('hirdetesek-lista');
@@ -221,17 +214,44 @@
             }
         }
 
-        function renderHirdetesek(hirdetesek) {
+        async function renderHirdetesek(hirdetesek) {
             const hirdetesekLista = document.getElementById('hirdetesek-lista');
             if (!hirdetesekLista) return;
+
+            const { data: { session } } = await supaClient.auth.getSession();
+
             if (!hirdetesek || hirdetesek.length === 0) {
                 hirdetesekLista.innerHTML = "<p class='text-center text-gray-500'>Nincsenek a szűrésnek megfelelő hirdetések.</p>";
                 return;
             }
             hirdetesekLista.innerHTML = hirdetesek.map(h => {
+                const isOwner = session && session.user.id === h.user_id;
+                const isAdmin = session && session.user.email === ADMIN_EMAIL;
+
                 const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0
                     ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
-                return `<div class="bg-white p-6 rounded-lg shadow-sm"><div class="flex justify-between items-start"><div><p class="text-sm font-medium text-green-600">${h.kategoria || ''}</p><h3 class="text-xl font-bold mt-1">${h.cim}</h3></div><p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p></div><p class="text-gray-600 my-4">${h.leiras}</p>${kepekHTML}<div class="flex flex-wrap gap-2 pt-4 border-t"><a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}</div></div>`;
+                
+                const deleteButtonHTML = (isOwner || isAdmin) 
+                    ? `<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Törlés</button>` : '';
+
+                return `<div class="bg-white p-6 rounded-lg shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-green-600">${h.kategoria || ''}</p>
+                                    <h3 class="text-xl font-bold mt-1">${h.cim}</h3>
+                                </div>
+                                <p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p>
+                            </div>
+                            <p class="text-gray-600 my-4">${h.leiras}</p>
+                            ${kepekHTML}
+                            <div class="flex flex-wrap gap-2 pt-4 border-t justify-between items-center">
+                                <div>
+                                    <a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
+                                    ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}
+                                </div>
+                                ${deleteButtonHTML}
+                            </div>
+                        </div>`;
             }).join('');
         }
 
@@ -447,9 +467,9 @@
             const lejaratiDatum = new Date();
             lejaratiDatum.setDate(lejaratiDatum.getDate() + napok);
             
-            // JAVÍTVA: A `user_id` oszlopot eltávolítottuk a mentésből, mert nem létezik az adatbázisban.
             const { error } = await supaClient.from('hirdetesek').insert({
                 ...adData, 
+                user_id: session.user.id,
                 email: session.user.email,
                 csomag: csomagNev, 
                 kep_url_tomb: kepUrlTomb,
@@ -490,7 +510,7 @@
                 showToast("Kérlek, adj meg kulcsszavakat!", 'error');
                 return;
             }
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === "IDE_MASOLD_A_GEMINI_API_KULCSOD") {
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyCeFYjUWF1F-jvmeJmZ5V_PYaFVhbMMpNU") {
                 showToast("Érvénytelen vagy hiányzó Gemini API kulcs! Kérlek, add meg a kódban.", 'error');
                 return;
             }
@@ -559,6 +579,89 @@
             setTimeout(() => lightbox.classList.remove('opacity-0'), 10);
         };
         
+        // ===== TÖRLÉSI FUNKCIÓ =====
+        async function handleDeleteAd(adId) {
+            if (!confirm('Biztosan törölni szeretnéd ezt a hirdetést? Ez a művelet nem vonható vissza.')) {
+                return;
+            }
+
+            try {
+                // 1. Képek elérési útvonalának lekérdezése
+                const { data: ad, error: selectError } = await supaClient
+                    .from('hirdetesek')
+                    .select('kep_url_tomb')
+                    .eq('id', adId)
+                    .single();
+
+                if (selectError) throw selectError;
+
+                // 2. Képek törlése a tárhelyről (ha vannak)
+                if (ad.kep_url_tomb && ad.kep_url_tomb.length > 0) {
+                    const filePaths = ad.kep_url_tomb.map(url => {
+                        const path = new URL(url).pathname.split('/hirdetes-kepek/')[1];
+                        return path;
+                    });
+                    
+                    const { error: storageError } = await supaClient.storage
+                        .from('hirdetes-kepek')
+                        .remove(filePaths);
+
+                    if (storageError) {
+                        console.error("Hiba a képek törlésekor, de a hirdetést ettől még töröljük:", storageError);
+                    }
+                }
+
+                // 3. Hirdetés törlése az adatbázisból
+                const { error: deleteError } = await supaClient
+                    .from('hirdetesek')
+                    .delete()
+                    .eq('id', adId);
+
+                if (deleteError) throw deleteError;
+
+                showToast('Hirdetés sikeresen törölve.', 'success');
+                loadHirdetesek(); // Lista frissítése
+
+            } catch (error) {
+                showToast(`Hiba a törlés során: ${error.message}`, 'error');
+                console.error("Delete ad error:", error);
+            }
+        }
+
+        // ===== ADMIN OLDAL =====
+        async function showAdminPage() {
+            const container = document.getElementById('admin-page');
+            container.innerHTML = `<div class="flex justify-center py-10"><div class="loader"></div></div>`;
+            const { data: { session } } = await supaClient.auth.getSession();
+            if (!session || session.user.email !== ADMIN_EMAIL) {
+                container.innerHTML = `<p class="text-red-500 text-center">Nincs jogosultságod az oldal megtekintéséhez.</p>`;
+                return;
+            }
+            try {
+                const { data: hirdetesek, error } = await supaClient.from('hirdetesek').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                container.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4">Adminisztráció - Hirdetések kezelése</h2>
+                    <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50"><tr><th class="p-4">Cím</th><th class="p-4">Felhasználó</th><th class="p-4">Műveletek</th></tr></thead>
+                            <tbody>
+                                ${hirdetesek.map(h => `
+                                    <tr class="border-b">
+                                        <td class="p-4">${h.cim}</td>
+                                        <td class="p-4">${h.email}</td>
+                                        <td class="p-4 space-x-2">
+                                            <button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Törlés</button>
+                                        </td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } catch(err) {
+                container.innerHTML = `<p class="text-red-500 text-center">Hiba a hirdetések betöltésekor: ${err.message}</p>`;
+            }
+        }
+
         // ===== FŐ INDÍTÓ LOGIKA =====
         document.addEventListener('DOMContentLoaded', () => {
             const lightbox = document.getElementById('lightbox');
@@ -582,10 +685,7 @@
             });
             supaClient.auth.onAuthStateChange((event, session) => {
                 handleAuthUI();
-                const currentHash = window.location.hash || '#home';
-                if (['#feltoltes', '#admin', '#auth'].includes(currentHash)) {
-                    handleRouteChange();
-                }
+                handleRouteChange(); // Frissítjük az oldalt, hogy a törlés gombok megjelenjenek/eltűnjenek
             });
         });
     </script>
