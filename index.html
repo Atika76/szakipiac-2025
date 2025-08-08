@@ -68,10 +68,42 @@
                 <div id="admin-page" class="page-content"></div>
             </div>
             <aside class="hidden lg:block space-y-6">
-                <div class="bg-white p-6 rounded-lg shadow-sm text-center">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Szabad reklámhely!</h3>
-                    <p class="text-sm text-gray-500">Itt hirdethet! <a href="#feltoltes" class="text-green-600 hover:underline">Reklám feltöltése</a></p>
-                    <div class="mt-4 bg-gray-200 h-48 rounded-md flex items-center justify-center"><span class="text-gray-400">300×250 Reklám</span></div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Hirdetések</h3>
+                    
+                    <!-- REKLÁMHELY: IDE BÁRMILYEN HTML KÓD BEILLESZTHETŐ -->
+                    
+                    <!-- Példa 1: Temu affiliate banner (kép + link) -->
+                    <div class="mb-4">
+                        <a href="https://www.temu.com/your-affiliate-link" target="_blank" rel="noopener sponsored">
+                            <img src="https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám" alt="Temu Hirdetés" class="w-full h-auto rounded-md">
+                        </a>
+                    </div>
+
+                    <!-- Példa 2: Alza.hu banner (kép + link) -->
+                    <div class="mb-4">
+                         <a href="https://www.alza.hu/your-partner-link" target="_blank" rel="noopener sponsored">
+                            <img src="https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés" alt="Alza.hu Hirdetés" class="w-full h-auto rounded-md">
+                        </a>
+                    </div>
+
+                    <!-- Példa 3: Google AdSense vagy más script alapú hirdetés -->
+                    <!-- Csak illeszd be a kapott script kódot ide -->
+                    <!-- 
+                    <div class="mt-4">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-id"
+                             crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-your-id"
+                             data-ad-slot="your-slot-id"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script>
+                             (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                    </div>
+                    -->
                 </div>
             </aside>
         </div>
@@ -86,7 +118,8 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_EMAIL = "atika.76@windowslive.com";
-        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"; // Cseréld le a saját Gemini API kulcsodra
+        // FONTOS: Cseréld le a saját Google AI Studio-ban generált API kulcsodra!
+        const GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";
 
         // ===== GLOBÁLIS VÁLTOZÓK =====
         let kivalasztottKepek = [];
@@ -217,8 +250,9 @@
                 return;
             }
             hirdetesekLista.innerHTML = hirdetesek.map(h => {
-                const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0
-                    ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
+                // A `kep_url_tomb` helyett a `kep_url`-t használjuk, ahogy a te kódodban volt
+                const kepekHTML = h.kep_url && h.kep_url.length > 0
+                    ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
                 return `<div class="bg-white p-6 rounded-lg shadow-sm"><div class="flex justify-between items-start"><div><p class="text-sm font-medium text-green-600">${h.kategoria || ''}</p><h3 class="text-xl font-bold mt-1">${h.cim}</h3></div><p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p></div><p class="text-gray-600 my-4">${h.leiras}</p>${kepekHTML}<div class="flex flex-wrap gap-2 pt-4 border-t"><a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}</div></div>`;
             }).join('');
         }
@@ -294,9 +328,13 @@
             kepInput.addEventListener('change', handleKepKivalasztas);
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                processAdSubmission();
+                // A PayPal gomb külön kezeli a fizetést, ez a gomb csak az ingyenes/admin feltöltést indítja
+                const price = document.getElementById('csomag').value.split('_')[1];
+                if (price == 0 || (supaClient.auth.user && supaClient.auth.user().email === ADMIN_EMAIL)) {
+                    processAdSubmission();
+                }
             });
-            handleCsomagValtas(); // Első hívás a fizetési gombok beállításához
+            handleCsomagValtas(); // Első hívás
         }
 
         async function handleCsomagValtas() {
@@ -305,7 +343,6 @@
             const [packageName, price, maxKepek] = csomagSelect.value.split('_');
             document.getElementById('max-kepek-szama').textContent = maxKepek;
 
-            // Képek szűrése, ha a felhasználó kisebb csomagra vált
             if (kivalasztottKepek.length > maxKepek) {
                 kivalasztottKepek = kivalasztottKepek.slice(0, maxKepek);
                 renderKepElonezetek();
@@ -318,22 +355,15 @@
             const freeSubmitSection = document.getElementById('free-submit-section');
             const paypalContainer = document.getElementById('paypal-button-container');
 
-            // Adminnak minden ingyenes
-            if (isAdmin) {
+            if (isAdmin || price == 0) {
                 freeSubmitSection.style.display = 'block';
                 paypalContainer.style.display = 'none';
                 paypalContainer.innerHTML = '';
-                return;
-            }
-
-            paypalContainer.innerHTML = '';
-            if (price > 0) {
+            } else {
                 freeSubmitSection.style.display = 'none';
                 paypalContainer.style.display = 'block';
+                paypalContainer.innerHTML = ''; // Töröljük a régi gombokat
                 renderPayPalButton(price, packageName);
-            } else {
-                freeSubmitSection.style.display = 'block';
-                paypalContainer.style.display = 'none';
             }
         }
 
@@ -342,36 +372,33 @@
             const maxKepek = parseInt(document.getElementById('max-kepek-szama').textContent);
 
             if (kivalasztottKepek.length + files.length > maxKepek) {
-                showToast(`Maximum ${maxKepek} képet tölthetsz fel a kiválasztott csomaggal.`, 'error');
-                event.target.value = ''; // Input törlése
+                showToast(`Maximum ${maxKepek} képet tölthetsz fel.`, 'error');
+                event.target.value = '';
                 return;
             }
             kivalasztottKepek.push(...files);
-            event.target.value = ''; // Input reset, hogy ugyanazt a fájlt újra ki lehessen választani törlés után
+            event.target.value = '';
             renderKepElonezetek();
         }
 
         function renderKepElonezetek() {
             const previewContainer = document.getElementById('kep-elonezetek');
             if (!previewContainer) return;
-            previewContainer.innerHTML = ''; // Előző előnézetek törlése
+            previewContainer.innerHTML = '';
 
             kivalasztottKepek.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const previewWrapper = document.createElement('div');
                     previewWrapper.className = 'relative group aspect-w-1 aspect-h-1';
-                    
                     const img = document.createElement('img');
                     img.src = e.target.result;
                     img.className = 'w-full h-full object-cover rounded-md border-2 border-gray-200';
-
                     const deleteButton = document.createElement('button');
                     deleteButton.type = 'button';
                     deleteButton.innerHTML = '&times;';
                     deleteButton.className = 'absolute -top-2 -right-2 bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none';
                     deleteButton.onclick = () => kepTorlese(index);
-
                     previewWrapper.appendChild(img);
                     previewWrapper.appendChild(deleteButton);
                     previewContainer.appendChild(previewWrapper);
@@ -452,7 +479,7 @@
                 user_id: session.user.id, 
                 email: session.user.email,
                 csomag: csomagNev, 
-                kep_url_tomb: kepUrlTomb,
+                kep_url: kepUrlTomb, // JAVÍTVA: `kep_url_tomb`-ról `kep_url`-re
                 lejárati_datum: lejaratiDatum.toISOString()
             });
             if (error) {
@@ -485,8 +512,12 @@
 
         async function generateAdContent() {
             const keywords = document.getElementById('gemini-keywords').value;
-            if (!keywords.trim() || !GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
-                showToast("Kérlek, adj meg kulcsszavakat és érvényes API kulcsot!", 'error');
+            if (!keywords.trim()) {
+                showToast("Kérlek, adj meg kulcsszavakat!", 'error');
+                return;
+            }
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "IDE_MASOLD_A_GEMINI_API_KULCSOD") {
+                showToast("Érvénytelen vagy hiányzó Gemini API kulcs!", 'error');
                 return;
             }
             const generateBtn = document.getElementById('generate-ad-btn');
@@ -507,7 +538,7 @@
                 document.getElementById('leiras').value = content.leiras;
                 showToast("Sikeres generálás!", 'success');
             } catch (error) {
-                showToast("Hiba a generálás során.", 'error');
+                showToast("Hiba a generálás során. Ellenőrizd az API kulcsot és a hálózati kapcsolatot.", 'error');
                 console.error("Gemini Hiba:", error);
             } finally {
                 generateBtn.disabled = false;
