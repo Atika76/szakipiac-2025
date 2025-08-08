@@ -91,24 +91,38 @@
 </aside>
 
 <script>
-// ===== Reklám slider =====
-const reklamok = [
-  { url: "https://www.temu.com/your-affiliate-link", img: "https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám", alt: "Temu Hirdetés" },
-  { url: "https://www.alza.hu/your-partner-link", img: "https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés", alt: "Alza.hu Hirdetés" },
-  { url: "https://www.emag.hu/affiliate-link", img: "https://placehold.co/300x250/1976d2/FFFFFF?text=eMAG+Reklám", alt: "eMAG Hirdetés" },
-  { url: "https://www.booking.com/index.hu.html?aid=your_aff_code", img: "https://placehold.co/300x250/FFC107/222222?text=Booking.com", alt: "Booking.com Hirdetés" },
-  { url: "https://www.ipon.hu/affiliate-link", img: "https://placehold.co/300x250/006400/FFFFFF?text=iPon+Reklám", alt: "iPon Hirdetés" },
-  { url: "https://www.extremedigital.hu/affiliate-link", img: "https://placehold.co/300x250/FF5722/FFFFFF?text=Extreme+Digital", alt: "Extreme Digital Hirdetés" }
-];
-
+// ===== Reklám slider (JSON-ból betöltve) =====
+let reklamok = [];
 let reklamIndex = 0, reklamTimer = null;
+
+async function loadReklamok() {
+  try {
+    const res = await fetch('./reklamok.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('Nem sikerült betölteni a reklamok.json-t');
+    reklamok = await res.json();
+    if (!Array.isArray(reklamok) || reklamok.length === 0) {
+      throw new Error('A reklamok.json üres vagy hibás.');
+    }
+    renderReklamSlide(reklamIndex);
+    const prev = document.getElementById("slider-prev");
+    const next = document.getElementById("slider-next");
+    if (prev) prev.addEventListener("click", reklamPrev);
+    if (next) next.addEventListener("click", reklamNext);
+    resetReklamTimer();
+  } catch (err) {
+    console.error('Reklámok betöltési hiba:', err);
+    const slides = document.getElementById("reklam-slides");
+    if (slides) slides.innerHTML = '<div class="flex items-center justify-center h-[250px] text-sm text-gray-500">Nem sikerült betölteni a reklámokat.</div>';
+  }
+}
 
 function renderReklamSlide(index) {
   const slides = document.getElementById("reklam-slides");
-  if (!slides) return;
+  if (!slides || !reklamok.length) return;
+  const ad = reklamok[index];
   slides.innerHTML = `
-    <a href="${reklamok[index].url}" target="_blank" rel="noopener sponsored" class="block w-full h-[250px] transition-all duration-500">
-      <img src="${reklamok[index].img}" alt="${reklamok[index].alt}" class="w-full h-full object-cover rounded-md shadow" draggable="false">
+    <a href="${ad.url}" target="_blank" rel="noopener sponsored" class="block w-full h-[250px] transition-all duration-500">
+      <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-cover rounded-md shadow" draggable="false">
     </a>
   `;
 
@@ -140,18 +154,14 @@ function reklamNext() {
 
 function resetReklamTimer() {
   if (reklamTimer) clearInterval(reklamTimer);
-  reklamTimer = setInterval(() => reklamNext(), 4000);
+  if (reklamok.length > 1) {
+    reklamTimer = setInterval(() => reklamNext(), 4000);
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Inicializálás csak akkor, ha a slider a DOM-ban van
   if (document.getElementById("reklam-slider")) {
-    renderReklamSlide(reklamIndex);
-    const prev = document.getElementById("slider-prev");
-    const next = document.getElementById("slider-next");
-    if (prev) prev.addEventListener("click", reklamPrev);
-    if (next) next.addEventListener("click", reklamNext);
-    resetReklamTimer();
+    loadReklamok();
   }
 });
 
