@@ -69,20 +69,13 @@
                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Szabad reklámhely!</h3>
                     <p class="text-sm text-gray-500 mb-2">Itt hirdethet!</p>
                     <!-- IDE MÁSOLJ BÁRMILYEN REKLÁMOT, pl.: -->
-                    <!-- Temu affiliate példa: -->
                     <a href="https://www.temu.com" target="_blank" rel="noopener">
                         <img src="https://a1.temucdn.com/temu-cdn/2023/06/05/1d3b44ab7e5546c9930b8dcffdb11e95.png" alt="Temu Banner" class="mx-auto rounded mb-2" style="max-width: 220px;">
                     </a>
-                    <!-- Facebook banner példa: -->
                     <a href="https://facebook.com" target="_blank" rel="noopener">
                         <img src="https://static.xx.fbcdn.net/rsrc.php/v3/yu/r/1MaIiHP8Avk.png" alt="Facebook" class="mx-auto rounded" style="max-width: 220px;">
                     </a>
-                    <!-- Adsense vagy egyéb affiliate script ide is mehet! -->
-                    <!--
-                    <script>
-                    // Adsense vagy affiliate JS banner
-                    </script>
-                    -->
+                    <!-- Itt lehet Adsense vagy affiliate script -->
                     <div class="mt-4 bg-gray-200 h-28 rounded-md flex items-center justify-center"><span class="text-gray-400">300×250 Reklám</span></div>
                 </div>
             </aside>
@@ -91,106 +84,68 @@
 
     <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-4xl font-bold cursor-pointer">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%]"></div>
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300"></div>
-
     <script>
-        // ===== KONFIGURÁCIÓ =====
-        const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
-        const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const ADMIN_EMAIL = "atika.76@windowslive.com";
-        const GEMINI_API_KEY = "AIzaSyCeFYjUWF1F-jvmeJmZ5V_PYaFVhbMMpNU";
-
-        // ===== GLOBÁLIS VÁLTOZÓK =====
-        let kivalasztottKepek = [];
-        let hirdetesekCache = [];
-
-        // ===== ROUTER ÉS FŐ LOGIKA =====
-        const router = {
-            '#home': showHomePage,
-            '#rolunk': showRolunkPage,
-            '#kapcsolat': showKapcsolatPage,
-            '#feltoltes': showFeltoltesPage,
-            '#auth': showAuthPage,
-            '#admin': showAdminPage
-        };
-
-        function showPage(pageId) {
-            document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
-            const activePage = document.getElementById(pageId + '-page');
-            if (activePage) activePage.style.display = 'block';
-        }
-
-        async function handleRouteChange() {
-            const hash = window.location.hash || '#home';
-            showPage(hash.substring(1));
-            const routeHandler = router[hash] || router['#home'];
-            try { await routeHandler(); }
-            catch (err) { console.error(`Hiba az oldal betöltésekor (${hash}):`, err); }
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.toggle('bg-gray-100', link.getAttribute('href') === hash);
-            });
-            document.getElementById('mobile-menu').classList.add('hidden');
-        }
-
-        // ===== OLDAL SPECIFIKUS FUNKCIÓK =====
-
-        async function showHomePage() { /* ... változatlan ... */ }
-        async function showRolunkPage() { /* ... változatlan ... */ }
-        async function showKapcsolatPage() { /* ... változatlan ... */ }
-        async function showAuthPage() { /* ... változatlan ... */ }
-        async function showAdminPage() { /* ... változatlan ... */ }
-
-        // ===== FELTÖLTÉS – ÚJ KÉPLOGIKA! =====
-        async function showFeltoltesPage() {
-            const container = document.getElementById('feltoltes-page');
-            const { data: { session } } = await supaClient.auth.getSession();
-            if (!session) {
-                container.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm text-center"><h1 class="text-2xl font-bold mb-4">A hirdetésfeladáshoz be kell jelentkezned.</h1><a href="#auth" class="text-green-600 hover:underline">Kattints ide.</a></div>`;
-                return;
-            }
-            kivalasztottKepek = [];
-            container.innerHTML = `
-                <div class="bg-white p-8 rounded-lg shadow-sm">
-                    <h1 class="text-3xl font-bold mb-2">Hirdetés feltöltése</h1>
-                    <p class="text-gray-600 mb-8">Töltsd ki az űrlapot, vagy használd az AI segédet!</p>
-                    <div class="bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-8">
-                        <h2 class="text-xl font-semibold text-indigo-800 mb-3">✨ AI Hirdetés Segéd</h2>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="text" id="gemini-keywords" placeholder="Kulcsszavak, pl. 'szobafestés, Budapest'" class="flex-grow w-full px-4 py-2 border-indigo-300 rounded-md">
-                            <button id="generate-ad-btn" class="inline-flex items-center justify-center px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">Szöveg generálása</button>
-                        </div>
-                    </div>
-                    <form id="feltoltesForm" class="space-y-6">
-                        <div><label class="block text-sm">Cím</label><input type="text" id="cim" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                        <div><label class="block text-sm">Leírás</label><textarea id="leiras" rows="6" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></textarea></div>
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div><label class="block text-sm">Kategória</label><select id="kategoria" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Válassz...</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div>
-                            <div><label class="block text-sm">Telefonszám (opcionális)</label><input type="tel" id="telefonszam" placeholder="+36..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                        </div>
-                        <div><label class="block text-sm">Ár (Ft, opcionális)</label><input type="number" id="ar" min="0" placeholder="Megegyezés szerint" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                        <div><label class="block text-sm">Csomag</label><select id="csomag" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="alap_0_2">Alap (ingyenes, 2 kép)</option><option value="premium_1990_3">Prémium (1990 Ft, 3 kép)</option><option value="extra_2990_5">Extra (2990 Ft, 5 kép)</option></select></div>
-                        <div>
-                            <label class="block text-sm">Képek (<span id="max-kepek-szama">2</span> db)</label>
-                            <div class="mt-1 flex flex-col gap-2">
-                                <label for="kep-input" class="cursor-pointer text-green-600 hover:underline">Fájlok kiválasztása...
-                                    <input id="kep-input" type="file" class="sr-only" multiple accept="image/*">
-                                </label>
-                                <div id="kep-elonezetek" class="grid grid-cols-3 sm:grid-cols-5 gap-4"></div>
-                            </div>
-                        </div>
-                        <div id="payment-section" class="border-t pt-6">
-                            <div id="free-submit-section">
-                                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700">Hirdetés feladása</button>
-                            </div>
-                            <div id="paypal-button-container" class="hidden"></div>
-                        </div>
-                    </form>
-                </div>`;
-            setupFeltoltesListeners();
-        }
-
-        // === Új KÉP-feltöltő logika! ===
-        function setupFeltoltesListeners() {
-            const container = document.getElementById('feltoltes-page');
-            container.querySelector('#generate-ad-btn').addEventListener('click', generateAdContent);
-           
+    // ==== SUPABASE & AUTH CONFIG ====
+    const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
+    const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const ADMIN_EMAIL = "atika.76@windowslive.com";
+    let kivalasztottKepek = [];
+    let hirdetesekCache = [];
+    // ==== NAVIGATION ROUTES ====
+    const router = {
+        '#home': showHomePage,
+        '#rolunk': showRolunkPage,
+        '#kapcsolat': showKapcsolatPage,
+        '#feltoltes': showFeltoltesPage,
+        '#auth': showAuthPage,
+        '#admin': showAdminPage
+    };
+    function showPage(pageId) {
+        document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
+        const activePage = document.getElementById(pageId + '-page');
+        if (activePage) activePage.style.display = 'block';
+    }
+    async function handleRouteChange() {
+        const hash = window.location.hash || '#home';
+        showPage(hash.substring(1));
+        const routeHandler = router[hash] || router['#home'];
+        try { await routeHandler(); } catch (err) {}
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.toggle('bg-gray-100', link.getAttribute('href') === hash);
+        });
+        document.getElementById('mobile-menu').classList.add('hidden');
+    }
+    // ==== MAIN PAGES ====
+    async function showHomePage() {
+        const container = document.getElementById('home-page');
+        container.innerHTML = `
+            <div class="text-center mb-12"><h1 class="text-4xl font-bold">Üdvözlünk a <span class="text-green-600">SzakiPiac.hu</span>-n!</h1><p class="mt-3 text-lg text-gray-500">Válassz szakembert, vagy adj fel hirdetést akár ingyen!</p></div>
+            <div class="bg-white p-6 rounded-lg shadow-sm mb-8"><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Keresés..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">Összes kategória</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div></div>
+            <div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center"><div class="loader"></div></div></div>`;
+        container.querySelector('#search-input').addEventListener('input', szuresAlkalmazasa);
+        container.querySelector('#category-select').addEventListener('change', szuresAlkalmazasa);
+        await loadHirdetesek();
+    }
+    async function showRolunkPage() {
+        document.getElementById('rolunk-page').innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Rólunk</h1><p class="mb-4 text-gray-700">A <b>SzakiPiac.hu</b> célja, hogy összekösse a szakembereket és a megrendelőket Magyarország egész területén – egyszerűen, gyorsan, megbízhatóan.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Közvetlen elérés: Regisztrált szakik, értékelésekkel.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Átlátható, rendezett piactér.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Gyors keresés kategória és kulcsszó alapján.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Ingyenes és fizetős hirdetés csomagok mindenkinek.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Egyszerű hirdetésfeltöltés és ügyfélkapcsolat.</li></ul><p class="mb-4 text-gray-700"><b>Küldetésünk:</b> Minőségi munkák, elégedett ügyfelek – támogatjuk a magyar vállalkozókat, és segítünk, hogy mindenki megtalálja a legjobb szakembert bármilyen feladathoz!</p><h3 class="text-2xl font-bold mt-8 mb-4">Miért válassz minket?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Gyors és biztonságos hirdetéskezelés</li><li>Egyszerűen használható felület</li><li>Segítőkész ügyfélszolgalat</li><li>Folyamatos fejlesztés, új funkciók</li></ul></div>`;
+    }
+    async function showKapcsolatPage() {
+        const container = document.getElementById('kapcsolat-page');
+        container.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Kapcsolat</h1><div class="grid md:grid-cols-2 gap-12"><div><h3 class="text-xl font-semibold">Elérhetőségeink:</h3><p class="mt-4"><b>E-mail:</b> <a href="mailto:szakipiac2025@gmail.com" class="text-green-600">szakipiac2025@gmail.com</a></p></div><div><h3 class="text-xl font-semibold mb-4">Írj nekünk!</h3><form id="kapcsolat-form" class="space-y-4"><div><label for="kapcsolat-nev">Név:</label><input type="text" id="kapcsolat-nev" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-email">E-mail cím:</label><input type="email" id="kapcsolat-email" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-uzenet">Üzenet:</label><textarea id="kapcsolat-uzenet" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md"></textarea></div><button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md">Üzenet elküldése</button></form></div></div></div>`;
+        container.querySelector('#kapcsolat-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showToast('Köszönjük az üzenetet! (Ez egy demo.)', 'info');
+            e.target.reset();
+        });
+    }
+    // ==== HIRDETÉSLISTA LOGIKA ====
+    async function loadHirdetesek() {
+        const hirdetesekLista = document.getElementById('hirdetesek-lista');
+        try {
+            const { data, error } = await supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
+            if (error) throw error;
+            hirdetesekCache = data;
+            renderHirdetesek(hirdetesekCache);
+        } catch (error) {
+            if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor. Ellenőrizd a Supabase adatbáz
