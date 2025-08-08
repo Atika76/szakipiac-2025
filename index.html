@@ -91,30 +91,40 @@
 </aside>
 
 <script>
-// ===== Reklám slider (JSON-ból betöltve) =====
-let reklamok = [];
-let reklamIndex = 0, reklamTimer = null;
-
-async function loadReklamok() {
-  try {
-    const res = await fetch('./reklamok.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('Nem sikerült betölteni a reklamok.json-t');
-    reklamok = await res.json();
-    if (!Array.isArray(reklamok) || reklamok.length === 0) {
-      throw new Error('A reklamok.json üres vagy hibás.');
-    }
-    renderReklamSlide(reklamIndex);
-    const prev = document.getElementById("slider-prev");
-    const next = document.getElementById("slider-next");
-    if (prev) prev.addEventListener("click", reklamPrev);
-    if (next) next.addEventListener("click", reklamNext);
-    resetReklamTimer();
-  } catch (err) {
-    console.error('Reklámok betöltési hiba:', err);
-    const slides = document.getElementById("reklam-slides");
-    if (slides) slides.innerHTML = '<div class="flex items-center justify-center h-[250px] text-sm text-gray-500">Nem sikerült betölteni a reklámokat.</div>';
+// ===== Reklám slider (inline JSON) =====
+const reklamok = [
+  {
+    "url": "https://www.temu.com/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",
+    "alt": "Temu – hivatalos logó (SVG)"
+  },
+  {
+    "url": "https://www.alza.hu/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",
+    "alt": "Alza.hu – hivatalos logó (SVG)"
+  },
+  {
+    "url": "https://www.emag.hu/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",
+    "alt": "eMAG – hivatalos logó (SVG)"
+  },
+  {
+    "url": "https://www.booking.com/index.hu.html",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Booking.com_logo.svg",
+    "alt": "Booking.com – hivatalos logó (SVG)"
+  },
+  {
+    "url": "https://ipon.hu/",
+    "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+banner",
+    "alt": "iPon – ide jöhet hivatalos banner, amint van stabil URL"
+  },
+  {
+    "url": "https://edigital.hu/",
+    "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=eDigital+banner",
+    "alt": "eDigital – ide jöhet hivatalos banner, amint van stabil URL"
   }
-}
+];
+let reklamIndex = 0, reklamTimer = null;
 
 function renderReklamSlide(index) {
   const slides = document.getElementById("reklam-slides");
@@ -122,14 +132,14 @@ function renderReklamSlide(index) {
   const ad = reklamok[index];
   slides.innerHTML = `
     <a href="${ad.url}" target="_blank" rel="noopener sponsored" class="block w-full h-[250px] transition-all duration-500">
-      <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-cover rounded-md shadow" draggable="false">
+      <img src="${ad.img}" alt="${ad.alt or ''}" class="w-full h-full object-contain bg-white rounded-md shadow" draggable="false">
     </a>
   `;
 
   const dots = document.getElementById("reklam-dots");
   if (dots) {
     dots.innerHTML = reklamok.map((_, i) => 
-      \`<button class="w-3 h-3 rounded-full border-2 \${i===index?'bg-green-600 border-green-700':'bg-white border-gray-400'}" onclick="showReklamSlide(\${i})" aria-label="Reklám \${i+1}"></button>\`
+      `<button class="w-3 h-3 rounded-full border-2 ${i===index?'bg-green-600 border-green-700':'bg-white border-gray-400'}" onclick="showReklamSlide(${i})" aria-label="Reklám ${i+1}"></button>`
     ).join('');
   }
 }
@@ -161,7 +171,12 @@ function resetReklamTimer() {
 
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("reklam-slider")) {
-    loadReklamok();
+    renderReklamSlide(reklamIndex);
+    const prev = document.getElementById("slider-prev");
+    const next = document.getElementById("slider-next");
+    if (prev) prev.addEventListener("click", reklamPrev);
+    if (next) next.addEventListener("click", reklamNext);
+    resetReklamTimer();
   }
 });
 
