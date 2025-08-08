@@ -69,48 +69,49 @@
             </div>
             <aside class="hidden lg:block space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Hirdetések</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Partnerek</h3>
                     
                     <!-- REKLÁMHELY: IDE BÁRMILYEN HTML KÓD BEILLESZTHETŐ -->
-                    
-                    <!-- Példa 1: Temu affiliate banner (kép + link) -->
-                    <div class="mb-4">
-                        <a href="https://www.temu.com/your-affiliate-link" target="_blank" rel="noopener sponsored">
-                            <img src="https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám" alt="Temu Hirdetés" class="w-full h-auto rounded-md">
-                        </a>
-                    </div>
+                    <div class="space-y-4">
+                        <!-- Példa 1: Temu affiliate banner (kép + link) -->
+                        <div>
+                            <a href="https://www.temu.com/your-affiliate-link" target="_blank" rel="noopener sponsored">
+                                <img src="https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám" alt="Temu Hirdetés" class="w-full h-auto rounded-md shadow-sm hover:shadow-md transition-shadow">
+                            </a>
+                        </div>
 
-                    <!-- Példa 2: Alza.hu banner (kép + link) -->
-                    <div class="mb-4">
-                         <a href="https://www.alza.hu/your-partner-link" target="_blank" rel="noopener sponsored">
-                            <img src="https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés" alt="Alza.hu Hirdetés" class="w-full h-auto rounded-md">
-                        </a>
-                    </div>
+                        <!-- Példa 2: Alza.hu banner (kép + link) -->
+                        <div>
+                             <a href="https://www.alza.hu/your-partner-link" target="_blank" rel="noopener sponsored">
+                                <img src="https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés" alt="Alza.hu Hirdetés" class="w-full h-auto rounded-md shadow-sm hover:shadow-md transition-shadow">
+                            </a>
+                        </div>
 
-                    <!-- Példa 3: Google AdSense vagy más script alapú hirdetés -->
-                    <!-- Csak illeszd be a kapott script kódot ide -->
-                    <!-- 
-                    <div class="mt-4">
-                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-id"
-                             crossorigin="anonymous"></script>
-                        <ins class="adsbygoogle"
-                             style="display:block"
-                             data-ad-client="ca-pub-your-id"
-                             data-ad-slot="your-slot-id"
-                             data-ad-format="auto"
-                             data-full-width-responsive="true"></ins>
-                        <script>
-                             (adsbygoogle = window.adsbygoogle || []).push({});
-                        </script>
+                        <!-- Példa 3: Google AdSense vagy más script alapú hirdetés -->
+                        <!-- Csak illeszd be a kapott script kódot ide -->
+                        <!-- 
+                        <div>
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-id"
+                                 crossorigin="anonymous"></script>
+                            <ins class="adsbygoogle"
+                                 style="display:block"
+                                 data-ad-client="ca-pub-your-id"
+                                 data-ad-slot="your-slot-id"
+                                 data-ad-format="auto"
+                                 data-full-width-responsive="true"></ins>
+                            <script>
+                                 (adsbygoogle = window.adsbygoogle || []).push({});
+                            </script>
+                        </div>
+                        -->
                     </div>
-                    -->
                 </div>
             </aside>
         </div>
     </main>
 
-    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-4xl font-bold cursor-pointer">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%]"></div>
-    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300"></div>
+    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-[100] hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%] rounded-lg"></div>
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
     <script>
         // ===== KONFIGURÁCIÓ =====
@@ -118,7 +119,7 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_EMAIL = "atika.76@windowslive.com";
-        // FONTOS: Cseréld le a saját Google AI Studio-ban generált API kulcsodra!
+        // FONTOS: Az AI segéd működéséhez cseréld le ezt a helyőrzőt a saját, ingyenesen generálható Google AI Studio API kulcsodra!
         const GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";
 
         // ===== GLOBÁLIS VÁLTOZÓK =====
@@ -144,22 +145,19 @@
         async function handleRouteChange() {
             const hash = window.location.hash || '#home';
             showPage(hash.substring(1));
-            
             const routeHandler = router[hash] || router['#home'];
             try {
                 await routeHandler();
             } catch (err) {
                 console.error(`Hiba az oldal betöltésekor (${hash}):`, err);
             }
-
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('bg-gray-100', link.getAttribute('href') === hash);
             });
             document.getElementById('mobile-menu').classList.add('hidden');
         }
 
-        // ===== OLDAL SPECIFIKUS FUNKCIÓK (EREDETI, MŰKÖDŐ) =====
-
+        // ===== OLDALAK MEGJELENÍTÉSE =====
         async function showHomePage() {
             const container = document.getElementById('home-page');
             container.innerHTML = `
@@ -229,7 +227,7 @@
         
         async function showAdminPage() { /* ... Admin oldal később ... */ }
         
-        // ===== HIRDETÉSEK MEGJELENÍTÉSE (EREDETI LOGIKA) =====
+        // ===== HIRDETÉSEK LOGIKÁJA =====
         async function loadHirdetesek() {
             const hirdetesekLista = document.getElementById('hirdetesek-lista');
             try {
@@ -238,7 +236,7 @@
                 hirdetesekCache = data;
                 renderHirdetesek(hirdetesekCache);
             } catch (error) {
-                if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor. Ellenőrizd a Supabase adatbázis-szabályokat (RLS).</p>`;
+                if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor.</p>`;
             }
         }
 
@@ -250,9 +248,8 @@
                 return;
             }
             hirdetesekLista.innerHTML = hirdetesek.map(h => {
-                // A `kep_url_tomb` helyett a `kep_url`-t használjuk, ahogy a te kódodban volt
-                const kepekHTML = h.kep_url && h.kep_url.length > 0
-                    ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
+                const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0
+                    ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
                 return `<div class="bg-white p-6 rounded-lg shadow-sm"><div class="flex justify-between items-start"><div><p class="text-sm font-medium text-green-600">${h.kategoria || ''}</p><h3 class="text-xl font-bold mt-1">${h.cim}</h3></div><p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p></div><p class="text-gray-600 my-4">${h.leiras}</p>${kepekHTML}<div class="flex flex-wrap gap-2 pt-4 border-t"><a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}</div></div>`;
             }).join('');
         }
@@ -268,7 +265,7 @@
              renderHirdetesek(filtered);
         }
         
-        // ===== FELTÖLTÉS OLDAL (ÚJ, JAVÍTOTT LOGIKA) =====
+        // ===== FELTÖLTÉS OLDAL LOGIKÁJA (JAVÍTOTT) =====
         async function showFeltoltesPage() {
             const container = document.getElementById('feltoltes-page');
             const { data: { session } } = await supaClient.auth.getSession();
@@ -328,13 +325,9 @@
             kepInput.addEventListener('change', handleKepKivalasztas);
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                // A PayPal gomb külön kezeli a fizetést, ez a gomb csak az ingyenes/admin feltöltést indítja
-                const price = document.getElementById('csomag').value.split('_')[1];
-                if (price == 0 || (supaClient.auth.user && supaClient.auth.user().email === ADMIN_EMAIL)) {
-                    processAdSubmission();
-                }
+                processAdSubmission();
             });
-            handleCsomagValtas(); // Első hívás
+            handleCsomagValtas();
         }
 
         async function handleCsomagValtas() {
@@ -362,7 +355,7 @@
             } else {
                 freeSubmitSection.style.display = 'none';
                 paypalContainer.style.display = 'block';
-                paypalContainer.innerHTML = ''; // Töröljük a régi gombokat
+                paypalContainer.innerHTML = '';
                 renderPayPalButton(price, packageName);
             }
         }
@@ -445,7 +438,6 @@
             const { data: { session } } = await supaClient.auth.getSession();
             if (!session || files.length === 0) return [];
             
-            showToast(`${files.length} kép feltöltése...`);
             const uploadPromises = files.map(file => {
                 const fileName = `${session.user.id}/${Date.now()}_${file.name}`;
                 return supaClient.storage.from('hirdetes-kepek').upload(fileName, file);
@@ -455,7 +447,7 @@
             for (const result of results) {
                 if (result.error) { 
                     console.error('Hiba a kép feltöltésekor:', result.error.message); 
-                    continue; 
+                    throw new Error('Hiba a kép feltöltésekor.');
                 }
                 const { data } = supaClient.storage.from('hirdetes-kepek').getPublicUrl(result.data.path);
                 urls.push(data.publicUrl);
@@ -474,16 +466,18 @@
             const lejaratiDatum = new Date();
             lejaratiDatum.setDate(lejaratiDatum.getDate() + napok);
             
+            // JAVÍTVA: a `kep_url_tomb` oszlopnevet használjuk, ahogy az adatbázis és a renderelő függvény elvárja
             const { error } = await supaClient.from('hirdetesek').insert({
                 ...adData, 
                 user_id: session.user.id, 
                 email: session.user.email,
                 csomag: csomagNev, 
-                kep_url: kepUrlTomb, // JAVÍTVA: `kep_url_tomb`-ról `kep_url`-re
+                kep_url_tomb: kepUrlTomb,
                 lejárati_datum: lejaratiDatum.toISOString()
             });
             if (error) {
                 showToast(`Hiba a mentéskor: ${error.message}`, 'error');
+                console.error("Supabase insert error:", error);
             } else {
                 showToast('Hirdetés sikeresen feladva!', 'success');
                 window.location.hash = '#home';
@@ -517,7 +511,7 @@
                 return;
             }
             if (!GEMINI_API_KEY || GEMINI_API_KEY === "IDE_MASOLD_A_GEMINI_API_KULCSOD") {
-                showToast("Érvénytelen vagy hiányzó Gemini API kulcs!", 'error');
+                showToast("Érvénytelen vagy hiányzó Gemini API kulcs! Kérlek, add meg a kódban.", 'error');
                 return;
             }
             const generateBtn = document.getElementById('generate-ad-btn');
@@ -546,7 +540,7 @@
             }
         }
         
-        // ===== AUTH UI (EREDETI) =====
+        // ===== AUTH UI =====
         async function handleAuthUI() {
             const { data: { session } } = await supaClient.auth.getSession();
             const navAuth = document.getElementById('nav-auth-section');
@@ -561,20 +555,21 @@
             navAuth.innerHTML = authHTML;
             mobileNavAuth.innerHTML = authHTML.replace('hidden lg:inline', '');
             if (session) {
-                navAuth.querySelector('#logoutBtn')?.addEventListener('click', async () => {
+                document.querySelectorAll('#logoutBtn').forEach(btn => btn.addEventListener('click', async () => {
                     await supaClient.auth.signOut();
                     showToast("Sikeres kijelentkezés!");
                     window.location.hash = '#home';
-                });
+                }));
             }
         }
 
+        // ===== SEGÉDFÜGGVÉNYEK =====
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast-notification');
             toast.textContent = message;
-            toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 z-[110] ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
             toast.classList.remove('translate-x-[120%]');
-            setTimeout(() => { toast.classList.add('translate-x-[120%]'); }, 3000);
+            setTimeout(() => { toast.classList.add('translate-x-[120%]'); }, 4000);
         }
         
         window.openLightbox = (imageUrl) => {
@@ -584,19 +579,18 @@
             setTimeout(() => lightbox.classList.remove('opacity-0'), 10);
         };
         
-        document.addEventListener('DOMContentLoaded', () => {
-             const lightbox = document.getElementById('lightbox');
-             document.getElementById('lightbox-close').addEventListener('click', () => {
-                 lightbox.classList.add('opacity-0');
-                 setTimeout(() => lightbox.classList.add('hidden'), 300);
-             });
-        });
-        
         // ===== FŐ INDÍTÓ LOGIKA =====
         document.addEventListener('DOMContentLoaded', () => {
+            const lightbox = document.getElementById('lightbox');
+            document.getElementById('lightbox-close').addEventListener('click', () => {
+                lightbox.classList.add('opacity-0');
+                setTimeout(() => lightbox.classList.add('hidden'), 300);
+            });
+
             handleAuthUI();
             handleRouteChange();
             window.addEventListener('hashchange', handleRouteChange);
+
             document.querySelectorAll('.nav-link, .nav-link-logo').forEach(link => {
                 link.addEventListener('click', (e) => { 
                     e.preventDefault();
