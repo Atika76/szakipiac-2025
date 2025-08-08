@@ -96,7 +96,9 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_EMAIL = "atika.76@windowslive.com";
-        const GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";
+        
+        // JAVÍTVA: Az API kulcsod beillesztve a megfelelő helyre
+        const GEMINI_API_KEY = "AIzaSyCeFYjUWF1F-jvmeJmZ5V_PYaFVhbMMpNU";
 
         // ===== GLOBÁLIS VÁLTOZÓK =====
         let kivalasztottKepek = [];
@@ -208,7 +210,7 @@
                 const { data, error } = await supaClient.from('hirdetesek').select('*').gte('lejárati_datum', new Date().toISOString()).order('created_at', { ascending: false });
                 if (error) throw error;
                 hirdetesekCache = data;
-                renderHirdetesek(hirdetesekCache);
+                await renderHirdetesek(hirdetesekCache);
             } catch (error) {
                 if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor.</p>`;
             }
@@ -237,16 +239,16 @@
                 return `<div class="bg-white p-6 rounded-lg shadow-sm">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <p class="text-sm font-medium text-green-600">${h.kategoria || ''}</p>
-                                    <h3 class="text-xl font-bold mt-1">${h.cim}</h3>
+                                    <p class="text-sm font-medium text-green-600">${h.Kategoria || ''}</p>
+                                    <h3 class="text-xl font-bold mt-1">${h.Cim}</h3>
                                 </div>
-                                <p class="text-lg font-semibold">${h.ar ? h.ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p>
+                                <p class="text-lg font-semibold">${h.Ar ? h.Ar.toLocaleString('hu-HU') + ' Ft' : 'Megegyezés szerint'}</p>
                             </div>
-                            <p class="text-gray-600 my-4">${h.leiras}</p>
+                            <p class="text-gray-600 my-4">${h.Leiras}</p>
                             ${kepekHTML}
                             <div class="flex flex-wrap gap-2 pt-4 border-t justify-between items-center">
                                 <div>
-                                    <a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
+                                    <a href="mailto:${h['E-mail']}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
                                     ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}
                                 </div>
                                 ${deleteButtonHTML}
@@ -259,8 +261,8 @@
              const searchText = document.getElementById('search-input').value.toLowerCase();
              const category = document.getElementById('category-select').value;
              const filtered = hirdetesekCache.filter(h => {
-                 const matchesText = `${h.cim} ${h.leiras}`.toLowerCase().includes(searchText);
-                 const matchesCategory = !category || h.kategoria === category;
+                 const matchesText = `${h.Cim} ${h.Leiras}`.toLowerCase().includes(searchText);
+                 const matchesCategory = !category || h.Kategoria === category;
                  return matchesText && matchesCategory;
              });
              renderHirdetesek(filtered);
@@ -427,10 +429,10 @@
                 return null;
             }
             return { 
-                cim, 
-                leiras, 
-                kategoria: document.getElementById('kategoria').value, 
-                ar: document.getElementById('ar').value || null, 
+                Cim: cim, 
+                Leiras: leiras, 
+                Kategoria: document.getElementById('kategoria').value, 
+                Ar: document.getElementById('ar').value || null, 
                 telefonszam: document.getElementById('telefonszam').value || null 
             };
         }
@@ -470,7 +472,7 @@
             const { error } = await supaClient.from('hirdetesek').insert({
                 ...adData, 
                 user_id: session.user.id,
-                email: session.user.email,
+                "E-mail": session.user.email,
                 csomag: csomagNev, 
                 kep_url_tomb: kepUrlTomb,
                 lejárati_datum: lejaratiDatum.toISOString()
@@ -510,7 +512,7 @@
                 showToast("Kérlek, adj meg kulcsszavakat!", 'error');
                 return;
             }
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyCeFYjUWF1F-jvmeJmZ5V_PYaFVhbMMpNU") {
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "IDE_MASOLD_A_GEMINI_API_KULCSOD") {
                 showToast("Érvénytelen vagy hiányzó Gemini API kulcs! Kérlek, add meg a kódban.", 'error');
                 return;
             }
@@ -586,7 +588,6 @@
             }
 
             try {
-                // 1. Képek elérési útvonalának lekérdezése
                 const { data: ad, error: selectError } = await supaClient
                     .from('hirdetesek')
                     .select('kep_url_tomb')
@@ -595,7 +596,6 @@
 
                 if (selectError) throw selectError;
 
-                // 2. Képek törlése a tárhelyről (ha vannak)
                 if (ad.kep_url_tomb && ad.kep_url_tomb.length > 0) {
                     const filePaths = ad.kep_url_tomb.map(url => {
                         const path = new URL(url).pathname.split('/hirdetes-kepek/')[1];
@@ -611,7 +611,6 @@
                     }
                 }
 
-                // 3. Hirdetés törlése az adatbázisból
                 const { error: deleteError } = await supaClient
                     .from('hirdetesek')
                     .delete()
@@ -620,7 +619,7 @@
                 if (deleteError) throw deleteError;
 
                 showToast('Hirdetés sikeresen törölve.', 'success');
-                loadHirdetesek(); // Lista frissítése
+                await loadHirdetesek();
 
             } catch (error) {
                 showToast(`Hiba a törlés során: ${error.message}`, 'error');
@@ -685,9 +684,9 @@
             });
             supaClient.auth.onAuthStateChange((event, session) => {
                 handleAuthUI();
-                handleRouteChange(); // Frissítjük az oldalt, hogy a törlés gombok megjelenjenek/eltűnjenek
+                handleRouteChange();
             });
         });
     </script>
 </body>
-</html>
+</ht
