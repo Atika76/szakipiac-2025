@@ -70,40 +70,17 @@
             <aside class="hidden lg:block space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow-sm">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Partnerek</h3>
-                    
-                    <!-- REKLÁMHELY: IDE BÁRMILYEN HTML KÓD BEILLESZTHETŐ -->
                     <div class="space-y-4">
-                        <!-- Példa 1: Temu affiliate banner (kép + link) -->
                         <div>
                             <a href="https://www.temu.com/your-affiliate-link" target="_blank" rel="noopener sponsored">
                                 <img src="https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám" alt="Temu Hirdetés" class="w-full h-auto rounded-md shadow-sm hover:shadow-md transition-shadow">
                             </a>
                         </div>
-
-                        <!-- Példa 2: Alza.hu banner (kép + link) -->
                         <div>
                              <a href="https://www.alza.hu/your-partner-link" target="_blank" rel="noopener sponsored">
                                 <img src="https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés" alt="Alza.hu Hirdetés" class="w-full h-auto rounded-md shadow-sm hover:shadow-md transition-shadow">
                             </a>
                         </div>
-
-                        <!-- Példa 3: Google AdSense vagy más script alapú hirdetés -->
-                        <!-- Csak illeszd be a kapott script kódot ide -->
-                        <!-- 
-                        <div>
-                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-id"
-                                 crossorigin="anonymous"></script>
-                            <ins class="adsbygoogle"
-                                 style="display:block"
-                                 data-ad-client="ca-pub-your-id"
-                                 data-ad-slot="your-slot-id"
-                                 data-ad-format="auto"
-                                 data-full-width-responsive="true"></ins>
-                            <script>
-                                 (adsbygoogle = window.adsbygoogle || []).push({});
-                            </script>
-                        </div>
-                        -->
                     </div>
                 </div>
             </aside>
@@ -119,7 +96,11 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
         const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_EMAIL = "atika.76@windowslive.com";
+        
         // FONTOS: Az AI segéd működéséhez cseréld le ezt a helyőrzőt a saját, ingyenesen generálható Google AI Studio API kulcsodra!
+        // 1. Látogass el ide: https://aistudio.google.com/app/apikey
+        // 2. Hozz létre egy új API kulcsot.
+        // 3. Másold be a kapott kulcsot az alábbi idézőjelek közé.
         const GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";
 
         // ===== GLOBÁLIS VÁLTOZÓK =====
@@ -466,10 +447,9 @@
             const lejaratiDatum = new Date();
             lejaratiDatum.setDate(lejaratiDatum.getDate() + napok);
             
-            // JAVÍTVA: a `kep_url_tomb` oszlopnevet használjuk, ahogy az adatbázis és a renderelő függvény elvárja
+            // JAVÍTVA: A `user_id` oszlopot eltávolítottuk a mentésből, mert nem létezik az adatbázisban.
             const { error } = await supaClient.from('hirdetesek').insert({
                 ...adData, 
-                user_id: session.user.id, 
                 email: session.user.email,
                 csomag: csomagNev, 
                 kep_url_tomb: kepUrlTomb,
