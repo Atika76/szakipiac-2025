@@ -1,32 +1,32 @@
 [
   {
-    "url": "https://www.temu.com/your-affiliate-link",
-    "img": "https://placehold.co/300x250/E91E63/FFFFFF?text=Temu+Reklám",
-    "alt": "Temu Hirdetés"
+    "url": "https://www.temu.com/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",
+    "alt": "Temu – hivatalos logó (SVG)"
   },
   {
-    "url": "https://www.alza.hu/your-partner-link",
-    "img": "https://placehold.co/300x250/4CAF50/FFFFFF?text=Alza.hu+Hirdetés",
-    "alt": "Alza.hu Hirdetés"
+    "url": "https://www.alza.hu/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",
+    "alt": "Alza.hu – hivatalos logó (SVG)"
   },
   {
-    "url": "https://www.emag.hu/affiliate-link",
-    "img": "https://placehold.co/300x250/1976d2/FFFFFF?text=eMAG+Reklám",
-    "alt": "eMAG Hirdetés"
+    "url": "https://www.emag.hu/",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",
+    "alt": "eMAG – hivatalos logó (SVG)"
   },
   {
-    "url": "https://www.booking.com/index.hu.html?aid=your_aff_code",
-    "img": "https://placehold.co/300x250/FFC107/222222?text=Booking.com",
-    "alt": "Booking.com Hirdetés"
+    "url": "https://www.booking.com/index.hu.html",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Booking.com_logo.svg",
+    "alt": "Booking.com – hivatalos logó (SVG)"
   },
   {
-    "url": "https://www.ipon.hu/affiliate-link",
-    "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+Reklám",
-    "alt": "iPon Hirdetés"
+    "url": "https://ipon.hu/",
+    "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+banner",
+    "alt": "iPon – ide jöhet hivatalos banner, amint van stabil URL"
   },
   {
-    "url": "https://www.extremedigital.hu/affiliate-link",
-    "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=Extreme+Digital",
-    "alt": "Extreme Digital Hirdetés"
+    "url": "https://edigital.hu/",
+    "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=eDigital+banner",
+    "alt": "eDigital – ide jöhet hivatalos banner, amint van stabil URL"
   }
 ]
