@@ -90,14 +90,18 @@
 
 <script>
 // ===== Reklám slider (JAVÍTOTT) =====
+// === VÁLTOZTATÁS KEZDETE (Lidl és Aldi hozzáadva) ===
 const reklamok = [
   { "url": "https://www.temu.com/", "img": "https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg", "alt": "Temu – hivatalos logó (SVG)" },
   { "url": "https://www.alza.hu/", "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg", "alt": "Alza.hu – hivatalos logó (SVG)" },
   { "url": "https://www.emag.hu/", "img": "https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg", "alt": "eMAG – hivatalos logó (SVG)" },
   { "url": "https://www.booking.com/index.hu.html", "img": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Booking.com_logo.svg", "alt": "Booking.com – hivatalos logó (SVG)" },
+  { "url": "https://www.lidl.hu/", "img": "https://placehold.co/300x250/0050AA/FFFFFF?text=Lidl+banner", "alt": "Lidl – hivatalos banner" },
+  { "url": "https://www.aldi.hu/", "img": "https://placehold.co/300x250/003580/FFFFFF?text=Aldi+banner", "alt": "Aldi – hivatalos banner" },
   { "url": "https://ipon.hu/", "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+banner", "alt": "iPon – ide jöhet hivatalos banner, amint van stabil URL" },
   { "url": "https://edigital.hu/", "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=eDigital+banner", "alt": "eDigital – ide jöhet hivatalos banner, amint van stabil URL" }
 ];
+// === VÁLTOZTATÁS VÉGE ===
 let reklamIndex = 0, reklamTimer = null;
 
 function renderReklamSlide(index) {
