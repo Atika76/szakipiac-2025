@@ -13,6 +13,7 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="1200" />
     <meta property="og:site_name" content="SzakiPiac.hu" />
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,17 +75,31 @@
                 <div id="feltoltes-page" class="page-content"></div>
                 <div id="auth-page" class="page-content"></div>
                 <div id="admin-page" class="page-content"></div>
-            </div>
-            <aside class="hidden lg:block space-y-6">
-              <div class="bg-white p-6 rounded-lg shadow-sm">
+
+                <div class="lg:hidden mt-8"> <div class="bg-white p-6 rounded-lg shadow-sm">
+                      <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Partnerek</h3>
+                      <div id="reklam-slider-mobile" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
+                        <div id="reklam-slides-mobile"></div>
+                        <div id="reklam-dots-mobile" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
+                        <button id="slider-prev-mobile" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                          <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button id="slider-next-mobile" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                          <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                </div>
+                </div>
+            <aside class="hidden lg:block space-y-6"> <div class="bg-white p-6 rounded-lg shadow-sm">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Partnerek</h3>
-                <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
-                  <div id="reklam-slides"></div>
-                  <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
-                  <button id="slider-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                <div id="reklam-slider-desktop" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
+                  <div id="reklam-slides-desktop"></div>
+                  <div id="reklam-dots-desktop" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
+                  <button id="slider-prev-desktop" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
                     <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
                   </button>
-                  <button id="slider-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                  <button id="slider-next-desktop" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
                     <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
                   </button>
                 </div>
@@ -98,7 +113,6 @@
 
 <script>
 // ===== Reklám slider (JAVÍTOTT) =====
-// === VÁLTOZTATÁS KEZDETE (Lidl és Aldi hozzáadva) ===
 const reklamok = [
   { "url": "https://www.temu.com/", "img": "https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg", "alt": "Temu – hivatalos logó (SVG)" },
   { "url": "https://www.alza.hu/", "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg", "alt": "Alza.hu – hivatalos logó (SVG)" },
@@ -109,63 +123,75 @@ const reklamok = [
   { "url": "https://ipon.hu/", "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+banner", "alt": "iPon – ide jöhet hivatalos banner, amint van stabil URL" },
   { "url": "https://edigital.hu/", "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=eDigital+banner", "alt": "eDigital – ide jöhet hivatalos banner, amint van stabil URL" }
 ];
-// === VÁLTOZTATÁS VÉGE ===
 let reklamIndex = 0, reklamTimer = null;
 
-function renderReklamSlide(index) {
-  const slides = document.getElementById("reklam-slides");
-  if (!slides || !reklamok.length) return;
-  const ad = reklamok[index];
-  slides.innerHTML = `
-    <a href="${ad.url}" target="_blank" rel="noopener sponsored" class="block w-full h-[250px] transition-all duration-500">
-      <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-contain bg-white rounded-md shadow" draggable="false">
-    </a>
-  `;
-  const dots = document.getElementById("reklam-dots");
-  if (dots) {
-    dots.innerHTML = reklamok.map((_, i) => 
-      `<button class="w-3 h-3 rounded-full border-2 ${i===index?'bg-green-600 border-green-700':'bg-white border-gray-400'}" onclick="showReklamSlide(${i})" aria-label="Reklám ${i+1}"></button>`
-    ).join('');
+// === VÁLTOZTATÁS: Külön függvény a slider inicializálásához ===
+function initSlider(containerId) {
+  let currentIndex = 0;
+  let timer = null;
+  const slides = document.getElementById(`reklam-slides-${containerId}`);
+  const dots = document.getElementById(`reklam-dots-${containerId}`);
+
+  function renderSlide(index) {
+    if (!slides || !reklamok.length) return;
+    const ad = reklamok[index];
+    slides.innerHTML = `
+      <a href="${ad.url}" target="_blank" rel="noopener sponsored" class="block w-full h-[250px] transition-all duration-500">
+        <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-contain bg-white rounded-md shadow" draggable="false">
+      </a>`;
+    if (dots) {
+      dots.innerHTML = reklamok.map((_, i) => 
+        `<button class="w-3 h-3 rounded-full border-2 ${i===index?'bg-green-600 border-green-700':'bg-white border-gray-400'}" data-index="${i}" aria-label="Reklám ${i+1}"></button>`
+      ).join('');
+    }
   }
-}
 
-function showReklamSlide(index) {
-  reklamIndex = index;
-  renderReklamSlide(reklamIndex);
-  resetReklamTimer();
-}
+  function showSlide(index) {
+    currentIndex = index;
+    renderSlide(currentIndex);
+    resetTimer();
+  }
 
-function reklamPrev() {
-  reklamIndex = (reklamIndex - 1 + reklamok.length) % reklamok.length;
-  renderReklamSlide(reklamIndex);
-  resetReklamTimer();
-}
+  function prevSlide() {
+    currentIndex = (currentIndex - 1 + reklamok.length) % reklamok.length;
+    renderSlide(currentIndex);
+    resetTimer();
+  }
 
-function reklamNext() {
-  reklamIndex = (reklamIndex + 1) % reklamok.length;
-  renderReklamSlide(reklamIndex);
-  resetReklamTimer();
-}
+  function nextSlide() {
+    currentIndex = (currentIndex + 1) % reklamok.length;
+    renderSlide(currentIndex);
+    resetTimer();
+  }
 
-function resetReklamTimer() {
-  if (reklamTimer) clearInterval(reklamTimer);
-  if (reklamok.length > 1) {
-    reklamTimer = setInterval(() => reklamNext(), 4000);
+  function resetTimer() {
+    if (timer) clearInterval(timer);
+    if (reklamok.length > 1) {
+      timer = setInterval(nextSlide, 4000);
+    }
+  }
+
+  if (document.getElementById(`reklam-slider-${containerId}`)) {
+    renderSlide(currentIndex);
+    const prevBtn = document.getElementById(`slider-prev-${containerId}`);
+    const nextBtn = document.getElementById(`slider-next-${containerId}`);
+    if (prevBtn) prevBtn.addEventListener("click", prevSlide);
+    if (nextBtn) nextBtn.addEventListener("click", nextSlide);
+    if (dots) {
+        dots.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                showSlide(parseInt(e.target.dataset.index));
+            }
+        });
+    }
+    resetTimer();
   }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (document.getElementById("reklam-slider")) {
-    renderReklamSlide(reklamIndex);
-    const prev = document.getElementById("slider-prev");
-    const next = document.getElementById("slider-next");
-    if (prev) prev.addEventListener("click", reklamPrev);
-    if (next) next.addEventListener("click", reklamNext);
-    resetReklamTimer();
-  }
+  initSlider('desktop'); // Asztali slider inicializálása
+  initSlider('mobile'); // Mobil slider inicializálása
 });
-
-window.showReklamSlide = showReklamSlide;
 
 // ===== KONFIGURÁCIÓ =====
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
@@ -267,41 +293,28 @@ async function showAuthPage() {
 }
 
 // ===== HIRDETÉSEK LOGIKÁJA =====
-
-// === VÁLTOZTATÁS KEZDETE (1. LÉPÉS - Sorba rendezés) ===
-// Kicseréltem a teljes 'loadHirdetesek' funkciót, hogy a sorba rendezés már a kódban történjen.
 async function loadHirdetesek() {
     const hirdetesekLista = document.getElementById('hirdetesek-lista');
     try {
-        // 1. Letöltjük a hirdetéseket az adatbázisból, sorba rendezés NÉLKÜL.
         const { data, error } = await supaClient
             .from('hirdetesek')
             .select('*')
             .gte('lejárati_datum', new Date().toISOString());
 
         if (error) throw error;
-
-        // 2. A kódban rendezzük sorba őket a csomag értéke szerint.
         const csomagErtekek = { 'extra': 3, 'premium': 2, 'alap': 1 };
         data.sort((a, b) => {
             const ertekA = csomagErtekek[a.csomag] || 0;
             const ertekB = csomagErtekek[b.csomag] || 0;
-            // Ha a csomagok értéke nem egyenlő, a nagyobb értékű kerül előre.
-            if (ertekA !== ertekB) {
-                return ertekB - ertekA;
-            }
-            // Ha a csomagok egyformák, a legfrissebb hirdetés kerül előre.
+            if (ertekA !== ertekB) return ertekB - ertekA;
             return new Date(b.created_at) - new Date(a.created_at);
         });
-
         hirdetesekCache = data;
-        renderHirdetesek(hirdetesekCache); // Meghívjuk a megjelenítést a már sorba rendezett adatokkal.
+        renderHirdetesek(hirdetesekCache);
     } catch (error) {
         if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor.</p>`;
     }
 }
-// === VÁLTOZTATÁS VÉGE (1. LÉPÉS - Sorba rendezés) ===
-
 
 async function renderHirdetesek(hirdetesek) {
     const hirdetesekLista = document.getElementById('hirdetesek-lista');
@@ -316,11 +329,8 @@ async function renderHirdetesek(hirdetesek) {
         const isAdmin = session && session.user.email === ADMIN_EMAIL;
         const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0 ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
         const deleteButtonHTML = (isOwner || isAdmin) ? `<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Törlés</button>` : '';
-
-        // === VÁLTOZTATÁS KEZDETE (2. LÉPÉS - Vizuális kiemelés) ===
         const kiemelesClass = h.csomag === 'extra' ? 'border-2 border-yellow-400' : '';
         const plecsniHTML = h.csomag === 'extra' ? '<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>' : '';
-        // === VÁLTOZTATÁS VÉGE (2. LÉPÉS - Vizuális kiemelés) ===
 
         return `<div class="bg-white p-6 rounded-lg shadow-sm relative ${kiemelesClass}">
             ${plecsniHTML}
@@ -333,9 +343,8 @@ async function renderHirdetesek(hirdetesek) {
                 <div>
                     <a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
                     ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}
-                    
                     ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" rel="noopener nofollow" class="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Weboldal</a>` : ''}
-                    </div>${deleteButtonHTML}
+                </div>${deleteButtonHTML}
             </div></div>`;
     }).join('');
 }
@@ -351,7 +360,7 @@ function szuresAlkalmazasa() {
     renderHirdetesek(filtered);
 }
 
-// ===== FELTÖLTÉS OLDAL LOGIKÁJA (JAVÍTOTT) =====
+// ===== FELTÖLTÉS OLDAL LOGIKÁJA =====
 async function showFeltoltesPage() {
     const container = document.getElementById('feltoltes-page');
     const { data: { session } } = await supaClient.auth.getSession();
@@ -377,12 +386,8 @@ async function showFeltoltesPage() {
                 <div class="grid md:grid-cols-2 gap-6">
                     <div><label class="block text-sm">Kategória</label><select id="kategoria" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Válassz...</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div>
                     <div><label class="block text-sm">Telefonszám (opcionális)</label><input type="tel" id="telefonszam" placeholder="+36..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                    
-                    <div>
-                        <label class="block text-sm">Saját weboldal (opcionális)</label>
-                        <input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-                    </div>
-                    </div>
+                    <div><label class="block text-sm">Saját weboldal (opcionális)</label><input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
+                </div>
                 <div><label class="block text-sm">Ár (Ft, opcionális)</label><input type="number" id="ar" min="0" placeholder="Megegyezés szerint" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
                 <div><label class="block text-sm">Csomag</label><select id="csomag" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="alap_0_2">Alap (ingyenes, 2 kép)</option><option value="premium_1990_3">Prémium (1990 Ft, 3 kép)</option><option value="extra_2990_5">Extra (2990 Ft, 5 kép)</option></select></div>
                 <div>
@@ -407,16 +412,9 @@ function setupFeltoltesListeners() {
     const csomagSelect = container.querySelector('#csomag');
     const kepInput = container.querySelector('#kep-input');
     const freeSubmitBtn = container.querySelector('#free-submit-btn');
-
     csomagSelect.addEventListener('change', handleCsomagValtas);
     kepInput.addEventListener('change', handleKepKivalasztas);
-    // **JAVÍTÁS:** A form submit helyett a gomb kattintására figyelünk
-    if (freeSubmitBtn) {
-        freeSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            processAdSubmission();
-        });
-    }
+    if (freeSubmitBtn) freeSubmitBtn.addEventListener('click', (e) => { e.preventDefault(); processAdSubmission(); });
     handleCsomagValtas();
 }
 
@@ -510,10 +508,8 @@ function getAdData() {
     return {
         cim, leiras, kategoria: document.getElementById('kategoria').value,
         ar: document.getElementById('ar').value || null,
-        // === VÁLTOZTATÁS KEZDETE (3.C LÉPÉS - Weboldal adatának kiolvasása) ===
         telefonszam: document.getElementById('telefonszam').value || null,
         weboldal: document.getElementById('weboldal').value || null
-        // === VÁLTOZTATÁS VÉGE (3.C LÉPÉS - Weboldal adatának kiolvasása) ===
     };
 }
 
