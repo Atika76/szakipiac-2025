@@ -5,16 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SzakiPiac - Találj megbízható szakembert!</title>
 
-    <meta property="og:title" content="SzakiPiac - Találj megbízható szakembert!" />
-    <meta property="og:description" content="Hirdess, találj, dolgozz! A SzakiPiac.hu összeköti a szakembereket és a megrendelőket Magyarország egész területén." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://majestic-kelpie-17d95b.netlify.app" />
-    <meta property="og:image" content="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="1200" />
-    <meta property="og:site_name" content="SzakiPiac.hu" />
-    <link rel="manifest" href="manifest.json">
-    
+    <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="shortcut icon" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,7 +93,8 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script>
-// ===== Reklám slider =====
+// ===== Reklám slider (JAVÍTOTT) =====
+// === VÁLTOZTATÁS KEZDETE (Lidl és Aldi hozzáadva) ===
 const reklamok = [
   { "url": "https://www.temu.com/", "img": "https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg", "alt": "Temu – hivatalos logó (SVG)" },
   { "url": "https://www.alza.hu/", "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg", "alt": "Alza.hu – hivatalos logó (SVG)" },
@@ -110,6 +105,7 @@ const reklamok = [
   { "url": "https://ipon.hu/", "img": "https://placehold.co/300x250/006400/FFFFFF?text=iPon+banner", "alt": "iPon – ide jöhet hivatalos banner, amint van stabil URL" },
   { "url": "https://edigital.hu/", "img": "https://placehold.co/300x250/FF5722/FFFFFF?text=eDigital+banner", "alt": "eDigital – ide jöhet hivatalos banner, amint van stabil URL" }
 ];
+// === VÁLTOZTATÁS VÉGE ===
 let reklamIndex = 0, reklamTimer = null;
 
 function renderReklamSlide(index) {
@@ -267,28 +263,41 @@ async function showAuthPage() {
 }
 
 // ===== HIRDETÉSEK LOGIKÁJA =====
+
+// === VÁLTOZTATÁS KEZDETE (1. LÉPÉS - Sorba rendezés) ===
+// Kicseréltem a teljes 'loadHirdetesek' funkciót, hogy a sorba rendezés már a kódban történjen.
 async function loadHirdetesek() {
     const hirdetesekLista = document.getElementById('hirdetesek-lista');
     try {
+        // 1. Letöltjük a hirdetéseket az adatbázisból, sorba rendezés NÉLKÜL.
         const { data, error } = await supaClient
             .from('hirdetesek')
             .select('*')
             .gte('lejárati_datum', new Date().toISOString());
 
         if (error) throw error;
+
+        // 2. A kódban rendezzük sorba őket a csomag értéke szerint.
         const csomagErtekek = { 'extra': 3, 'premium': 2, 'alap': 1 };
         data.sort((a, b) => {
             const ertekA = csomagErtekek[a.csomag] || 0;
             const ertekB = csomagErtekek[b.csomag] || 0;
-            if (ertekA !== ertekB) return ertekB - ertekA;
+            // Ha a csomagok értéke nem egyenlő, a nagyobb értékű kerül előre.
+            if (ertekA !== ertekB) {
+                return ertekB - ertekA;
+            }
+            // Ha a csomagok egyformák, a legfrissebb hirdetés kerül előre.
             return new Date(b.created_at) - new Date(a.created_at);
         });
+
         hirdetesekCache = data;
-        renderHirdetesek(hirdetesekCache);
+        renderHirdetesek(hirdetesekCache); // Meghívjuk a megjelenítést a már sorba rendezett adatokkal.
     } catch (error) {
         if (hirdetesekLista) hirdetesekLista.innerHTML = `<p class="text-center text-red-600">Hiba a hirdetések betöltésekor.</p>`;
     }
 }
+// === VÁLTOZTATÁS VÉGE (1. LÉPÉS - Sorba rendezés) ===
+
 
 async function renderHirdetesek(hirdetesek) {
     const hirdetesekLista = document.getElementById('hirdetesek-lista');
@@ -303,8 +312,11 @@ async function renderHirdetesek(hirdetesek) {
         const isAdmin = session && session.user.email === ADMIN_EMAIL;
         const kepekHTML = h.kep_url_tomb && h.kep_url_tomb.length > 0 ? `<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url => `<img src="${url}" alt="Hirdetés kép" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join('')}</div>` : '';
         const deleteButtonHTML = (isOwner || isAdmin) ? `<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Törlés</button>` : '';
+
+        // === VÁLTOZTATÁS KEZDETE (2. LÉPÉS - Vizuális kiemelés) ===
         const kiemelesClass = h.csomag === 'extra' ? 'border-2 border-yellow-400' : '';
         const plecsniHTML = h.csomag === 'extra' ? '<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>' : '';
+        // === VÁLTOZTATÁS VÉGE (2. LÉPÉS - Vizuális kiemelés) ===
 
         return `<div class="bg-white p-6 rounded-lg shadow-sm relative ${kiemelesClass}">
             ${plecsniHTML}
@@ -317,8 +329,9 @@ async function renderHirdetesek(hirdetesek) {
                 <div>
                     <a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Kapcsolat (Email)</a>
                     ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Kapcsolat (Telefon)</a>` : ''}
+                    
                     ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" rel="noopener nofollow" class="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Weboldal</a>` : ''}
-                </div>${deleteButtonHTML}
+                    </div>${deleteButtonHTML}
             </div></div>`;
     }).join('');
 }
@@ -334,7 +347,7 @@ function szuresAlkalmazasa() {
     renderHirdetesek(filtered);
 }
 
-// ===== FELTÖLTÉS OLDAL LOGIKÁJA =====
+// ===== FELTÖLTÉS OLDAL LOGIKÁJA (JAVÍTOTT) =====
 async function showFeltoltesPage() {
     const container = document.getElementById('feltoltes-page');
     const { data: { session } } = await supaClient.auth.getSession();
@@ -360,8 +373,12 @@ async function showFeltoltesPage() {
                 <div class="grid md:grid-cols-2 gap-6">
                     <div><label class="block text-sm">Kategória</label><select id="kategoria" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Válassz...</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div>
                     <div><label class="block text-sm">Telefonszám (opcionális)</label><input type="tel" id="telefonszam" placeholder="+36..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                    <div><label class="block text-sm">Saját weboldal (opcionális)</label><input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                </div>
+                    
+                    <div>
+                        <label class="block text-sm">Saját weboldal (opcionális)</label>
+                        <input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    </div>
                 <div><label class="block text-sm">Ár (Ft, opcionális)</label><input type="number" id="ar" min="0" placeholder="Megegyezés szerint" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
                 <div><label class="block text-sm">Csomag</label><select id="csomag" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="alap_0_2">Alap (ingyenes, 2 kép)</option><option value="premium_1990_3">Prémium (1990 Ft, 3 kép)</option><option value="extra_2990_5">Extra (2990 Ft, 5 kép)</option></select></div>
                 <div>
@@ -386,9 +403,16 @@ function setupFeltoltesListeners() {
     const csomagSelect = container.querySelector('#csomag');
     const kepInput = container.querySelector('#kep-input');
     const freeSubmitBtn = container.querySelector('#free-submit-btn');
+
     csomagSelect.addEventListener('change', handleCsomagValtas);
     kepInput.addEventListener('change', handleKepKivalasztas);
-    if (freeSubmitBtn) freeSubmitBtn.addEventListener('click', (e) => { e.preventDefault(); processAdSubmission(); });
+    // **JAVÍTÁS:** A form submit helyett a gomb kattintására figyelünk
+    if (freeSubmitBtn) {
+        freeSubmitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            processAdSubmission();
+        });
+    }
     handleCsomagValtas();
 }
 
@@ -482,8 +506,10 @@ function getAdData() {
     return {
         cim, leiras, kategoria: document.getElementById('kategoria').value,
         ar: document.getElementById('ar').value || null,
+        // === VÁLTOZTATÁS KEZDETE (3.C LÉPÉS - Weboldal adatának kiolvasása) ===
         telefonszam: document.getElementById('telefonszam').value || null,
         weboldal: document.getElementById('weboldal').value || null
+        // === VÁLTOZTATÁS VÉGE (3.C LÉPÉS - Weboldal adatának kiolvasása) ===
     };
 }
 
@@ -555,7 +581,7 @@ async function generateAdContent() {
     const originalBtnContent = generateBtn.innerHTML;
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>';
-    const prompt = `Írj egy magyar nyelvű, professzális hirdetési címet és egy részletes, 3-4 bekezdéses leírást a SzakiPiac.hu oldalra a következő kulcsszavak alapján: "${keywords}". A válaszod JSON formátumú legyen: {"cim": "...", "leiras": "..."}`;
+    const prompt = `Írj egy magyar nyelvű, professzionális hirdetési címet és egy részletes, 3-4 bekezdéses leírást a SzakiPiac.hu oldalra a következő kulcsszavak alapján: "${keywords}". A válaszod JSON formátumú legyen: {"cim": "...", "leiras": "..."}`;
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
