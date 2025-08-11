@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SzakiPiac - Találj megbízható szakembert!</title>
+    <title>SzakiPiac-2025.hu - Találj megbízható szakembert!</title>
 
     <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
     <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
@@ -35,7 +35,7 @@
                 <div class="flex items-center">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
                         <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png" alt="SzakiPiac logó">
-                        <span>SzakiPiac</span>
+                        <span>SzakiPiac-2025.hu</span>
                     </a>
                 </div>
                 <div class="hidden md:flex items-center space-x-1">
@@ -66,6 +66,7 @@
         <div id="main-loader" class="page-content flex justify-center items-center py-20" style="display: none;">
             <div class="loader"></div>
         </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <div id="home-page" class="page-content"></div>
@@ -77,7 +78,7 @@
             </div>
             <aside class="hidden lg:block space-y-6">
               <div class="bg-white p-6 rounded-lg shadow-sm">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Kiemelt Partnerek</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Hirdessen Nálunk!</h3>
                 <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
                   <div id="reklam-slides"></div>
                   <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
@@ -97,7 +98,7 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script>
-// ===== VÁLTOZTATÁS KEZDETE: A reklám slidert a saját képeidre cseréltem =====
+// ===== Reklám slider a saját képeiddel =====
 // FONTOS: Először töltsd fel a képeket a GitHubra, és ha a fájlnév más, cseréld ki az URL-ben!
 const reklamok = [
     { 
@@ -111,7 +112,6 @@ const reklamok = [
       "alt": "SzakiPiac-2025: Hirdess, találj, dolgozz!" 
     }
 ];
-// ===== VÁLTOZTATÁS VÉGE =====
 
 let reklamIndex = 0, reklamTimer = null;
 
@@ -189,7 +189,6 @@ const router = {
 
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach(p => {
-        // A main-loadert nem rejtjük el itt, csak a tényleges oldalakat
         if (p.id !== 'main-loader') {
             p.style.display = 'none';
         }
@@ -198,24 +197,18 @@ function showPage(pageId) {
     if (activePage) activePage.style.display = 'block';
 }
 
-// ===== VÁLTOZTATÁS KEZDETE: A router logikája a loader kezelésével =====
 async function handleRouteChange() {
     const hash = window.location.hash || '#home';
     
-    // Elrejtjük az összes oldaltartalmat
     document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
-    // Megjelenítjük a központi loadert
     const mainLoader = document.getElementById('main-loader');
     if (mainLoader) mainLoader.style.display = 'flex';
 
     const routeHandler = router[hash] || router['#home'];
     try {
-        // A háttérben betöltjük az oldalhoz tartozó adatokat és logikát
         await routeHandler(); 
         
-        // Elrejtjük a loadert
         if (mainLoader) mainLoader.style.display = 'none';
-        // És csak most, a betöltés után jelenítjük meg a kész oldalt
         showPage(hash.substring(1));
 
     } catch (err) {
@@ -228,14 +221,12 @@ async function handleRouteChange() {
     });
     document.getElementById('mobile-menu').classList.add('hidden');
 }
-// ===== VÁLTOZTATÁS VÉGE =====
 
 // ===== OLDALAK MEGJELENÍTÉSE =====
-// ===== VÁLTOZTATÁS KEZDETE: A showHomePage most már tartalmaz egy loadert a hirdetések helyén =====
 async function showHomePage() {
     const container = document.getElementById('home-page');
     container.innerHTML = `
-        <div class="text-center mb-12"><h1 class="text-4xl font-bold">Üdvözlünk a <span class="text-green-600">SzakiPiac-2025</span>-ön!</h1><p class="mt-3 text-lg text-gray-500">Válassz szakembert, vagy adj fel hirdetést akár ingyen!</p></div>
+        <div class="text-center mb-12"><h1 class="text-4xl font-bold">Üdvözlünk a <span class="text-green-600">SzakiPiac-2025.hu</span>-n!</h1><p class="mt-3 text-lg text-gray-500">Válassz szakembert, vagy adj fel hirdetést akár ingyen!</p></div>
         <div class="bg-white p-6 rounded-lg shadow-sm mb-8"><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Keresés..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">Összes kategória</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div></div>
         <div id="hirdetesek-lista" class="space-y-6">
             <div class="flex justify-center py-10">
@@ -248,7 +239,6 @@ async function showHomePage() {
     
     await loadHirdetesek();
 }
-// ===== VÁLTOZTATÁS VÉGE =====
 
 async function showRolunkPage() {
     document.getElementById('rolunk-page').innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Rólunk</h1><p class="mb-4 text-gray-700">A <b>SzakiPiac-2025.hu</b> célja, hogy összekösse a szakembereket és a megrendelőket Magyarország egész területén – egyszerűen, gyorsan, megbízhatóan.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Közvetlen elérés: Regisztrált szakik, értékelésekkel.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Átlátható, rendezett piactér.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Gyors keresés kategória és kulcsszó alapján.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Ingyenes és fizetős hirdetés csomagok mindenkinek.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Egyszerű hirdetésfeltöltés és ügyfélkapcsolat.</li></ul><p class="mb-4 text-gray-700"><b>Küldetésünk:</b> Minőségi munkák, elégedett ügyfelek – támogatjuk a magyar vállalkozókat, és segítünk, hogy mindenki megtalálja a legjobb szakembert bármilyen feladathoz!</p><h3 class="text-2xl font-bold mt-8 mb-4">Miért válassz minket?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Gyors és biztonságos hirdetéskezelés</li><li>Egyszerűen használható felület</li><li>Segítőkész ügyfélszolgalat</li><li>Folyamatos fejlesztés, új funkciók</li></ul></div>`;
@@ -372,7 +362,7 @@ function szuresAlkalmazasa() {
     renderHirdetesek(filtered);
 }
 
-// ===== FELTÖLTÉS OLDAL LOGIKÁJA (JAVÍTOTT) =====
+// ===== FELTÖLTÉS OLDAL LOGIKÁJA =====
 async function showFeltoltesPage() {
     const container = document.getElementById('feltoltes-page');
     const { data: { session } } = await supaClient.auth.getSession();
@@ -691,11 +681,9 @@ async function showAdminPage() {
         container.innerHTML = `<p class="text-red-500 text-center">Nincs jogosultságod az oldal megtekintéséhez.</p>`; return;
     }
     try {
-        // A lekérdezés már most is minden adatot (a lejáratot is) lekéri.
         const { data: hirdetesek, error } = await supaClient.from('hirdetesek').select('*').order('created_at', { ascending: false });
         if (error) throw error;
 
-        // A változtatás itt, a táblázat HTML kódjának generálásánál történik.
         container.innerHTML = `
             <h2 class="text-2xl font-bold mb-4">Adminisztráció - Hirdetések kezelése</h2>
             <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
@@ -752,4 +740,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-ebbe az indexbe tedd bele a kört vagy töltés jelzöt meg ezeket a logókat is cseréld le a reklám sliderben
