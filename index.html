@@ -34,7 +34,7 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
-                        <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png" alt="SzakiPiac logó">
+                        <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="SzakiPiac logó">
                         <span>SzakiPiac-2025.hu</span>
                     </a>
                 </div>
@@ -83,7 +83,7 @@
                   <div id="reklam-slides"></div>
                   <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
                   <button id="slider-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
-                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                    <svg class="w-6 w-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
                   </button>
                   <button id="slider-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
                     <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
@@ -98,17 +98,16 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script>
-// ===== Reklám slider a saját képeiddel =====
-// FONTOS: Először töltsd fel a képeket a GitHubra, és ha a fájlnév más, cseréld ki az URL-ben!
+// ===== VÁLTOZTATÁS: Reklám slider a javított, helyes képnevekkel =====
 const reklamok = [
     { 
       "url": "#feltoltes", 
-      "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.jpg", 
+      "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png", 
       "alt": "Hirdess a SzakiPiac-2025 oldalon!" 
     },
     { 
       "url": "#feltoltes", 
-      "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.jpg", 
+      "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png", 
       "alt": "SzakiPiac-2025: Hirdess, találj, dolgozz!" 
     }
 ];
@@ -240,6 +239,9 @@ async function showHomePage() {
     await loadHirdetesek();
 }
 
+// (A többi JavaScript függvény változatlanul következik...)
+// ... (az összes többi függvény, mint showRolunkPage, showKapcsolatPage, stb., idáig változatlan)
+
 async function showRolunkPage() {
     document.getElementById('rolunk-page').innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Rólunk</h1><p class="mb-4 text-gray-700">A <b>SzakiPiac-2025.hu</b> célja, hogy összekösse a szakembereket és a megrendelőket Magyarország egész területén – egyszerűen, gyorsan, megbízhatóan.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Közvetlen elérés: Regisztrált szakik, értékelésekkel.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Átlátható, rendezett piactér.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Gyors keresés kategória és kulcsszó alapján.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Ingyenes és fizetős hirdetés csomagok mindenkinek.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Egyszerű hirdetésfeltöltés és ügyfélkapcsolat.</li></ul><p class="mb-4 text-gray-700"><b>Küldetésünk:</b> Minőségi munkák, elégedett ügyfelek – támogatjuk a magyar vállalkozókat, és segítünk, hogy mindenki megtalálja a legjobb szakembert bármilyen feladathoz!</p><h3 class="text-2xl font-bold mt-8 mb-4">Miért válassz minket?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Gyors és biztonságos hirdetéskezelés</li><li>Egyszerűen használható felület</li><li>Segítőkész ügyfélszolgalat</li><li>Folyamatos fejlesztés, új funkciók</li></ul></div>`;
 }
@@ -289,7 +291,6 @@ async function showAuthPage() {
     });
 }
 
-// ===== HIRDETÉSEK LOGIKÁJA =====
 async function loadHirdetesek() {
     const hirdetesekLista = document.getElementById('hirdetesek-lista');
     try {
@@ -362,7 +363,6 @@ function szuresAlkalmazasa() {
     renderHirdetesek(filtered);
 }
 
-// ===== FELTÖLTÉS OLDAL LOGIKÁJA =====
 async function showFeltoltesPage() {
     const container = document.getElementById('feltoltes-page');
     const { data: { session } } = await supaClient.auth.getSession();
@@ -740,3 +740,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+a főoldalon ez a kép legyen a főoldalon a nagy hirdetés helyett
