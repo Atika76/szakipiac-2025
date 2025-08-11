@@ -78,12 +78,12 @@
             </div>
             <aside class="hidden lg:block space-y-6">
               <div class="bg-white p-6 rounded-lg shadow-sm">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Hirdessen Nálunk!</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Partnereink és ajánlataink</h3>
                 <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
                   <div id="reklam-slides"></div>
                   <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
                   <button id="slider-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
-                    <svg class="w-6 w-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
                   </button>
                   <button id="slider-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
                     <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
@@ -98,17 +98,37 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script>
-// ===== VÁLTOZTATÁS: Reklám slider a javított, helyes képnevekkel =====
+// ===== VÁLTOZTATÁS: Reklám slider vegyesen a te hirdetéseiddel és partnerekkel =====
 const reklamok = [
+    // 1. SAJÁT HIRDETÉS
     { 
       "url": "#feltoltes", 
       "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png", 
       "alt": "Hirdess a SzakiPiac-2025 oldalon!" 
     },
+    // 2. SAJÁT HIRDETÉS
     { 
       "url": "#feltoltes", 
       "img": "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png", 
       "alt": "SzakiPiac-2025: Hirdess, találj, dolgozz!" 
+    },
+    // 3. PARTNER HIRDETÉS - FONTOS: Ezt cseréld le a saját affiliate linkedre!
+    { 
+      "url": "https://www.alza.hu/", 
+      "img": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg", 
+      "alt": "Alza.hu – Vásárolj online!" 
+    },
+    // 4. PARTNER HIRDETÉS - FONTOS: Ezt cseréld le a saját affiliate linkedre!
+    { 
+      "url": "https://www.emag.hu/", 
+      "img": "https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg", 
+      "alt": "eMAG – Óriási választék!" 
+    },
+     // 5. PARTNER HIRDETÉS - FONTOS: Ezt cseréld le a saját affiliate linkedre!
+    { 
+      "url": "https://ipon.hu/", 
+      "img": "https://ipon.hu/build/images/ipon-logo-blue.svg", 
+      "alt": "iPon Computer" 
     }
 ];
 
@@ -118,9 +138,11 @@ function renderReklamSlide(index) {
   const slides = document.getElementById("reklam-slides");
   if (!slides || !reklamok.length) return;
   const ad = reklamok[index];
+  // Ha a link belső (hash-sel kezdődik), akkor nav-link-ként kezeljük, egyébként sima linkként
+  const linkClass = ad.url.startsWith('#') ? 'nav-link' : '';
   slides.innerHTML = `
-    <a href="${ad.url}" class="nav-link block w-full h-[250px] transition-all duration-500">
-      <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-cover bg-white rounded-md shadow" draggable="false">
+    <a href="${ad.url}" class="${linkClass} block w-full h-[250px] transition-all duration-500" ${!linkClass ? 'target="_blank" rel="noopener sponsored"' : ''}>
+      <img src="${ad.img}" alt="${ad.alt || ''}" class="w-full h-full object-contain p-2 bg-white rounded-md shadow" draggable="false">
     </a>
   `;
   const dots = document.getElementById("reklam-dots");
@@ -240,7 +262,7 @@ async function showHomePage() {
 }
 
 // (A többi JavaScript függvény változatlanul következik...)
-// ... (az összes többi függvény, mint showRolunkPage, showKapcsolatPage, stb., idáig változatlan)
+// ... (az összes többi függvény, mint showRolunkPage, stb., idáig változatlan)
 
 async function showRolunkPage() {
     document.getElementById('rolunk-page').innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Rólunk</h1><p class="mb-4 text-gray-700">A <b>SzakiPiac-2025.hu</b> célja, hogy összekösse a szakembereket és a megrendelőket Magyarország egész területén – egyszerűen, gyorsan, megbízhatóan.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Közvetlen elérés: Regisztrált szakik, értékelésekkel.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Átlátható, rendezett piactér.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Gyors keresés kategória és kulcsszó alapján.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Ingyenes és fizetős hirdetés csomagok mindenkinek.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Egyszerű hirdetésfeltöltés és ügyfélkapcsolat.</li></ul><p class="mb-4 text-gray-700"><b>Küldetésünk:</b> Minőségi munkák, elégedett ügyfelek – támogatjuk a magyar vállalkozókat, és segítünk, hogy mindenki megtalálja a legjobb szakembert bármilyen feladathoz!</p><h3 class="text-2xl font-bold mt-8 mb-4">Miért válassz minket?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Gyors és biztonságos hirdetéskezelés</li><li>Egyszerűen használható felület</li><li>Segítőkész ügyfélszolgalat</li><li>Folyamatos fejlesztés, új funkciók</li></ul></div>`;
@@ -740,4 +762,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-a főoldalon ez a kép legyen a főoldalon a nagy hirdetés helyett
+a főoldalon a nagy hirdetés helyett ez a kép jelenjen meg a kicsi helyett
