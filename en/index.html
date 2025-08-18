@@ -18,11 +18,18 @@
 
   <!-- Supabase + PayPal + image-compress -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- try to load shared config from repo root (ok if 404) -->
+  <script src="../supabase.js"></script>
+  <!-- fallback: create supaClient locally if the above wasn't loaded -->
+  <script>
+    if (typeof window.supaClient === "undefined") {
+      const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
+      window.supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  </script>
   <script src="https://www.paypal.com/sdk/js?client-id=AQsaQCLj0og2wsfMoDKAqxJieD2cgXwWq5cssAJCJbO2KoYE8LGHCREyR4vMzMfKZK68qw6EY7IAxMYF&currency=HUF"></script>
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2/dist/browser-image-compression.js"></script>
-
-  <!-- Project config from root -->
-  <script src="../supabase.js"></script>
 
   <style>
     :root { --brand-yellow:#F7B500; --brand-blue:#1e64c8; --brand-red:#e11d21; }
@@ -39,7 +46,8 @@
 
   <!-- Tiny language switcher (top-right) -->
   <div class="fixed top-2 right-3 z-[60] text-xs text-gray-600 bg-white/80 backdrop-blur px-2 py-1 rounded-md shadow-sm">
-    <a href="/index.html" class="hover:underline mr-2" title="Magyar">
+    <!-- HU link (relative) -->
+    <a href="../index.html" class="hover:underline mr-2" title="Magyar">
       <span class="flag align-[-1px]">
         <!-- HU flag -->
         <svg viewBox="0 0 3 2" width="16" height="12">
@@ -50,16 +58,17 @@
       </span> HU
     </a>
     <span class="opacity-60">|</span>
+    <!-- EN (current) -->
     <span class="ml-2" title="English">
       <span class="flag align-[-1px]">
         <!-- GB flag (simple) -->
         <svg viewBox="0 0 60 30" width="16" height="12">
-          <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
-          <clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
-          <g clip-path="url(#s)">
+          <clipPath id="s-en"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+          <clipPath id="t-en"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+          <g clip-path="url(#s-en)">
             <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
             <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
-            <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t)" stroke="#C8102E" stroke-width="4"/>
+            <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t-en)" stroke="#C8102E" stroke-width="4"/>
             <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
             <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
           </g>
