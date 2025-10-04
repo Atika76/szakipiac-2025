@@ -209,44 +209,32 @@ async function uploadKepek(files){const{data:{session}}=await supaClient.auth.ge
 async function saveAdToDatabase(adData,kepUrlTomb=[]){const{data:{session}}=await supaClient.auth.getSession();if(!session){showToast("Hiba: nem vagy bejelentkezve!","error");return}const csomagNev=document.getElementById("csomag").value.split("_")[0];let napok={alap:7,premium:14,extra:30}[csomagNev]||7;const lejaratiDatum=new Date;lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);const{error}=await supaClient.from("hirdetesek").insert({...adData,user_id:session.user.id,email:session.user.email,csomag:csomagNev,kep_url_tomb:kepUrlTomb,lejárati_datum:lejaratiDatum.toISOString()});if(error){showToast(`Hiba a mentéskor: ${error.message}`,"error");console.error("Supabase insert error:",error)}else{showToast("Hirdetés sikeresen feladva!","success");window.location.hash="#home"}}
 function renderPayPalButton(price,packageName){paypal.Buttons({createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Hibás űrlapadatok."));return actions.order.create({purchase_units:[{description:`SzakiPiac csomag: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),onError:err=>showToast("Hiba a PayPal fizetés során.","error")}).render("#paypal-button-container")}
 
-// ===== KICSERÉLT, SABLON ALAPÚ FUNKCIÓ =====
-function generateAdContent() {
-    const keywordsInput = document.getElementById("gemini-keywords");
-    const keywords = keywordsInput.value;
-    const generateBtn = document.getElementById("generate-ad-btn");
-    const originalBtnContent = generateBtn.innerHTML;
-
-    if (!keywords.trim()) {
-        showToast("Kérlek, adj meg kulcsszavakat!", "error");
+// ===== EREDETI, GEMINI-ALAPÚ (SZERVERHÍVÓ) FUNKCIÓ =====
+async function generateAdContent(){
+    const keywords=document.getElementById("gemini-keywords").value;
+    if(!keywords.trim()){
+        showToast("Kérlek, adj meg kulcsszavakat!","error");
         return;
     }
-
-    // Töltő állapot mutatása a jobb felhasználói élményért
+    const generateBtn=document.getElementById("generate-ad-btn");
+    const originalBtnContent=generateBtn.innerHTML;
     generateBtn.disabled = true;
-    generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>`;
-    
-    // Rövid késleltetés, hogy a "töltés" látható legyen
-    setTimeout(() => {
-        // A kulcsszavakat szétválasztjuk (pl. "szobafestés, Budapest")
-        const parts = keywords.split(',').map(part => part.trim());
-        const szakma = parts[0] || "minőségi szolgáltatás";
-        const capitalizedSzakma = szakma.charAt(0).toUpperCase() + szakma.slice(1);
-        const helyseg = parts[1] || "az ország egész területén";
-
-        // Sablonok definiálása
-        const generaltCim = `${capitalizedSzakma} ${helyseg} területén!`;
-        const generaltLeiras = `Vállalok professzionális ${szakma} munkát ${helyseg} és környékén. Több éves tapasztalattal, garanciával. Keressen bizalommal árajánlatért!`;
-
-        // A form mezőinek kitöltése
-        document.getElementById("cim").value = generaltCim;
-        document.getElementById("leiras").value = generaltLeiras;
-
-        showToast("Javaslat sikeresen generálva!", "success");
-
-        // Gomb visszaállítása
+    generateBtn.innerHTML=`<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>`;
+    try{
+        const{data,error} = await supaClient.functions.invoke("generate-ad",{body:{keywords}});
+        if(error) {
+            throw new Error(error.message || "Ismeretlen hiba a szerveroldali generálás során.");
+        }
+        document.getElementById("cim").value = data.cim;
+        document.getElementById("leiras").value = data.leiras;
+        showToast("Sikeres generálás!","success");
+    } catch(error) {
+        showToast("Hiba a generálás során: " + error.message, "error");
+        console.error("Hiba a Function hívásakor:", error);
+    } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalBtnContent;
-    }, 500); // 0.5 másodperces késleltetés
+    }
 }
 
 async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");let authHTML="";if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Kijelentkezés</button></div>`}else authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Bejelentkezés</a>`;navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Sikeres kijelentkezés!");window.location.hash="#home"}))}
