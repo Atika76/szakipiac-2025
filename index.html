@@ -209,7 +209,7 @@ async function uploadKepek(files){const{data:{session}}=await supaClient.auth.ge
 async function saveAdToDatabase(adData,kepUrlTomb=[]){const{data:{session}}=await supaClient.auth.getSession();if(!session){showToast("Hiba: nem vagy bejelentkezve!","error");return}const csomagNev=document.getElementById("csomag").value.split("_")[0];let napok={alap:7,premium:14,extra:30}[csomagNev]||7;const lejaratiDatum=new Date;lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);const{error}=await supaClient.from("hirdetesek").insert({...adData,user_id:session.user.id,email:session.user.email,csomag:csomagNev,kep_url_tomb:kepUrlTomb,lejárati_datum:lejaratiDatum.toISOString()});if(error){showToast(`Hiba a mentéskor: ${error.message}`,"error");console.error("Supabase insert error:",error)}else{showToast("Hirdetés sikeresen feladva!","success");window.location.hash="#home"}}
 function renderPayPalButton(price,packageName){paypal.Buttons({createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Hibás űrlapadatok."));return actions.order.create({purchase_units:[{description:`SzakiPiac csomag: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),onError:err=>showToast("Hiba a PayPal fizetés során.","error")}).render("#paypal-button-container")}
 
-// ===== KREATÍVABB, VÁLTOZATOSABB SABLON ALAPÚ FUNKCIÓ =====
+// ===== KREATÍV, VÁLTOZATOS SZÖVEGGENERÁTOR (BÖNGÉSZŐBEN FUT) =====
 function generateAdContent() {
     const keywordsInput = document.getElementById("gemini-keywords");
     const keywords = keywordsInput.value;
@@ -227,16 +227,13 @@ function generateAdContent() {
 
     setTimeout(() => {
         // --- SZÖVEGKÉSZLETEK (EZEKET SZABADON BŐVÍTHETED!) ---
-
         const cimKezdetek = ["Professzionális", "Megbízható", "Szakértő", "Gyors és precíz", "Minőségi"];
-        
         const nyitoMondatok = [
             "Vállalom {szakma} munkálatok teljes körű elvégzését {helyseg} területén.",
             "Több éves tapasztalattal rendelkezem {szakma} területén, {helyseg} és környékén.",
             "Ha megbízható szakembert keres {szakma} feladatra, jó helyen jár.",
             "Szolgáltatásaimmal az Ön rendelkezésére állok {helyseg} vonzáskörzetében."
         ];
-
         const erossegek = [
             "rövid határidővel",
             "garanciával",
@@ -246,7 +243,6 @@ function generateAdContent() {
             "precíz, tiszta munkavégzéssel",
             "kizárólag minőségi anyagokkal"
         ];
-
         const zaroMondatok = [
             "Keressen bizalommal a részletekért!",
             "Várom megtisztelő megkeresését!",
@@ -255,31 +251,25 @@ function generateAdContent() {
         ];
 
         // --- LOGIKA ---
-
-        // Kulcsszavak feldolgozása
         const parts = keywords.split(',').map(part => part.trim());
         const szakma = parts[0] || "szolgáltatás";
         const capitalizedSzakma = szakma.charAt(0).toUpperCase() + szakma.slice(1);
         const helyseg = parts[1] || "az Ön otthonában";
 
-        // Véletlenszerű elemek kiválasztása
         const valasztottCimKezdet = cimKezdetek[Math.floor(Math.random() * cimKezdetek.length)];
         const valasztottNyito = nyitoMondatok[Math.floor(Math.random() * nyitoMondatok.length)];
         const valasztottZaro = zaroMondatok[Math.floor(Math.random() * zaroMondatok.length)];
 
-        // Erősségek megkeverése és 2-3 kiválasztása
         const kevertErossegek = erossegek.sort(() => 0.5 - Math.random());
         const valasztottErossegekSzama = Math.floor(Math.random() * 2) + 2; // 2 vagy 3 db
         const valasztottErossegek = kevertErossegek.slice(0, valasztottErossegekSzama).join(", ");
 
-        // Szöveg összeállítása
         const generaltCim = `${valasztottCimKezdet} ${szakma} ${helyseg} területén!`;
         const generaltLeiras = 
             `${valasztottNyito.replace('{szakma}', szakma).replace('{helyseg}', helyseg)} ` +
             `Munkámat ${valasztottErossegek} végzem. ` +
             `${valasztottZaro}`;
 
-        // Mezők kitöltése
         document.getElementById("cim").value = generaltCim;
         document.getElementById("leiras").value = generaltLeiras;
         
