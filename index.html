@@ -129,7 +129,7 @@ const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
 // ===== GEMINI KONFIGURÁCIÓ (FONTOS!) =====
-const GEMINI_API_KEY = "AIzaSyDS_OrtU68jYpdd65Elgw1XWeduW0HNMlE";
+const GEMINI_API_KEY = "AIzaSyDceKSv00eSSieyPhQIWBwCVVQjU2jl8Eg";
 
 // ===== GLOBÁLIS VÁLTOZÓK =====
 let kivalasztottKepek = [];
@@ -227,7 +227,7 @@ async function generateAdContent() {
         return;
     }
     
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyDS_OrtU68jYpdd65Elgw1XWeduW0HNMlE") {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyDceKSv00eSSieyPhQIWBwCVVQjU2jl8Eg") {
         showToast("A Gemini API kulcs nincs beállítva!", "error");
         return;
     }
@@ -281,4 +281,5 @@ window.handleDeleteAd = handleDeleteAd;
 </script>
 </body>
 </html>
+
 
