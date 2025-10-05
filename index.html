@@ -227,7 +227,8 @@ async function generateAdContent() {
         return;
     }
     
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyDceKSv00eSSieyPhQIWBwCVVQjU2jl8Eg") {
+    // A javított ellenőrzés: csak azt nézzük, hogy a kulcs üres-e, nem azt, hogy egyezik-e a placeholderrel.
+    if (!GEMINI_API_KEY) {
         showToast("A Gemini API kulcs nincs beállítva!", "error");
         return;
     }
@@ -238,7 +239,6 @@ async function generateAdContent() {
 
     try {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        // A módosított sor itt van:
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
 
         const prompt = `Írj egy rövid, ütős hirdetési szöveget egy magyar szakembernek a SzakiPiac-2025.hu oldalra. A hirdetés legyen figyelemfelkeltő és bizalmat sugárzó. Készíts egy címet és egy leírást. A válaszod legyen JSON formátumú, a következő kulcsokkal: "cim" és "leiras". A kulcsszavak, amikből dolgoznod kell: "${keywords}"`;
@@ -281,5 +281,3 @@ window.handleDeleteAd = handleDeleteAd;
 </script>
 </body>
 </html>
-
-
