@@ -108,9 +108,6 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script type="module">
-// ===== FONTOS: IDE KELL IMPORTÁLNI A GEMINI KÖNYVTÁRAT =====
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
 // ===== Segédfüggvény YouTube videóhoz =====
 function getYouTubeEmbedUrl(url){if(!url)return null;try{const urlObj=new URL(url);let videoId;if(urlObj.hostname==="youtu.be")videoId=urlObj.pathname.slice(1);else if(urlObj.hostname.includes("youtube.com")&&urlObj.searchParams.has("v"))videoId=urlObj.searchParams.get("v");return videoId?`https://www.youtube.com/embed/${videoId}`:null}catch(e){console.error("Invalid video URL:",e);return null}}
 
@@ -127,9 +124,6 @@ const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "atika.76@windowslive.com";
-
-// ===== GEMINI KONFIGURÁCIÓ (FONTOS!) =====
-const GEMINI_API_KEY = "AIzaSyDceKSv00eSSieyPhQIWBwCVVQjU2jl8Eg";
 
 // ===== GLOBÁLIS VÁLTOZÓK =====
 let kivalasztottKepek = [];
@@ -215,7 +209,7 @@ async function uploadKepek(files){const{data:{session}}=await supaClient.auth.ge
 async function saveAdToDatabase(adData,kepUrlTomb=[]){const{data:{session}}=await supaClient.auth.getSession();if(!session){showToast("Hiba: nem vagy bejelentkezve!","error");return}const csomagNev=document.getElementById("csomag").value.split("_")[0];let napok={alap:7,premium:14,extra:30}[csomagNev]||7;const lejaratiDatum=new Date;lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);const{error}=await supaClient.from("hirdetesek").insert({...adData,user_id:session.user.id,email:session.user.email,csomag:csomagNev,kep_url_tomb:kepUrlTomb,lejárati_datum:lejaratiDatum.toISOString()});if(error){showToast(`Hiba a mentéskor: ${error.message}`,"error");console.error("Supabase insert error:",error)}else{showToast("Hirdetés sikeresen feladva!","success");window.location.hash="#home"}}
 function renderPayPalButton(price,packageName){paypal.Buttons({createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Hibás űrlapadatok."));return actions.order.create({purchase_units:[{description:`SzakiPiac csomag: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),onError:err=>showToast("Hiba a PayPal fizetés során.","error")}).render("#paypal-button-container")}
 
-// ===== KREATÍV, VÁLTOZATOS SZÖVEGGENERÁTOR (GEMINI API-VAL) =====
+// ===== KREATÍV, VÁLTOZATOS SZÖVEGGENERÁTOR (JAVÍTOTT) =====
 async function generateAdContent() {
     const keywordsInput = document.getElementById("gemini-keywords");
     const keywords = keywordsInput.value;
@@ -227,48 +221,43 @@ async function generateAdContent() {
         return;
     }
     
-    // A javított ellenőrzés: csak azt nézzük, hogy a kulcs üres-e, nem azt, hogy egyezik-e a placeholderrel.
-    if (!GEMINI_API_KEY) {
-        showToast("A Gemini API kulcs nincs beállítva!", "error");
-        return;
-    }
-
     // Töltő állapot mutatása
     generateBtn.disabled = true;
     generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>`;
 
     try {
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+        // A Supabase Edge Function meghívása a biztonságos módon
+        const { data, error } = await supaClient.functions.invoke('generate-ad', {
+            body: { keywords: keywords }
+        });
 
-        const prompt = `Írj egy rövid, ütős hirdetési szöveget egy magyar szakembernek a SzakiPiac-2025.hu oldalra. A hirdetés legyen figyelemfelkeltő és bizalmat sugárzó. Készíts egy címet és egy leírást. A válaszod legyen JSON formátumú, a következő kulcsokkal: "cim" és "leiras". A kulcsszavak, amikből dolgoznod kell: "${keywords}"`;
-        
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = await response.text();
-        
-        // A válasz JSON-ként való feldolgozása
-        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const generatedAd = JSON.parse(cleanedText);
+        if (error) {
+            throw error;
+        }
 
-        if (generatedAd.cim && generatedAd.leiras) {
-            document.getElementById("cim").value = generatedAd.cim;
-            document.getElementById("leiras").value = generatedAd.leiras;
+        // A háttérfüggvény által visszaadott esetleges hiba kezelése
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // A sikeresen generált szöveg beillesztése az űrlapba
+        if (data.title && data.description) {
+            document.getElementById("cim").value = data.title;
+            document.getElementById("leiras").value = data.description;
             showToast("AI hirdetés sikeresen generálva!", "success");
         } else {
             throw new Error("A generált válasz formátuma nem megfelelő.");
         }
 
     } catch (error) {
-        console.error("Gemini API hiba:", error);
-        showToast("Hiba történt a generálás során. Próbáld újra!", "error");
+        console.error("Hiba a Supabase function hívásakor:", error);
+        showToast(`Hiba történt a generálás során: ${error.message}`, "error");
     } finally {
         // Gomb visszaállítása
         generateBtn.disabled = false;
         generateBtn.innerHTML = originalBtnContent;
     }
 }
-
 
 async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");let authHTML="";if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Kijelentkezés</button></div>`}else authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Bejelentkezés</a>`;navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Sikeres kijelentkezés!");window.location.hash="#home"}))}
 function showToast(message,type="success"){const toast=document.getElementById("toast-notification");toast.textContent=message;toast.className=`fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 z-[110] ${type==="error"?"bg-red-500":"bg-green-500"}`;toast.classList.remove("translate-x-[120%]");setTimeout(()=>{toast.classList.add("translate-x-[120%]")},4e3)}
@@ -281,4 +270,3 @@ window.handleDeleteAd = handleDeleteAd;
 </script>
 </body>
 </html>
-
