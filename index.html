@@ -67,8 +67,8 @@
       btn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generálás...</span>`;
 
       try {
-        // Supabase Edge Function hívás
-        const response = await fetch("/functions/v1/generate-ad", {
+        // ✅ TELJES SUPABASE URL
+        const response = await fetch("https://bxtpnotswmwrbycvfypz.supabase.co/functions/v1/generate-ad", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ keywords })
@@ -82,10 +82,9 @@
         if (data.cim) document.getElementById("cim").value = data.cim;
         if (data.leiras) document.getElementById("leiras").value = data.leiras;
 
-        alert("✅ AI hirdetés sikeresen generálva!");
       } catch (error) {
         console.error("Hiba:", error);
-        alert("❌ Hiba történt a generálás közben. Ellenőrizd a beállításokat.");
+        alert("❌ Hiba történt a generálás közben. Ellenőrizd a Supabase funkció URL-t és a kulcsot.");
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
