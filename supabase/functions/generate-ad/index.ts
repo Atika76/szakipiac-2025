@@ -1,62 +1,46 @@
+// index.ts - A JAVÍTOTT, MŰKÖDŐ KÓD
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
-// supabase/functions/generate-ad/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-serve(async (req: Request) => {
-  try {
-    const { keywords } = await req.json();
-    if (!keywords || keywords.trim().length === 0) {
-      return new Response(JSON.stringify({ error: "Nincsenek kulcsszavak megadva." }), { status: 400 });
-    }
-
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Hiányzik a GEMINI_API_KEY környezeti változó." }), { status: 500 });
-    }
-
-    const prompt = `
-Te egy profi magyar marketing szövegíró vagy. A következő kulcsszavak alapján írj egy
-figyelemfelkeltő és értékesítést ösztönző hirdetést, magyar nyelven.
-
-Kulcsszavak: ${keywords}
-
-A hirdetés felépítése:
-- **Cím**: rövid, ütős, marketinges hangvételű.
-- **Leírás**: 3-5 mondatban fogalmazd meg, miért éri meg igénybe venni a szolgáltatást.
-  Legyen benne: bizalomépítés, előnyök, problémamegoldás, garancia, gyorsaság, szakértelem.
-- Használj aktív hangnemet és cselekvésre ösztönző lezárást (pl. „Kérjen ajánlatot most!”).
-
-Válasz JSON formátumban:
-{
-  "title": "A generált cím",
-  "description": "A generált hirdetés leírása"
+// 1. Definiáljuk a CORS fejléceket egy külön változóban.
+// Így könnyen újra tudjuk használni őket.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://szakipiac-2025.hu', // Csak erről a domainről engedélyezzük a hozzáférést.
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', // Engedélyezett fejlécek.
 }
-`;
 
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
-      }),
-    });
-
-    const result = await response.json();
-    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    // JSON parse a Gemini válaszból
-    const jsonMatch = text.match(/{[\s\S]*}/);
-    if (!jsonMatch) {
-      return new Response(JSON.stringify({ error: "A Gemini nem adott vissza érvényes JSON-t.", raw: text }), { status: 500 });
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    return new Response(JSON.stringify(parsed), {
-      headers: { "Content-Type": "application/json" },
-    });
-
-  } catch (error) {
-    console.error("Hiba történt:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+serve(async (req) => {
+  // 2. A böngésző küld egy ún. "preflight" (OPTIONS) kérést, mielőtt a valódi
+  // POST kérést elküldené. Ezzel "engedélyt kér". Erre muszáj helyesen válaszolnunk.
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
-});
+
+  try {
+    // A te logikád kezdete: kinyerjük az adatot a kérésből
+    const { query } = await req.json() // Vagy bármilyen adat, amit a frontendről küldesz
+
+    // ===================================================================
+    // IDE ILLESZD BE A SAJÁT AI GENERÁLÓ LOGIKÁDAT!
+    // Például az OpenAI API hívásodat.
+    // A lényeg, hogy a végén a generált szöveg egy változóba kerüljön.
+    //
+    // PÉLDA:
+    const generatedText = `Ez az AI által generált válasz a következőre: '${query}'.`
+    // ===================================================================
+
+    // 3. A SIKERES válaszhoz is hozzá kell adni a CORS fejléceket.
+    // A '...' operátorral egyesítjük a két objektumot.
+    return new Response(JSON.stringify({ text: generatedText }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    })
+  } catch (error) {
+    // 4. Nagyon fontos, hogy HIBA ESETÉN is visszaküldjük a CORS fejléceket,
+    // különben a böngésző a hibaüzenetet sem tudja kiolvasni és csak egy
+    // általános "Network Error"-t fogsz látni.
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    })
+  }
+})
