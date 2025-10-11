@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded",()=>{if(document.getElementById("re
 
 // ===== KONFIGURÁCIÓ =====
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIZMTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
@@ -272,27 +272,4 @@ window.handleDeleteAd = handleDeleteAd;
 </body>
 </html>
 }
-Itt van egy részletesebb leírás a SzakiPiac-2025.hu weboldalról, a megadott `index.html` fájl alapján.
-
-[cite_start]A SzakiPiac-2025.hu egy online piactér, amelynek célja, hogy összekösse a szakembereket a megrendelőkkel Magyarországon[cite: 1]. [cite_start]A platform lehetőséget biztosít a szakembereknek, hogy hirdetéseket tegyenek közzé, és a felhasználóknak, hogy böngésszenek a hirdetések között, és megtalálják a számukra megfelelő szakembert[cite: 1].
-
-### Főbb funkciók
-
-[cite_start]A weboldal egy egyoldalas alkalmazás (SPA - Single Page Application), amely dinamikusan tölti be a különböző tartalmakat, mint például a főoldalt, a rólunk szóló részt, a kapcsolatfelvételi űrlapot és a hirdetésfeltöltő oldalt[cite: 1].
-
-**Hirdetéskezelés:**
-* [cite_start]**Feltöltés:** A felhasználók hirdetéseket tölthetnek fel, amelyekben megadhatják a hirdetés címét, leírását, kategóriáját, árát, és elérhetőségeiket[cite: 1]. [cite_start]Lehetőség van képek és YouTube videók csatolására is[cite: 1].
-* [cite_start]**Csomagok:** Különböző hirdetési csomagok közül lehet választani, mint például "Alap", "Prémium" és "Extra", amelyek különböző számú kép feltöltését és eltérő lejárati időt tesznek lehetővé[cite: 1]. [cite_start]A fizetős csomagok díját PayPal-on keresztül lehet rendezni[cite: 1].
-* **AI Hirdetés Segéd:** Egy mesterséges intelligencia alapú funkció segíti a felhasználókat a hirdetési szöveg (cím és leírás) megírásában. [cite_start]A felhasználónak csak kulcsszavakat kell megadnia, és a rendszer legenerálja a hirdetés szövegét[cite: 1]. [cite_start]Ez a funkció a Supabase Edge Function-ön keresztül működik[cite: 1].
-
-**Felhasználói funkciók:**
-* [cite_start]**Keresés és szűrés:** A főoldalon a látogatók kulcsszó és kategória alapján kereshetnek a hirdetések között[cite: 1].
-* **Regisztráció és bejelentkezés:** A hirdetés feladásához a felhasználóknak regisztrálniuk és bejelentkezniük kell. [cite_start]A hitelesítést a Supabase Auth szolgáltatása kezeli[cite: 1].
-* [cite_start]**Adminisztrációs felület:** Egy adminisztrátori felület is elérhető, ahol a megadott admin e-mail címmel bejelentkezve lehetőség van a hirdetések kezelésére és törlésére[cite: 1].
-
-### Technikai háttér
-
-A weboldal modern webtechnológiákra épül:
-* **Frontend:** A felhasználói felület HTML-ből, CSS-ből és JavaScriptből áll. [cite_start]A stílusozáshoz a Tailwind CSS keretrendszert használja[cite: 1].
-* [cite_start]**Backend:** A háttérszolgáltatásokat a Supabase platform biztosítja, beleértve az adatbázist (hirdetések tárolása), a felhasználókezelést (Auth), a fájltárolást (képek feltöltése), és a szerveroldali logikát (Edge Functions)[cite: 1].
-* [cite_start]**Függőségek:** Az oldal több külső JavaScript könyvtárat is használ, mint például a Supabase klienskönyvtárat, a PayPal SDK-t a fizetéshez, és egy képkompressziós könyvtárat a feltöltött képek optimalizálásához[cite: 1].
+hogy kell használni ezt a kódot?
