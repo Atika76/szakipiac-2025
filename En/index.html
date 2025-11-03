@@ -154,7 +154,7 @@ async function handleRouteChange(){
         await routeHandler();
         if(mainLoader)mainLoader.style.display="none";
         
-        // A DIV ID-k (pl. "rolunk-page") alapján jelenítjük meg az oldalt
+        // JAVÍTÁS: A DIV ID-k (pl. "rolunk-page") alapján jelenítjük meg az oldalt
         if (routeHandler === showRolunkPage) { showPage('rolunk'); }
         else if (routeHandler === showKapcsolatPage) { showPage('kapcsolat'); }
         else if (routeHandler === showFeltoltesPage) { showPage('feltoltes'); }
@@ -240,8 +240,7 @@ async function handleKepKivalasztas(event) { // JAVÍTVA: Angol szöveg
     const maxKepek = parseInt(document.getElementById('max-kepek-szama').textContent);
     if (kivalasztottKepek.length + files.length > maxKepek) {
         showToast(`You can upload a maximum of ${maxKepek} images.`, 'error');
-        event.target.value = '';
-        return;
+        event.target.value = ''; return;
     }
     showToast(`Optimizing images... Please wait.`, 'info');
     const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
@@ -255,8 +254,7 @@ async function handleKepKivalasztas(event) { // JAVÍTVA: Angol szöveg
         event.target.value = '';
         renderKepElonezetek();
     } catch (error) {
-        showToast('Error optimizing images.', 'error');
-        console.error(error);
+        showToast('Error optimizing images.', 'error'); console.error(error);
     }
 }
 
@@ -265,19 +263,13 @@ function kepTorlese(index){kivalasztottKepek.splice(index,1);renderKepElonezetek
 
 async function processAdSubmission() { // JAVÍTVA: Angol szöveg
     const { data: { session } } = await supaClient.auth.getSession();
-    if (!session) {
-        showToast("You must be logged in to post an ad!", 'error');
-        return;
-    }
-    const adData = getAdData();
-    if (!adData) return;
+    if (!session) { showToast("You must be logged in to post an ad!", 'error'); return; }
+    const adData = getAdData(); if (!adData) return;
     showToast('Upload in progress...', 'info');
     try {
         const kepUrlTomb = await uploadKepek(kivalasztottKepek);
         await saveAdToDatabase(adData, kepUrlTomb);
-    } catch (error) {
-        showToast(`An error occurred: ${error.message}`, 'error');
-    }
+    } catch (error) { showToast(`An error occurred: ${error.message}`, 'error'); }
 }
 
 function getAdData(){ // JAVÍTVA: Angol szöveg
@@ -311,8 +303,7 @@ async function generateAdContent() { // JAVÍTVA: Angol szöveg
     const generateBtn = document.getElementById("generate-ad-btn");
     const originalBtnContent = generateBtn.innerHTML;
     if (!keywords.trim()) {
-        showToast("Please enter keywords!", "error");
-        return;
+        showToast("Please enter keywords!", "error"); return;
     }
     generateBtn.disabled = true;
     generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generating...</span>`;
