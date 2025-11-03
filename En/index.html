@@ -85,10 +85,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <div id="home-page" class="page-content"></div>
-                <div id="about-page" class="page-content"></div>
-                <div id="contact-page" class="page-content"></div>
-                <div id="post-page" class="page-content"></div>
-                <div id="auth-page" class="page-content"></div>
+                <div id="rolunk-page" class="page-content"></div> <div id="kapcsolat-page" class="page-content"></div> <div id="feltoltes-page" class="page-content"></div> <div id="auth-page" class="page-content"></div>
                 <div id="admin-page" class="page-content"></div>
             </div>
             <aside class="hidden lg:block space-y-6">
@@ -134,13 +131,13 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
-// ===== ROUTER ÉS FŐ LOGIKA (JAVÍTVA) =====
-// A router KULCSAI és a Függvénynevek is angolra cserélve
+// ===== ROUTER ÉS FŐ LOGIKA (Angolosítva) =====
+// A router KULCSAI angolra cserélve, de az ÉRTÉKEK (a függvénynevek) maradnak ugyanazok!
 const router = {
     '#home': showHomePage, 
-    '#about': showAboutPage, 
-    '#contact': showContactPage, 
-    '#post': showPostPage, 
+    '#about': showRolunkPage, // Link: #about -> Funkció: showRolunkPage
+    '#contact': showKapcsolatPage, // Link: #contact -> Funkció: showKapcsolatPage
+    '#post': showFeltoltesPage, // Link: #post -> Funkció: showFeltoltesPage
     '#auth': showAuthPage, 
     '#admin': showAdminPage
 };
@@ -151,13 +148,17 @@ async function handleRouteChange(){
     const mainLoader=document.getElementById("main-loader");
     if(mainLoader)mainLoader.style.display="flex";
     
-    // Egyszerűsített router hívás
     const routeHandler=router[hash]||router["#home"]; 
     
     try{
-        await routeHandler(); // Meghívja a megfelelő függvényt (pl. showAboutPage)
+        await routeHandler();
         if(mainLoader)mainLoader.style.display="none";
-        showPage(hash.substring(1)); // Megjeleníti a megfelelő ID-jű divet (pl. "about-page")
+        
+        // A DIV ID-k (pl. "rolunk-page") alapján jelenítjük meg az oldalt
+        if (routeHandler === showRolunkPage) { showPage('rolunk'); }
+        else if (routeHandler === showKapcsolatPage) { showPage('kapcsolat'); }
+        else if (routeHandler === showFeltoltesPage) { showPage('feltoltes'); }
+        else { showPage(hash.substring(1)); } // home, auth, admin
 
     }catch(err){console.error(`Error loading page (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}
     
@@ -165,7 +166,7 @@ async function handleRouteChange(){
     document.getElementById("mobile-menu")?.classList.add("hidden")
 }
 
-// ===== OLDALAK MEGJELENÍTÉSE (Angolra fordítva és JAVÍTVA) =====
+// ===== OLDALAK MEGJELENÍTÉSE (Angolra fordítva) =====
 
 async function showHomePage(){
     const container=document.getElementById("home-page");
@@ -174,15 +175,15 @@ async function showHomePage(){
     container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
     await loadHirdetesek()
 }
-async function showAboutPage(){ // JAVÍTVA: Angol szöveg és angol ID
-    document.getElementById("about-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
+async function showRolunkPage(){ // JAVÍTVA: Angol szöveg
+    document.getElementById("rolunk-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
 }
-async function showContactPage(){ // JAVÍTVA: Angol szöveg és angol ID
-    const container=document.getElementById("contact-page");
+async function showKapcsolatPage(){ // JAVÍTVA: Angol szöveg
+    const container=document.getElementById("kapcsolat-page");
     container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Contact</h1><div class="grid md:grid-cols-2 gap-12"><div><h3 class="text-xl font-semibold">Our Contact Info:</h3><p class="mt-4"><b>E-mail:</b> <a href="mailto:szakipiac2025@gmail.com" class="text-green-600">szakipiac2025@gmail.com</a></p></div><div><h3 class="text-xl font-semibold mb-4">Send us a message!</h3><form id="kapcsolat-form" class="space-y-4"><div><label for="kapcsolat-nev">Name:</label><input type="text" id="kapcsolat-nev" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-email">E-mail:</label><input type="email" id="kapcsolat-email" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-uzenet">Message:</label><textarea id="kapcsolat-uzenet" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md"></textarea></div><button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md">Send Message</button></form></div></div></div>`;
     container.querySelector("#kapcsolat-form").addEventListener("submit",e=>{e.preventDefault();showToast("Thank you for your message! (This is a demo.)","info");e.target.reset()})
 }
-async function showAuthPage(){ // JAVÍTVA: Angol szöveg
+async function showAuthPage(){
     const container=document.getElementById("auth-page");
     const{data:{session}}=await supaClient.auth.getSession();
     if(session){container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm text-center"><h1 class="text-2xl font-bold mb-4">You are already logged in.</h1><p class="text-gray-600">${session.user.email}</p></div>`;return}
@@ -200,7 +201,7 @@ async function loadHirdetesek(){
         hirdetesekCache=data;renderHirdetesek(hirdetesekCache)
     }catch(error){if(hirdetesekLista)hirdetesekLista.innerHTML=`<p class="text-center text-red-600">Error loading ads.</p>`}
 }
-async function renderHirdetesek(hirdetesek){ // JAVÍTVA: Teljesen angol
+async function renderHirdetesek(hirdetesek){ // JAVÍTVA: Angol szöveg
     const hirdetesekLista=document.getElementById("hirdetesek-lista");if(!hirdetesekLista)return;
     const{data:{session}}=await supaClient.auth.getSession();
     if(!hirdetesek||hirdetesek.length===0){hirdetesekLista.innerHTML="<p class='text-center text-gray-500'>There are no active ads right now. Be the first!</p>";return}
@@ -209,8 +210,8 @@ async function renderHirdetesek(hirdetesek){ // JAVÍTVA: Teljesen angol
 }
 function szuresAlkalmazasa(){const searchText=document.getElementById("search-input").value.toLowerCase(),category=document.getElementById("category-select").value,filtered=hirdetesekCache.filter(h=>{const matchesText=`${h.cim} ${h.leiras}`.toLowerCase().includes(searchText),matchesCategory=!category||h.kategoria===category;return matchesText&&matchesCategory});renderHirdetesek(filtered)}
 
-async function showPostPage() { // JAVÍTVA: Teljesen angol
-    const container = document.getElementById('post-page');
+async function showFeltoltesPage() { // JAVÍTVA: Angol szöveg
+    const container = document.getElementById('feltoltes-page');
     const { data: { session } } = await supaClient.auth.getSession();
     const loginWarningHTML = !session ? `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 mb-6 rounded-md" role="alert"><p class="font-bold">You must be logged in to post an ad!</p><p>Sign in or register to advertise your services. <a href="#auth" class="nav-link font-bold hover:underline">Click here to sign in!</a></p></div>` : '';
     kivalasztottKepek = [];
@@ -218,9 +219,8 @@ async function showPostPage() { // JAVÍTVA: Teljesen angol
     setupFeltoltesListeners();
 }
 
-// A segédfüggvények (amiket a showFeltoltesPage hív) NEVE MARAD, de a TARTALMUK angol
 function setupFeltoltesListeners(){const container=document.getElementById("feltoltes-page");container.querySelector("#generate-ad-btn").addEventListener("click",generateAdContent);const csomagSelect=container.querySelector("#csomag"),kepInput=container.querySelector("#kep-input"),freeSubmitBtn=container.querySelector("#free-submit-btn");csomagSelect.addEventListener("change",handleCsomagValtas);kepInput.addEventListener("change",handleKepKivalasztas);if(freeSubmitBtn)freeSubmitBtn.addEventListener("click",e=>{e.preventDefault();processAdSubmission()});handleCsomagValtas()}
-async function handleCsomagValtas(){ // JAVÍTVA: Teljesen angol
+async function handleCsomagValtas(){ // JAVÍTVA: Angol szöveg
     const csomagSelect=document.getElementById("csomag");if(!csomagSelect)return;
     const[packageName,price,maxKepek]=csomagSelect.value.split("_");
     document.getElementById("max-kepek-szama").textContent=maxKepek;
@@ -235,12 +235,13 @@ async function handleCsomagValtas(){ // JAVÍTVA: Teljesen angol
     else{freeSubmitSection.style.display="none";paypalContainer.style.display="block";paypalContainer.innerHTML="";renderPayPalButton(price,packageName)}
 }
 
-async function handleKepKivalasztas(event) { // JAVÍTVA: Teljesen angol
+async function handleKepKivalasztas(event) { // JAVÍTVA: Angol szöveg
     const files = Array.from(event.target.files);
     const maxKepek = parseInt(document.getElementById('max-kepek-szama').textContent);
     if (kivalasztottKepek.length + files.length > maxKepek) {
         showToast(`You can upload a maximum of ${maxKepek} images.`, 'error');
-        event.target.value = ''; return;
+        event.target.value = '';
+        return;
     }
     showToast(`Optimizing images... Please wait.`, 'info');
     const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
@@ -254,31 +255,38 @@ async function handleKepKivalasztas(event) { // JAVÍTVA: Teljesen angol
         event.target.value = '';
         renderKepElonezetek();
     } catch (error) {
-        showToast('Error optimizing images.', 'error'); console.error(error);
+        showToast('Error optimizing images.', 'error');
+        console.error(error);
     }
 }
 
 function renderKepElonezetek(){const previewContainer=document.getElementById("kep-elonezetek");if(!previewContainer)return;previewContainer.innerHTML="";kivalasztottKepek.forEach((file,index)=>{const reader=new FileReader;reader.onload=e=>{const previewWrapper=document.createElement("div");previewWrapper.className="relative group aspect-w-1 aspect-h-1";const img=document.createElement("img");img.src=e.target.result;img.className="w-full h-full object-cover rounded-md border-2 border-gray-200";const deleteButton=document.createElement("button");deleteButton.type="button";deleteButton.innerHTML="&times;";deleteButton.className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none";deleteButton.onclick=()=>kepTorlese(index);previewWrapper.appendChild(img);previewWrapper.appendChild(deleteButton);previewContainer.appendChild(previewWrapper)};reader.readAsDataURL(file)})}
 function kepTorlese(index){kivalasztottKepek.splice(index,1);renderKepElonezetek()}
 
-async function processAdSubmission() { // JAVÍTVA: Teljesen angol
+async function processAdSubmission() { // JAVÍTVA: Angol szöveg
     const { data: { session } } = await supaClient.auth.getSession();
-    if (!session) { showToast("You must be logged in to post an ad!", 'error'); return; }
-    const adData = getAdData(); if (!adData) return;
+    if (!session) {
+        showToast("You must be logged in to post an ad!", 'error');
+        return;
+    }
+    const adData = getAdData();
+    if (!adData) return;
     showToast('Upload in progress...', 'info');
     try {
         const kepUrlTomb = await uploadKepek(kivalasztottKepek);
         await saveAdToDatabase(adData, kepUrlTomb);
-    } catch (error) { showToast(`An error occurred: ${error.message}`, 'error'); }
+    } catch (error) {
+        showToast(`An error occurred: ${error.message}`, 'error');
+    }
 }
 
-function getAdData(){ // JAVÍTVA: Teljesen angol
+function getAdData(){ // JAVÍTVA: Angol szöveg
     const cim=document.getElementById("cim").value,leiras=document.getElementById("leiras").value;
     if(!cim||!leiras){showToast("Title and Description fields are required!","error");return null}
     return{cim,leiras,kategoria:document.getElementById("kategoria").value,ar:document.getElementById("ar").value||null,telefonszam:document.getElementById("telefonszam").value||null,weboldal:document.getElementById("weboldal").value||null,video_url:document.getElementById("video_url").value||null}
 }
 async function uploadKepek(files){const{data:{session}}=await supaClient.auth.getSession();if(!session||files.length===0)return[];const uploadPromises=files.map(file=>{const fileName=`${session.user.id}/${Date.now()}_${file.name}`;return supaClient.storage.from("hirdetes-kepek").upload(fileName,file)}),results=await Promise.all(uploadPromises),urls=[];for(const result of results){if(result.error){console.error("Error uploading image:",result.error.message);throw new Error("Error uploading image.")}const{data}=supaClient.storage.from("hirdetes-kepek").getPublicUrl(result.data.path);urls.push(data.publicUrl)}return urls}
-async function saveAdToDatabase(adData,kepUrlTomb=[]){ // JAVÍTVA: Teljesen angol
+async function saveAdToDatabase(adData,kepUrlTomb=[]){ // JAVÍTVA: Angol szöveg
     const{data:{session}}=await supaClient.auth.getSession();
     if(!session){showToast("Error: Not logged in!","error");return}
     const csomagNev=document.getElementById("csomag").value.split("_")[0];
@@ -288,7 +296,7 @@ async function saveAdToDatabase(adData,kepUrlTomb=[]){ // JAVÍTVA: Teljesen ang
     if(error){showToast(`Error saving: ${error.message}`,"error");console.error("Supabase insert error:",error)}
     else{showToast("Ad posted successfully!","success");window.location.hash="#home"}
 }
-function renderPayPalButton(price,packageName){ // JAVÍTVA: Teljesen angol
+function renderPayPalButton(price,packageName){ // JAVÍTVA: Angol szöveg
     paypal.Buttons({
         createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Invalid form data."));
         return actions.order.create({purchase_units:[{description:`SzakiPiac package: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},
@@ -297,13 +305,14 @@ function renderPayPalButton(price,packageName){ // JAVÍTVA: Teljesen angol
     }).render("#paypal-button-container")
 }
 
-async function generateAdContent() { // JAVÍTVA: Teljesen angol
+async function generateAdContent() { // JAVÍTVA: Angol szöveg
     const keywordsInput = document.getElementById("gemini-keywords");
     const keywords = keywordsInput.value;
     const generateBtn = document.getElementById("generate-ad-btn");
     const originalBtnContent = generateBtn.innerHTML;
     if (!keywords.trim()) {
-        showToast("Please enter keywords!", "error"); return;
+        showToast("Please enter keywords!", "error");
+        return;
     }
     generateBtn.disabled = true;
     generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generating...</span>`;
@@ -329,8 +338,7 @@ async function generateAdContent() { // JAVÍTVA: Teljesen angol
     }
 }
 
-
-async function handleAuthUI(){ // JAVÍTVA: Teljesen angol
+async function handleAuthUI(){ // JAVÍTVA: Angol szöveg
     const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");
     let authHTML="";
     if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Sign Out</button></div>`}
@@ -340,7 +348,7 @@ async function handleAuthUI(){ // JAVÍTVA: Teljesen angol
 }
 function showToast(message,type="success"){const toast=document.getElementById("toast-notification");toast.textContent=message;toast.className=`fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 z-[110] ${type==="error"?"bg-red-500":"bg-green-500"}`;toast.classList.remove("translate-x-[120%]");setTimeout(()=>{toast.classList.add("translate-x-[120%]")},4e3)}
 window.openLightbox=imageUrl=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-img").src=imageUrl;lightbox.classList.remove("hidden");setTimeout(()=>lightbox.classList.remove("opacity-0"),10)};
-async function handleDeleteAd(adId){ // JAVÍTVA: Teljesen angol
+async function handleDeleteAd(adId){ // JAVÍTVA: Angol szöveg
     if(!confirm("Are you sure you want to delete this ad? This action cannot be undone."))return;
     try{
         const{data:ad,error:selectError}=await supaClient.from("hirdetesek").select("kep_url_tomb,weboldal").eq("id",adId).single();
@@ -352,7 +360,7 @@ async function handleDeleteAd(adId){ // JAVÍTVA: Teljesen angol
         loadHirdetesek()
     }catch(error){showToast(`Error deleting: ${error.message}`,"error");console.error("Delete ad error:",error)}
 }
-async function showAdminPage(){ // JAVÍTVA: Teljesen angol
+async function showAdminPage(){ // JAVÍTVA: Angol szöveg
     const container=document.getElementById("admin-page");
     container.innerHTML=`<div class="flex justify-center py-10"><div class="loader"></div></div>`;
     const{data:{session}}=await supaClient.auth.getSession();
@@ -380,7 +388,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 // Globális függvények
 window.handleDeleteAd = handleDeleteAd;
-window.kepTorlese = kepTorlese; // FONTOS: Elérhetővé tesszük a HTML számára
+window.kepTorlese = kepTorlese;
 
 </script>
 </body>
