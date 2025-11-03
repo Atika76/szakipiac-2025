@@ -233,7 +233,7 @@ async function generateAdContent() {
     try {
         // A Supabase Edge Function meghívása a biztonságos módon
         const { data, error } = await supaClient.functions.invoke('generate-ad', {
-            body: { query: keywords } // Itt javítottam 'keywords' helyett 'query'-re
+            body: { query: keywords }
         });
 
         if (error) {
