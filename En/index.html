@@ -55,9 +55,9 @@
                 </div>
                 <div class="hidden md:flex items-center space-x-1">
                     <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
-                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Post an Ad</a>
+                    <a href="#about" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
+                    <a href="#contact" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                    <a href="#post" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Post an Ad</a>
                 </div>
                 <div id="nav-auth-section" class="hidden md:block"></div>
                 <div class="md:hidden">
@@ -67,9 +67,9 @@
             <div id="mobile-menu" class="md:hidden hidden">
                 <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                     <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Home</a>
-                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
-                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium">Post an Ad</a>
+                    <a href="#about" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
+                    <a href="#contact" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
+                    <a href="#post" class="nav-link bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium">Post an Ad</a>
                     <div id="mobile-nav-auth-section" class="pt-4 mt-4 border-t border-gray-200"></div>
                 </div>
             </div>
@@ -85,10 +85,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <div id="home-page" class="page-content"></div>
-                <div id="rolunk-page" class="page-content"></div>
-                <div id="kapcsolat-page" class="page-content"></div>
-                <div id="feltoltes-page" class="page-content"></div>
-                <div id="auth-page" class="page-content"></div>
+                <div id="rolunk-page" class="page-content"></div> <div id="kapcsolat-page" class="page-content"></div> <div id="feltoltes-page" class="page-content"></div> <div id="auth-page" class="page-content"></div>
                 <div id="admin-page" class="page-content"></div>
             </div>
             <aside class="hidden lg:block space-y-6">
@@ -117,7 +114,7 @@
 function getYouTubeEmbedUrl(url){if(!url)return null;try{const urlObj=new URL(url);let videoId;if(urlObj.hostname==="youtu.be")videoId=urlObj.pathname.slice(1);else if(urlObj.hostname.includes("youtube.com")&&urlObj.searchParams.has("v"))videoId=urlObj.searchParams.get("v");return videoId?`https://www.youtube.com/embed/${videoId}`:null}catch(e){console.error("Invalid video URL:",e);return null}}
 
 // ===== Reklám slider (Angol) =====
-const reklamok=[{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png",alt:"Advertise on SzakiPiac-2025!"},{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png",alt:"SzakiPiac-2025: Advertise, find, work!"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",alt:"Alza.hu – Shop online!"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",alt:"eMAG – Huge selection!"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",alt:"Temu"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png",alt:"Lidl"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png",alt:"Aldi"}];let reklamIndex=0,reklamTimer=null;function renderReklamSlide(index){const slides=document.getElementById("reklam-slides");if(!slides||!reklamok.length)return;const ad=reklamok[index],linkClass=ad.url.startsWith("#")?"nav-link":"";slides.innerHTML=`<a href="${ad.url}" class="${linkClass} block w-full h-[250px] transition-all duration-500" ${!linkClass?'target="_blank" rel="noopener sponsored"':""}><img src="${ad.img}" alt="${ad.alt||""}" class="w-full h-full object-contain p-2 bg-white rounded-md shadow" draggable="false"></a>`;const dots=document.getElementById("reklam-dots");if(dots)dots.innerHTML=reklamok.map((_,i)=>`<button class="w-3 h-3 rounded-full border-2 ${i===index?"bg-green-600 border-green-700":"bg-white border-gray-400"}" onclick="showReklamSlide(${i})" aria-label="Ad ${i+1}"></button>`).join("")}
+const reklamok=[{url:"#post",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png",alt:"Advertise on SzakiPiac-2025!"},{url:"#post",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png",alt:"SzakiPiac-2025: Advertise, find, work!"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",alt:"Alza.hu – Shop online!"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",alt:"eMAG – Huge selection!"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",alt:"Temu"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png",alt:"Lidl"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png",alt:"Aldi"}];let reklamIndex=0,reklamTimer=null;function renderReklamSlide(index){const slides=document.getElementById("reklam-slides");if(!slides||!reklamok.length)return;const ad=reklamok[index],linkClass=ad.url.startsWith("#")?"nav-link":"";slides.innerHTML=`<a href="${ad.url}" class="${linkClass} block w-full h-[250px] transition-all duration-500" ${!linkClass?'target="_blank" rel="noopener sponsored"':""}><img src="${ad.img}" alt="${ad.alt||""}" class="w-full h-full object-contain p-2 bg-white rounded-md shadow" draggable="false"></a>`;const dots=document.getElementById("reklam-dots");if(dots)dots.innerHTML=reklamok.map((_,i)=>`<button class="w-3 h-3 rounded-full border-2 ${i===index?"bg-green-600 border-green-700":"bg-white border-gray-400"}" onclick="showReklamSlide(${i})" aria-label="Ad ${i+1}"></button>`).join("")}
 function showReklamSlide(index){reklamIndex=index;renderReklamSlide(reklamIndex);resetReklamTimer()}
 function reklamPrev(){reklamIndex=(reklamIndex-1+reklamok.length)%reklamok.length;renderReklamSlide(reklamIndex);resetReklamTimer()}
 function reklamNext(){reklamIndex=(reklamIndex+1)%reklamok.length;renderReklamSlide(reklamIndex);resetReklamTimer()}
@@ -134,16 +131,46 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
-// ===== ROUTER ÉS FŐ LOGIKA (Változatlan, az eredeti magyarral) =====
-// A linkek az URL-ben (#home, #rolunk) megegyeznek a router kulcsaival
-const router = {'#home': showHomePage, '#rolunk': showRolunkPage, '#kapcsolat': showKapcsolatPage, '#feltoltes': showFeltoltesPage, '#auth': showAuthPage, '#admin': showAdminPage};
+// ===== ROUTER ÉS FŐ LOGIKA (Angolosítva) =====
+// A router KULCSAI angolra cserélve, de az ÉRTÉKEK (a függvénynevek) maradnak ugyanazok!
+const router = {
+    '#home': showHomePage, 
+    '#about': showRolunkPage, // Link: #about -> Funkció: showRolunkPage
+    '#contact': showKapcsolatPage, // Link: #contact -> Funkció: showKapcsolatPage
+    '#post': showFeltoltesPage, // Link: #post -> Funkció: showFeltoltesPage
+    '#auth': showAuthPage, 
+    '#admin': showAdminPage
+};
 function showPage(pageId){document.querySelectorAll(".page-content").forEach(p=>{if(p.id!=="main-loader")p.style.display="none"});const activePage=document.getElementById(pageId+"-page");if(activePage)activePage.style.display="block"}
-async function handleRouteChange(){const hash=window.location.hash||"#home";document.querySelectorAll(".page-content").forEach(p=>p.style.display="none");const mainLoader=document.getElementById("main-loader");if(mainLoader)mainLoader.style.display="flex";const routeHandler=router[hash]||router["#home"];try{await routeHandler();if(mainLoader)mainLoader.style.display="none";showPage(hash.substring(1))}catch(err){console.error(`Hiba az oldal betöltésekor (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("bg-gray-100",link.getAttribute("href")===hash));document.getElementById("mobile-menu")?.classList.add("hidden")}
+async function handleRouteChange(){
+    const hash=window.location.hash.split('/')[0]||"#home";
+    document.querySelectorAll(".page-content").forEach(p=>p.style.display="none");
+    const mainLoader=document.getElementById("main-loader");
+    if(mainLoader)mainLoader.style.display="flex";
+    
+    const routeHandler=router[hash]||router["#home"]; 
+    
+    try{
+        await routeHandler(); // Meghívja a megfelelő függvényt (pl. showRolunkPage)
+        if(mainLoader)mainLoader.style.display="none";
+        
+        // JAVÍTÁS: A DIV ID-k (pl. "rolunk-page") alapján jelenítjük meg az oldalt
+        if (routeHandler === showRolunkPage) { showPage('rolunk'); }
+        else if (routeHandler === showKapcsolatPage) { showPage('kapcsolat'); }
+        else if (routeHandler === showFeltoltesPage) { showPage('feltoltes'); }
+        else { showPage(hash.substring(1)); } // home, auth, admin
 
-// ===== OLDALAK MEGJELENÍTÉSE (MINDEN ANGOLRA FORDÍTVA) =====
+    }catch(err){console.error(`Error loading page (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}
+    
+    document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("bg-gray-100",link.getAttribute("href")===hash));
+    document.getElementById("mobile-menu")?.classList.add("hidden")
+}
+
+// ===== OLDALAK MEGJELENÍTÉSE (Angolra fordítva) =====
+
 async function showHomePage(){
     const container=document.getElementById("home-page");
-    container.innerHTML=`<div class="text-center mb-8"><h1 class="text-4xl font-bold">Welcome to <span class="text-green-600">SzakiPiac-2025.hu</span>!</h1><p class="mt-3 text-lg text-gray-500">Find trusted professionals, or post an ad to get new clients!</p></div><div class="mb-12"><a href="#feltoltes" class="nav-link block group"><img src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png" alt="Advertise with us!" class="w-full rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-300"></a></div><div class="bg-white p-6 rounded-lg shadow-sm mb-8"><h2 class="text-2xl font-bold text-center mb-4">Browse the listings</h2><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Search by trade or name..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">All Categories</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div></div><div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
+    container.innerHTML=`<div class="text-center mb-8"><h1 class="text-4xl font-bold">Welcome to <span class="text-green-600">SzakiPiac-2025.hu</span>!</h1><p class="mt-3 text-lg text-gray-500">Find trusted professionals, or post an ad to get new clients!</p></div><div class="mb-12"><a href="#post" class="nav-link block group"><img src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png" alt="Advertise with us!" class="w-full rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-300"></a></div><div class="bg-white p-6 rounded-lg shadow-sm mb-8"><h2 class="text-2xl font-bold text-center mb-4">Browse the listings</h2><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Search by trade or name..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">All Categories</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div></div><div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
     container.querySelector("#search-input").addEventListener("input",szuresAlkalmazasa);
     container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
     await loadHirdetesek()
@@ -165,6 +192,7 @@ async function showAuthPage(){ // JAVÍTVA: Teljesen angol
     authForm.addEventListener("submit",async e=>{e.preventDefault();const email=authForm.email.value,password=authForm.password.value;try{const{error}=isLoginMode?await supaClient.auth.signInWithPassword({email,password}):await supaClient.auth.signUp({email,password});if(error)throw error;showToast(isLoginMode?"Signed in successfully!":"Signed up successfully! Please confirm your email.");window.location.hash="#home"}catch(error){showToast("Error: "+error.message,"error")}});
     container.querySelector("#switch-auth-mode").addEventListener("click",e=>{e.preventDefault();isLoginMode=!isLoginMode;container.querySelector("#auth-title").textContent=isLoginMode?"Sign In":"Sign Up";container.querySelector("#auth-submit-btn").textContent=isLoginMode?"Sign In":"Sign Up";e.target.textContent=isLoginMode?"Don't have an account? Sign up!":"Already have an account? Sign in!"})
 }
+
 async function loadHirdetesek(){
     const hirdetesekLista=document.getElementById("hirdetesek-lista");
     try{
@@ -191,7 +219,6 @@ async function showFeltoltesPage() { // JAVÍTVA: Teljesen angol
     setupFeltoltesListeners();
 }
 
-// A segédfüggvények (amiket a showFeltoltesPage hív) NEVE MARAD, de a TARTALMUK angol
 function setupFeltoltesListeners(){const container=document.getElementById("feltoltes-page");container.querySelector("#generate-ad-btn").addEventListener("click",generateAdContent);const csomagSelect=container.querySelector("#csomag"),kepInput=container.querySelector("#kep-input"),freeSubmitBtn=container.querySelector("#free-submit-btn");csomagSelect.addEventListener("change",handleCsomagValtas);kepInput.addEventListener("change",handleKepKivalasztas);if(freeSubmitBtn)freeSubmitBtn.addEventListener("click",e=>{e.preventDefault();processAdSubmission()});handleCsomagValtas()}
 async function handleCsomagValtas(){ // JAVÍTVA: Teljesen angol
     const csomagSelect=document.getElementById("csomag");if(!csomagSelect)return;
@@ -242,7 +269,7 @@ async function processAdSubmission() { // JAVÍTVA: Teljesen angol
     try {
         const kepUrlTomb = await uploadKepek(kivalasztottKepek);
         await saveAdToDatabase(adData, kepUrlTomb);
-    } catch (error) { showToast(`An error occurred: ${error.message}`, 'error'); }
+    } catch (error) {showToast(`An error occurred: ${error.message}`, 'error');}
 }
 
 function getAdData(){ // JAVÍTVA: Teljesen angol
@@ -336,11 +363,24 @@ async function showAdminPage(){ // JAVÍTVA: Teljesen angol
         container.innerHTML=`<h2 class="text-2xl font-bold mb-4">Admin - Manage Ads</h2><div class="bg-white rounded-lg shadow-sm overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr><th class="p-4">Title</th><th class="p-4">User</th><th class="p-4">Expires</th><th class="p-4">Actions</th></tr></thead><tbody>${hirdetesek.map(h=>`<tr class="border-b"><td class="p-4">${h.cim}</td><td class="p-4">${h.email}</td><td class="p-4 whitespace-nowrap">${h.lejárati_datum?(new Date(h.lejárati_datum)).toLocaleDateString("en-GB"):"N/A"}</td><td class="p-4 space-x-2"><button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Delete</button></td></tr>`).join("")}</tbody></table></div>`
     }catch(err){container.innerHTML=`<p class="text-red-500 text-center">Error loading ads: ${err.message}</p>`}
 }
-document.addEventListener("DOMContentLoaded",()=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-close").addEventListener("click",()=>{lightbox.classList.add("opacity-0");setTimeout(()=>lightbox.classList.add("hidden"),300)});handleAuthUI();handleRouteChange();window.addEventListener("hashchange",handleRouteChange);document.querySelectorAll(".nav-link, .nav-link-logo").forEach(link=>{link.addEventListener("click",e=>{e.preventDefault();window.location.hash=(new URL(link.href)).hash})});document.getElementById("mobile-menu-button").addEventListener("click",()=>{document.getElementById("mobile-menu")?.classList.toggle("hidden")});supaClient.auth.onAuthStateChange((event,session)=>{handleAuthUI();if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') handleRouteChange();})});
 
-// Globális függvények elérhetővé tétele, ha szükségesek a HTML-ben (onclick)
+document.addEventListener("DOMContentLoaded",()=>{
+    const lightbox=document.getElementById("lightbox");
+    document.getElementById("lightbox-close").addEventListener("click",()=>{lightbox.classList.add("opacity-0");setTimeout(()=>lightbox.classList.add("hidden"),300)});
+    
+    handleAuthUI();
+    handleRouteChange();
+    window.addEventListener("hashchange",handleRouteChange);
+    
+    document.querySelectorAll(".nav-link, .nav-link-logo").forEach(link=>{link.addEventListener("click",e=>{e.preventDefault();window.location.hash=(new URL(link.href)).hash})});
+    document.getElementById("mobile-menu-button").addEventListener("click",()=>{document.getElementById("mobile-menu")?.classList.toggle("hidden")});
+    
+    supaClient.auth.onAuthStateChange((event,session)=>{handleAuthUI();if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') handleRouteChange();})
+});
+
+// Globális függvények
 window.handleDeleteAd = handleDeleteAd;
-window.kepTorlese = kepTorlese; // FONTOS: Elérhetővé tesszük a HTML számára
+window.kepTorlese = kepTorlese;
 
 </script>
 </body>
