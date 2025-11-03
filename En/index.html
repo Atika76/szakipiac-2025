@@ -85,7 +85,10 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <div id="home-page" class="page-content"></div>
-                <div id="rolunk-page" class="page-content"></div> <div id="kapcsolat-page" class="page-content"></div> <div id="feltoltes-page" class="page-content"></div> <div id="auth-page" class="page-content"></div>
+                <div id="about-page" class="page-content"></div>
+                <div id="contact-page" class="page-content"></div>
+                <div id="post-page" class="page-content"></div>
+                <div id="auth-page" class="page-content"></div>
                 <div id="admin-page" class="page-content"></div>
             </div>
             <aside class="hidden lg:block space-y-6">
@@ -131,13 +134,13 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
-// ===== ROUTER ÉS FŐ LOGIKA (Angolosítva) =====
-// A router KULCSAI angolra cserélve, de az ÉRTÉKEK (a függvénynevek) maradnak ugyanazok!
+// ===== ROUTER ÉS FŐ LOGIKA (JAVÍTVA) =====
+// A router KULCSAI és a Függvénynevek is angolra cserélve
 const router = {
     '#home': showHomePage, 
-    '#about': showRolunkPage, // Link: #about -> Funkció: showRolunkPage
-    '#contact': showKapcsolatPage, // Link: #contact -> Funkció: showKapcsolatPage
-    '#post': showFeltoltesPage, // Link: #post -> Funkció: showFeltoltesPage
+    '#about': showAboutPage, 
+    '#contact': showContactPage, 
+    '#post': showPostPage, 
     '#auth': showAuthPage, 
     '#admin': showAdminPage
 };
@@ -148,17 +151,13 @@ async function handleRouteChange(){
     const mainLoader=document.getElementById("main-loader");
     if(mainLoader)mainLoader.style.display="flex";
     
+    // Egyszerűsített router hívás
     const routeHandler=router[hash]||router["#home"]; 
     
     try{
-        await routeHandler(); // Meghívja a megfelelő függvényt (pl. showRolunkPage)
+        await routeHandler(); // Meghívja a megfelelő függvényt (pl. showAboutPage)
         if(mainLoader)mainLoader.style.display="none";
-        
-        // JAVÍTÁS: A DIV ID-k (pl. "rolunk-page") alapján jelenítjük meg az oldalt
-        if (routeHandler === showRolunkPage) { showPage('rolunk'); }
-        else if (routeHandler === showKapcsolatPage) { showPage('kapcsolat'); }
-        else if (routeHandler === showFeltoltesPage) { showPage('feltoltes'); }
-        else { showPage(hash.substring(1)); } // home, auth, admin
+        showPage(hash.substring(1)); // Megjeleníti a megfelelő ID-jű divet (pl. "about-page")
 
     }catch(err){console.error(`Error loading page (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}
     
@@ -166,7 +165,7 @@ async function handleRouteChange(){
     document.getElementById("mobile-menu")?.classList.add("hidden")
 }
 
-// ===== OLDALAK MEGJELENÍTÉSE (Angolra fordítva) =====
+// ===== OLDALAK MEGJELENÍTÉSE (Angolra fordítva és JAVÍTVA) =====
 
 async function showHomePage(){
     const container=document.getElementById("home-page");
@@ -175,15 +174,15 @@ async function showHomePage(){
     container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
     await loadHirdetesek()
 }
-async function showRolunkPage(){ // JAVÍTVA: Teljesen angol
-    document.getElementById("rolunk-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
+async function showAboutPage(){ // JAVÍTVA: Angol szöveg és angol ID
+    document.getElementById("about-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
 }
-async function showKapcsolatPage(){ // JAVÍTVA: Teljesen angol
-    const container=document.getElementById("kapcsolat-page");
+async function showContactPage(){ // JAVÍTVA: Angol szöveg és angol ID
+    const container=document.getElementById("contact-page");
     container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Contact</h1><div class="grid md:grid-cols-2 gap-12"><div><h3 class="text-xl font-semibold">Our Contact Info:</h3><p class="mt-4"><b>E-mail:</b> <a href="mailto:szakipiac2025@gmail.com" class="text-green-600">szakipiac2025@gmail.com</a></p></div><div><h3 class="text-xl font-semibold mb-4">Send us a message!</h3><form id="kapcsolat-form" class="space-y-4"><div><label for="kapcsolat-nev">Name:</label><input type="text" id="kapcsolat-nev" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-email">E-mail:</label><input type="email" id="kapcsolat-email" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-uzenet">Message:</label><textarea id="kapcsolat-uzenet" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md"></textarea></div><button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md">Send Message</button></form></div></div></div>`;
     container.querySelector("#kapcsolat-form").addEventListener("submit",e=>{e.preventDefault();showToast("Thank you for your message! (This is a demo.)","info");e.target.reset()})
 }
-async function showAuthPage(){ // JAVÍTVA: Teljesen angol
+async function showAuthPage(){ // JAVÍTVA: Angol szöveg
     const container=document.getElementById("auth-page");
     const{data:{session}}=await supaClient.auth.getSession();
     if(session){container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm text-center"><h1 class="text-2xl font-bold mb-4">You are already logged in.</h1><p class="text-gray-600">${session.user.email}</p></div>`;return}
@@ -210,8 +209,8 @@ async function renderHirdetesek(hirdetesek){ // JAVÍTVA: Teljesen angol
 }
 function szuresAlkalmazasa(){const searchText=document.getElementById("search-input").value.toLowerCase(),category=document.getElementById("category-select").value,filtered=hirdetesekCache.filter(h=>{const matchesText=`${h.cim} ${h.leiras}`.toLowerCase().includes(searchText),matchesCategory=!category||h.kategoria===category;return matchesText&&matchesCategory});renderHirdetesek(filtered)}
 
-async function showFeltoltesPage() { // JAVÍTVA: Teljesen angol
-    const container = document.getElementById('feltoltes-page');
+async function showPostPage() { // JAVÍTVA: Teljesen angol
+    const container = document.getElementById('post-page');
     const { data: { session } } = await supaClient.auth.getSession();
     const loginWarningHTML = !session ? `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 mb-6 rounded-md" role="alert"><p class="font-bold">You must be logged in to post an ad!</p><p>Sign in or register to advertise your services. <a href="#auth" class="nav-link font-bold hover:underline">Click here to sign in!</a></p></div>` : '';
     kivalasztottKepek = [];
@@ -219,6 +218,7 @@ async function showFeltoltesPage() { // JAVÍTVA: Teljesen angol
     setupFeltoltesListeners();
 }
 
+// A segédfüggvények (amiket a showFeltoltesPage hív) NEVE MARAD, de a TARTALMUK angol
 function setupFeltoltesListeners(){const container=document.getElementById("feltoltes-page");container.querySelector("#generate-ad-btn").addEventListener("click",generateAdContent);const csomagSelect=container.querySelector("#csomag"),kepInput=container.querySelector("#kep-input"),freeSubmitBtn=container.querySelector("#free-submit-btn");csomagSelect.addEventListener("change",handleCsomagValtas);kepInput.addEventListener("change",handleKepKivalasztas);if(freeSubmitBtn)freeSubmitBtn.addEventListener("click",e=>{e.preventDefault();processAdSubmission()});handleCsomagValtas()}
 async function handleCsomagValtas(){ // JAVÍTVA: Teljesen angol
     const csomagSelect=document.getElementById("csomag");if(!csomagSelect)return;
@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 // Globális függvények
 window.handleDeleteAd = handleDeleteAd;
-window.kepTorlese = kepTorlese;
+window.kepTorlese = kepTorlese; // FONTOS: Elérhetővé tesszük a HTML számára
 
 </script>
 </body>
