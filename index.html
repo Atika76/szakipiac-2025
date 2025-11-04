@@ -40,7 +40,7 @@
 <body class="bg-gray-50 text-gray-800">
 
     <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="container mx-auto px-2 sm:px-4 lg:px-6">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
@@ -238,7 +238,7 @@ async function generateAdContent() {
     const originalBtnContent = generateBtn.innerHTML;
 
     if (!keywords.trim()) {
-        showToast("Kérlek, adj meg kulcsszavakat!", "error");
+        showToast("Kérlek, adj meg kulcsszavakakat!", "error");
         return;
     }
     
