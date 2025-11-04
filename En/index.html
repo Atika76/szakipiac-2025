@@ -1,129 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SzakiPiac-2025.hu - Find Trusted Pros!</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SzakiPiac-2025.hu - Find Trusted Pros!</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="shortcut icon" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://www.paypal.com/sdk/js?client-id=AQsaQCLj0og2wsfMoDKAqxJieD2cgXwWq5cssAJCJbO2KoYE8LGHCREyR4vMzMfKZK68qw6EY7IAxMYF&currency=HUF"></script>
-    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="shortcut icon" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AQsaQCLj0og2wsfMoDKAqxJieD2cgXwWq5cssAJCJbO2KoYE8LGHCREyR4vMzMfKZK68qw6EY7IAxMYF&currency=HUF"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
-        .page-content { display: none; }
-        .loader, .gemini-loader { border-radius: 50%; animation: spin 1s linear infinite; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2d3748; width: 40px; height: 40px; }
-        .gemini-loader { border: 2px solid #f3f3f3; border-top: 2px solid #4f46e5; width: 16px; height: 16px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .lightbox {
-            transition: opacity 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
+        .page-content { display: none; }
+        .loader, .gemini-loader { border-radius: 50%; animation: spin 1s linear infinite; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2d3748; width: 40px; height: 40px; }
+        .gemini-loader { border: 2px solid #f3f3f3; border-top: 2px solid #4f46e5; width: 16px; height: 16px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .lightbox {
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        .aspect-w-16 { position: relative; padding-bottom: 56.25%; }
-        .aspect-h-9 > iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    </style>
+        .aspect-w-16 { position: relative; padding-bottom: 56.25%; }
+        .aspect-h-9 > iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
-                        <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="SzakiPiac Logo">
-                        <span>SzakiPiac-2025.hu</span>
-                    </a>
-                </div>
-                                <div class="hidden md:flex items-center space-x-4">
-                    <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
-                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Post an Ad</a>
-                </div>
-                
-                <div class="flex items-center gap-4">
-                    <div id="nav-auth-section" class="hidden md:block"></div>
-                
-                    <div class="hidden md:block text-sm">
-                        <a href="/index.html#home" class="text-gray-600 hover:underline">HU</a>
-                        <span class="opacity-60 mx-1">|</span>
-                        <span class="font-bold text-gray-900">EN</span>
-                    </div>
-                    
-                    <div class="md:hidden">
-                        <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
-                    </div>
-        _D     </div>
-                </div>
-            <div id="mobile-menu" class="md:hidden hidden">
-                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                    <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Home</a>
-                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
-                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium">Post an Ad</a>
-                    
-                    <div class="pt-4 mt-4 border-t border-gray-200">
-                        <div class="flex justify-center items-center text-sm gap-4">
-                            <a href="/index.html#home" class="text-gray-600 hover:underline">HU</a>
-                            <span class="opacity-60 mx-1">|</span>
-                            <span class="font-bold text-gray-900">EN</span>
-                        </div>
-                    </div>
-                    <div id="mobile-nav-auth-section" class="pt-4 mt-2"></div>
-                    </div>
-            </div>
-        </nav>
-    </header>
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
+                        <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="SzakiPiac Logo">
+                        <span>SzakiPiac-2025.hu</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">About Us</a>
+                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                    <a href="#feltoltes" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Post an Ad</a>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div id="nav-auth-section" class="hidden md:block"></div>
+                
+                    <div class="hidden md:block text-sm">
+                        <a href="/index.html#home" class="text-gray-600 hover:underline">HU</a>
+                        <span class="opacity-60 mx-1">|</span>
+                        <span class="font-bold text-gray-900">EN</span>
+                    </div>
+                    
+                    <div class="md:hidden">
+                        <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
+                    </div>
+                </div>
+                </div>
+            <div id="mobile-menu" class="md:hidden hidden">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Home</a>
+                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">About Us</a>
+                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Contact</a>
+                    <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium">Post an Ad</a>
+                    
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <div class="flex justify-center items-center text-sm gap-4">
+                            <a href="/index.html#home" class="text-gray-600 hover:underline">HU</a>
+                            <span class="opacity-60 mx-1">|</span>
+                            <span class="font-bold text-gray-900">EN</span>
+                        </div>
+                    </div>
+                    <div id="mobile-nav-auth-section" class="pt-4 mt-2"></div>
+                    </div>
+            </div>
+        </nav>
+    </header>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <div id="main-loader" class="page-content flex justify-center items-center py-20" style="display: none;">
-            <div class="loader"></div>
-        </div>
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div id="main-loader" class="page-content flex justify-center items-center py-20" style="display: none;">
+            <div class="loader"></div>
+        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <div id="home-page" class="page-content"></div>
-                <div id="rolunk-page" class="page-content"></div>
-                <div id="kapcsolat-page" class="page-content"></div>
-                <div id="feltoltes-page" class="page-content"></div>
-                <div id="auth-page" class="page-content"></div>
-                <div id="admin-page" class="page-content"></div>
-            </div>
-            <aside class="hidden lg:block space-y-6">
-              <div class="bg-white p-6 rounded-lg shadow-sm">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Partners & Offers</h3>
-                <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
-                  <div id="reklam-slides"></div>
-                  <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
-            _A   <button id="slider-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
-                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
-                  </button>
-                  <button id="slider-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
-                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
-                  </button>
-                </div>
-              </div>
-            </aside>
-        </div>
-    </main>
-    
-    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-[100] hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%] rounded-lg"></div>
-    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div id="home-page" class="page-content"></div>
+                <div id="rolunk-page" class="page-content"></div>
+                <div id="kapcsolat-page" class="page-content"></div>
+                <div id="feltoltes-page" class="page-content"></div>
+                <div id="auth-page" class="page-content"></div>
+                <div id="admin-page" class="page-content"></div>
+            </div>
+            <aside class="hidden lg:block space-y-6">
+              <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Partners & Offers</h3>
+                <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
+                  <div id="reklam-slides"></div>
+                  <div id="reklam-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
+                  <button id="slider-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                  </button>
+                  <button id="slider-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">
+                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </aside>
+        </div>
+    </main>
+    
+    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-[100] hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%] rounded-lg"></div>
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script type="module">
 // ===== Segédfüggvény YouTube videóhoz =====
@@ -155,199 +155,199 @@ async function handleRouteChange(){const hash=window.location.hash||"#home";docu
 
 // ===== OLDALAK MEGJELENÍTÉSE (MINDEN ANGOLRA FORDÍTVA) =====
 async function showHomePage(){ // JAVÍTVA: Teljesen angol
-    const container=document.getElementById("home-page");
-    container.innerHTML=`<div class="text-center mb-8"><h1 class="text-4xl font-bold">Welcome to <span class="text-green-600">SzakiPiac-2025.hu</span>!</h1><p class="mt-3 text-lg text-gray-500">Find trusted professionals, or post an ad to get new clients!</p></div><div class="mb-12"><a href="#feltoltes" class="nav-link block group"><img src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png" alt="Advertise with us!" class="w-full rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-300"></a></div><div class="bg-white p-6 rounded-lg shadow-sm mb-8"><h2 class="text-2xl font-bold text-center mb-4">Browse the listings</h2><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Search by trade or name..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">All Categories</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div></div><div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
-    container.querySelector("#search-input").addEventListener("input",szuresAlkalmazasa);
-    container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
-    await loadHirdetesek()
+    const container=document.getElementById("home-page");
+    container.innerHTML=`<div class="text-center mb-8"><h1 class="text-4xl font-bold">Welcome to <span class="text-green-600">SzakiPiac-2025.hu</span>!</h1><p class="mt-3 text-lg text-gray-500">Find trusted professionals, or post an ad to get new clients!</p></div><div class="mb-12"><a href="#feltoltes" class="nav-link block group"><img src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png" alt="Advertise with us!" class="w-full rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-300"></a></div><div class="bg-white p-6 rounded-lg shadow-sm mb-8"><h2 class="text-2xl font-bold text-center mb-4">Browse the listings</h2><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Search by trade or name..." class="md:col-span-2 w-full border-gray-300 rounded-md"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">All Categories</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div></div><div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
+    container.querySelector("#search-input").addEventListener("input",szuresAlkalmazasa);
+    container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
+    await loadHirdetesek()
 }
 async function showRolunkPage(){ // JAVÍTVA: Teljesen angol
-    document.getElementById("rolunk-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
+    document.getElementById("rolunk-page").innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">About Us</h1><p class="mb-4 text-gray-700"><b>SzakiPiac-2025.hu</b> aims to connect professionals and customers throughout Hungary – simply, quickly, and reliably.</p><ul class="space-y-3 my-6"><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Direct access: Registered pros with ratings.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> A transparent, organized marketplace.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Quick search by category and keyword.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Free and paid ad packages for everyone.</li><li class="flex items-start"><span class="text-green-500 mr-2 font-bold">✔</span> Simple ad posting and client contact.</li></ul><p class="mb-4 text-gray-700"><b>Our Mission:</b> Quality work, satisfied customers – we support Hungarian entrepreneurs and help everyone find the best professional for any task!</p><h3 class="text-2xl font-bold mt-8 mb-4">Why choose us?</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li>Fast and secure ad management</li><li>Easy-to-use interface</li><li>Helpful customer support</li><li>Continuous development, new features</li></ul></div>`
 }
 async function showKapcsolatPage(){ // JAVÍTVA: Teljesen angol
-    const container=document.getElementById("kapcsolat-page");
-    container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Contact</h1><div class="grid md:grid-cols-2 gap-12"><div><h3 class="text-xl font-semibold">Our Contact Info:</h3><p class="mt-4"><b>E-mail:</b> <a href="mailto:szakipiac2025@gmail.com" class="text-green-600">szakipiac2025@gmail.com</a></p></div><div><h3 class="text-xl font-semibold mb-4">Send us a message!</h3><form id="kapcsolat-form" class="space-y-4"><div><label for="kapcsolat-nev">Name:</label><input type="text" id="kapcsolat-nev" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-email">E-mail:</label><input type="email" id="kapcsolat-email" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-uzenet">Message:</label><textarea id="kapcsolat-uzenet" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md"></textarea></div><button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md">Send Message</button></form></div></div></div>`;
-    container.querySelector("#kapcsolat-form").addEventListener("submit",e=>{e.preventDefault();showToast("Thank you for your message! (This is a demo.)","info");e.target.reset()})
+    const container=document.getElementById("kapcsolat-page");
+    container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm"><h1 class="text-3xl font-bold mb-6">Contact</h1><div class="grid md:grid-cols-2 gap-12"><div><h3 class="text-xl font-semibold">Our Contact Info:</h3><p class="mt-4"><b>E-mail:</b> <a href="mailto:szakipiac2025@gmail.com" class="text-green-600">szakipiac2025@gmail.com</a></p></div><div><h3 class="text-xl font-semibold mb-4">Send us a message!</h3><form id="kapcsolat-form" class="space-y-4"><div><label for="kapcsolat-nev">Name:</label><input type="text" id="kapcsolat-nev" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-email">E-mail:</label><input type="email" id="kapcsolat-email" required class="mt-1 block w-full border-gray-300 rounded-md"></div><div><label for="kapcsolat-uzenet">Message:</label><textarea id="kapcsolat-uzenet" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md"></textarea></div><button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md">Send Message</button></form></div></div></div>`;
+    container.querySelector("#kapcsolat-form").addEventListener("submit",e=>{e.preventDefault();showToast("Thank you for your message! (This is a demo.)","info");e.target.reset()})
 }
 async function showAuthPage(){ // JAVÍTVA: Teljesen angol
-    const container=document.getElementById("auth-page");
-    const{data:{session}}=await supaClient.auth.getSession();
-    if(session){container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm text-center"><h1 class="text-2xl font-bold mb-4">You are already logged in.</h1><p class="text-gray-600">${session.user.email}</p></div>`;return}
-    container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm max-w-md mx-auto"><h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Sign In</h2><form id="auth-form" class="space-y-6"><div><label for="email" class="block text-sm">Email address</label><input id="email" type="email" autocomplete="email" required class="mt-1 w-full border-gray-300 rounded-md"></div><div><label for="password" class="block text-sm">Password</label><input id="password" type="password" required class="mt-1 w-full border-gray-300 rounded-md"></div><div><button id="auth-submit-btn" type="submit" class="w-full text-white bg-green-600 hover:bg-green-700 py-2 rounded-md">Sign In</button></div></form><div class="mt-6 text-center"><a href="#" id="switch-auth-mode" class="text-sm text-green-600 hover:text-green-500">Don't have an account? Sign up!</a></div></div>`;
-    let isLoginMode=!0;const authForm=container.querySelector("#auth-form");
-    authForm.addEventListener("submit",async e=>{e.preventDefault();const email=authForm.email.value,password=authForm.password.value;try{const{error}=isLoginMode?await supaClient.auth.signInWithPassword({email,password}):await supaClient.auth.signUp({email,password});if(error)throw error;showToast(isLoginMode?"Signed in successfully!":"Signed up successfully! Please confirm your email.");window.location.hash="#home"}catch(error){showToast("Error: "+error.message,"error")}});
-    container.querySelector("#switch-auth-mode").addEventListener("click",e=>{e.preventDefault();isLoginMode=!isLoginMode;container.querySelector("#auth-title").textContent=isLoginMode?"Sign In":"Sign Up";container.querySelector("#auth-submit-btn").textContent=isLoginMode?"Sign In":"Sign Up";e.target.textContent=isLoginMode?"Don't have an account? Sign up!":"Already have an account? Sign in!"})
+    const container=document.getElementById("auth-page");
+    const{data:{session}}=await supaClient.auth.getSession();
+    if(session){container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm text-center"><h1 class="text-2xl font-bold mb-4">You are already logged in.</h1><p class="text-gray-600">${session.user.email}</p></div>`;return}
+    container.innerHTML=`<div class="bg-white p-8 rounded-lg shadow-sm max-w-md mx-auto"><h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Sign In</h2><form id="auth-form" class="space-y-6"><div><label for="email" class="block text-sm">Email address</label><input id="email" type="email" autocomplete="email" required class="mt-1 w-full border-gray-300 rounded-md"></div><div><label for="password" class="block text-sm">Password</label><input id="password" type="password" required class="mt-1 w-full border-gray-300 rounded-md"></div><div><button id="auth-submit-btn" type="submit" class="w-full text-white bg-green-600 hover:bg-green-700 py-2 rounded-md">Sign In</button></div></form><div class="mt-6 text-center"><a href="#" id="switch-auth-mode" class="text-sm text-green-600 hover:text-green-500">Don't have an account? Sign up!</a></div></div>`;
+    let isLoginMode=!0;const authForm=container.querySelector("#auth-form");
+    authForm.addEventListener("submit",async e=>{e.preventDefault();const email=authForm.email.value,password=authForm.password.value;try{const{error}=isLoginMode?await supaClient.auth.signInWithPassword({email,password}):await supaClient.auth.signUp({email,password});if(error)throw error;showToast(isLoginMode?"Signed in successfully!":"Signed up successfully! Please confirm your email.");window.location.hash="#home"}catch(error){showToast("Error: "+error.message,"error")}});
+    container.querySelector("#switch-auth-mode").addEventListener("click",e=>{e.preventDefault();isLoginMode=!isLoginMode;container.querySelector("#auth-title").textContent=isLoginMode?"Sign In":"Sign Up";container.querySelector("#auth-submit-btn").textContent=isLoginMode?"Sign In":"Sign Up";e.target.textContent=isLoginMode?"Don't have an account? Sign up!":"Already have an account? Sign in!"})
 }
 async function loadHirdetesek(){
-    const hirdetesekLista=document.getElementById("hirdetesek-lista");
-    try{
-        const{data,error}=await supaClient.from("hirdetesek").select("*").gte("lejárati_datum",(new Date).toISOString());if(error)throw error;
-        const csomagErtekek={extra:3,premium:2,alap:1};data.sort((a,b)=>{const ertekA=csomagErtekek[a.csomag]||0,ertekB=csomagErtekek[b.csomag]||0;if(ertekA!==ertekB)return ertekB-ertekA;return new Date(b.created_at)-new Date(a.created_at)});
-        hirdetesekCache=data;renderHirdetesek(hirdetesekCache)
-    }catch(error){if(hirdetesekLista)hirdetesekLista.innerHTML=`<p class="text-center text-red-600">Error loading ads.</p>`}
+    const hirdetesekLista=document.getElementById("hirdetesek-lista");
+    try{
+        const{data,error}=await supaClient.from("hirdetesek").select("*").gte("lejárati_datum",(new Date).toISOString());if(error)throw error;
+        const csomagErtekek={extra:3,premium:2,alap:1};data.sort((a,b)=>{const ertekA=csomagErtekek[a.csomag]||0,ertekB=csomagErtekek[b.csomag]||0;if(ertekA!==ertekB)return ertekB-ertekA;return new Date(b.created_at)-new Date(a.created_at)});
+        hirdetesekCache=data;renderHirdetesek(hirdetesekCache)
+    }catch(error){if(hirdetesekLista)hirdetesekLista.innerHTML=`<p class="text-center text-red-600">Error loading ads.</p>`}
 }
 async function renderHirdetesek(hirdetesek){ // JAVÍTVA: Teljesen angol
-    const hirdetesekLista=document.getElementById("hirdetesek-lista");if(!hirdetesekLista)return;
-    const{data:{session}}=await supaClient.auth.getSession();
-    if(!hirdetesek||hirdetesek.length===0){hirdetesekLista.innerHTML="<p class='text-center text-gray-500'>There are no active ads right now. Be the first!</p>";return}
-    hirdetesekLista.innerHTML=hirdetesek.map(h=>{const embedUrl=getYouTubeEmbedUrl(h.video_url),videoHTML=embedUrl?`<div class="aspect-w-16 aspect-h-9 my-4 rounded-lg overflow-hidden shadow"><iframe src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`:"",isOwner=session&&session.user.id===h.user_id,isAdmin=session&&session.user.email===ADMIN_EMAIL,kepekHTML=h.kep_url_tomb&&h.kep_url_tomb.length>0?`<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url=>`<img src="${url}" alt="Ad image" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join("")}</div>`:"",deleteButtonHTML=isOwner||isAdmin?`<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Delete</button>`:"",kiemelesClass=h.csomag==="extra"?"border-2 border-yellow-400":"",plecsniHTML=h.csomag==="extra"?`<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>`:"";
-    return`<div class="bg-white p-6 rounded-lg shadow-sm relative ${kiemelesClass}">${plecsniHTML}<div class="flex justify-between items-start"><div><p class="text-sm font-medium text-green-600">${h.kategoria||""}</p><h3 class="text-xl font-bold mt-1">${h.cim}</h3></div><p class="text-lg font-semibold">${h.ar?h.ar.toLocaleString("en-US")+" HUF":"Negotiable"}</p></div><p class="text-gray-600 my-4">${h.leiras}</p>${videoHTML}${kepekHTML}<div class="flex flex-wrap gap-2 pt-4 border-t justify-between items-center"><div><a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Contact (Email)</a>${h.telefonszam?`<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Contact (Phone)</a>`:""}${h.weboldal?`<a href="${h.weboldal}" target="_blank" rel="noopener nofollow" class="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Website</a>`:""}</div>${deleteButtonHTML}</div></div>`}).join("")
+    const hirdetesekLista=document.getElementById("hirdetesek-lista");if(!hirdetesekLista)return;
+    const{data:{session}}=await supaClient.auth.getSession();
+    if(!hirdetesek||hirdetesek.length===0){hirdetesekLista.innerHTML="<p class='text-center text-gray-500'>There are no active ads right now. Be the first!</p>";return}
+    hirdetesekLista.innerHTML=hirdetesek.map(h=>{const embedUrl=getYouTubeEmbedUrl(h.video_url),videoHTML=embedUrl?`<div class="aspect-w-16 aspect-h-9 my-4 rounded-lg overflow-hidden shadow"><iframe src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`:"",isOwner=session&&session.user.id===h.user_id,isAdmin=session&&session.user.email===ADMIN_EMAIL,kepekHTML=h.kep_url_tomb&&h.kep_url_tomb.length>0?`<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url=>`<img src="${url}" alt="Ad image" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join("")}</div>`:"",deleteButtonHTML=isOwner||isAdmin?`<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Delete</button>`:"",kiemelesClass=h.csomag==="extra"?"border-2 border-yellow-400":"",plecsniHTML=h.csomag==="extra"?`<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>`:"";
+    return`<div class="bg-white p-6 rounded-lg shadow-sm relative ${kiemelesClass}">${plecsniHTML}<div class="flex justify-between items-start"><div><p class="text-sm font-medium text-green-600">${h.kategoria||""}</p><h3 class="text-xl font-bold mt-1">${h.cim}</h3></div><p class="text-lg font-semibold">${h.ar?h.ar.toLocaleString("en-US")+" HUF":"Negotiable"}</p></div><p class="text-gray-600 my-4">${h.leiras}</p>${videoHTML}${kepekHTML}<div class="flex flex-wrap gap-2 pt-4 border-t justify-between items-center"><div><a href="mailto:${h.email}" class="px-3 py-1.5 text-sm text-white bg-green-600 rounded-md">Contact (Email)</a>${h.telefonszam?`<a href="tel:${h.telefonszam}" class="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded-md">Contact (Phone)</a>`:""}${h.weboldal?`<a href="${h.weboldal}" target="_blank" rel="noopener nofollow" class="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Website</a>`:""}</div>${deleteButtonHTML}</div></div>`}).join("")
 }
 function szuresAlkalmazasa(){const searchText=document.getElementById("search-input").value.toLowerCase(),category=document.getElementById("category-select").value,filtered=hirdetesekCache.filter(h=>{const matchesText=`${h.cim} ${h.leiras}`.toLowerCase().includes(searchText),matchesCategory=!category||h.kategoria===category;return matchesText&&matchesCategory});renderHirdetesek(filtered)}
 
 async function showFeltoltesPage() { // JAVÍTVA: Teljesen angol
-    const container = document.getElementById('feltoltes-page');
-    const { data: { session } } = await supaClient.auth.getSession();
-    const loginWarningHTML = !session ? `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 mb-6 rounded-md" role="alert"><p class="font-bold">You must be logged in to post an ad!</p><p>Sign in or register to advertise your services. <a href="#auth" class="nav-link font-bold hover:underline">Click here to sign in!</a></p></div>` : '';
-    kivalasztottKepek = [];
-    container.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm">${loginWarningHTML}<h1 class="text-3xl font-bold mb-2">Post an Ad</h1><p class="text-gray-600 mb-8">Fill out the form, or use the AI helper!</p><div class="bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-8"><h2 class="text-xl font-semibold text-indigo-800 mb-3">✨ AI Ad Helper</h2><div class="flex flex-col sm:flex-row gap-2"><input type="text" id="gemini-keywords" placeholder="Keywords, e.g. 'painting, Budapest'" class="flex-grow w-full px-4 py-2 border-indigo-300 rounded-md"><button id="generate-ad-btn" class="inline-flex items-center justify-center px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">Generate Text</button></div></div><form id="feltoltesForm" class="space-y-6"><div><label class="block text-sm">Title</label><input type="text" id="cim" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Description</label><textarea id="leiras" rows="6" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></textarea></div><div class="grid md:grid-cols-2 gap-6"><div><label class="block text-sm">Category</label><select id="kategoria" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Choose...</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div><div><label class="block text-sm">Phone (optional)</label><input type="tel" id="telefonszam" placeholder="+36..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Website (optional)</label><input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div id="video-url-wrapper" class="hidden"><label class="block text-sm">YouTube Video Link (optional)</label><input type="url" id="video_url" placeholder="https://www.youtube.com/watch?v=..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div></div><div><label class="block text-sm">Price (HUF, optional)</label><input type="number" id="ar" min="0" placeholder="Negotiable" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Package</label><select id="csomag" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Choose...</option><option value="alap_0_2">Basic (free, 2 images)</option><option value="premium_990_4">Premium (990 HUF, 4 images)</option><option value="extra_1990_8">Extra (1990 HUF, 8 images)</option></select></div><div id="csomag-leiras" class="mt-4 p-4 bg-gray-50 rounded-lg border text-sm"></div><div><label class="block text-sm">Images (<span id="max-kepek-szama">2</span>)</label><div class="mt-1"><label for="kep-input" class="cursor-pointer text-green-600 hover:underline">Choose files...<input id="kep-input" type="file" class="sr-only" multiple accept="image/*"></label></div><div id="kep-elonezetek" class="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-4"></div></div><div id="payment-section" class="border-t pt-6"><div id="free-submit-section"><button type="button" id="free-submit-btn" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700">Submit Ad</button></div><div id="paypal-button-container" class="hidden"></div></div></form></div>`;
-    setupFeltoltesListeners();
+    const container = document.getElementById('feltoltes-page');
+    const { data: { session } } = await supaClient.auth.getSession();
+    const loginWarningHTML = !session ? `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 mb-6 rounded-md" role="alert"><p class="font-bold">You must be logged in to post an ad!</p><p>Sign in or register to advertise your services. <a href="#auth" class="nav-link font-bold hover:underline">Click here to sign in!</a></p></div>` : '';
+    kivalasztottKepek = [];
+    container.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-sm">${loginWarningHTML}<h1 class="text-3xl font-bold mb-2">Post an Ad</h1><p class="text-gray-600 mb-8">Fill out the form, or use the AI helper!</p><div class="bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-8"><h2 class="text-xl font-semibold text-indigo-800 mb-3">✨ AI Ad Helper</h2><div class="flex flex-col sm:flex-row gap-2"><input type="text" id="gemini-keywords" placeholder="Keywords, e.g. 'painting, Budapest'" class="flex-grow w-full px-4 py-2 border-indigo-300 rounded-md"><button id="generate-ad-btn" class="inline-flex items-center justify-center px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">Generate Text</button></div></div><form id="feltoltesForm" class="space-y-6"><div><label class="block text-sm">Title</label><input type="text" id="cim" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Description</label><textarea id="leiras" rows="6" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></textarea></div><div class="grid md:grid-cols-2 gap-6"><div><label class="block text-sm">Category</label><select id="kategoria" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Choose...</option><option>Construction</option><option>Electrical</option><option>Plumbing/HVAC</option><option>Painting</option><option>Interior Design</option><option>IT Services</option><option>Gardening, Maintenance</option><option>Other</option></select></div><div><label class="block text-sm">Phone (optional)</label><input type="tel" id="telefonszam" placeholder="+36..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Website (optional)</label><input type="url" id="weboldal" placeholder="https://..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div id="video-url-wrapper" class="hidden"><label class="block text-sm">YouTube Video Link (optional)</label><input type="url" id="video_url" placeholder="https://www.youtube.com/watch?v=..." class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div></div><div><label class="block text-sm">Price (HUF, optional)</label><input type="number" id="ar" min="0" placeholder="Negotiable" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div><div><label class="block text-sm">Package</label><select id="csomag" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">Choose...</option><option value="alap_0_2">Basic (free, 2 images)</option><option value="premium_990_4">Premium (990 HUF, 4 images)</option><option value="extra_1990_8">Extra (1990 HUF, 8 images)</option></select></div><div id="csomag-leiras" class="mt-4 p-4 bg-gray-50 rounded-lg border text-sm"></div><div><label class="block text-sm">Images (<span id="max-kepek-szama">2</span>)</label><div class="mt-1"><label for="kep-input" class="cursor-pointer text-green-600 hover:underline">Choose files...<input id="kep-input" type="file" class="sr-only" multiple accept="image/*"></label></div><div id="kep-elonezetek" class="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-4"></div></div><div id="payment-section" class="border-t pt-6"><div id="free-submit-section"><button type="button" id="free-submit-btn" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700">Submit Ad</button></div><div id="paypal-button-container" class="hidden"></div></div></form></div>`;
+    setupFeltoltesListeners();
 }
 
 // A segédfüggvények (amiket a showFeltoltesPage hív) NEVE MARAD, de a TARTALMUK angol
 function setupFeltoltesListeners(){const container=document.getElementById("feltoltes-page");container.querySelector("#generate-ad-btn").addEventListener("click",generateAdContent);const csomagSelect=container.querySelector("#csomag"),kepInput=container.querySelector("#kep-input"),freeSubmitBtn=container.querySelector("#free-submit-btn");csomagSelect.addEventListener("change",handleCsomagValtas);kepInput.addEventListener("change",handleKepKivalasztas);if(freeSubmitBtn)freeSubmitBtn.addEventListener("click",e=>{e.preventDefault();processAdSubmission()});handleCsomagValtas()}
 async function handleCsomagValtas(){ // JAVÍTVA: Teljesen angol
-    const csomagSelect=document.getElementById("csomag");if(!csomagSelect)return;
-    const[packageName,price,maxKepek]=csomagSelect.value.split("_");
-    document.getElementById("max-kepek-szama").textContent=maxKepek;
-    if(kivalasztottKepek.length>maxKepek){kivalasztottKepek=kivalasztottKepek.slice(0,maxKepek);renderKepElonezetek();showToast(`Image count reduced to ${maxKepek} to match package.`,"info")}
-    const videoUrlWrapper=document.getElementById("video-url-wrapper"),videoUrlInput=document.getElementById("video_url"),csomagLeiras=document.getElementById("csomag-leiras"),
-    features={alap:["2 image uploads","Active for 7 days"],premium:["4 image uploads","Active for 14 days","✅ YouTube video embedding"],extra:["8 image uploads","Active for 30 days","✅ YouTube video embedding","⭐ Highlighted listing"]},
-    selectedFeatures=features[packageName]||[];
-    csomagLeiras.innerHTML=`<h4 class="font-semibold text-gray-700 mb-2">Selected package includes:</h4><ul class="list-disc list-inside text-gray-600 space-y-1">${selectedFeatures.map(f=>`<li>${f}</li>`).join("")}</ul>`;
-    if(packageName==="premium"||packageName==="extra")videoUrlWrapper.classList.remove("hidden");else{videoUrlWrapper.classList.add("hidden");if(videoUrlInput)videoUrlInput.value=""}
-    const{data:{session}}=await supaClient.auth.getSession(),isAdmin=session&&session.user.email===ADMIN_EMAIL,freeSubmitSection=document.getElementById("free-submit-section"),paypalContainer=document.getElementById("paypal-button-container");
-    if(isAdmin||price==0){freeSubmitSection.style.display="block";paypalContainer.style.display="none";paypalContainer.innerHTML=""}
-    else{freeSubmitSection.style.display="none";paypalContainer.style.display="block";paypalContainer.innerHTML="";renderPayPalButton(price,packageName)}
+    const csomagSelect=document.getElementById("csomag");if(!csomagSelect)return;
+    const[packageName,price,maxKepek]=csomagSelect.value.split("_");
+    document.getElementById("max-kepek-szama").textContent=maxKepek;
+    if(kivalasztottKepek.length>maxKepek){kivalasztottKepek=kivalasztottKepek.slice(0,maxKepek);renderKepElonezetek();showToast(`Image count reduced to ${maxKepek} to match package.`,"info")}
+    const videoUrlWrapper=document.getElementById("video-url-wrapper"),videoUrlInput=document.getElementById("video_url"),csomagLeiras=document.getElementById("csomag-leiras"),
+    features={alap:["2 image uploads","Active for 7 days"],premium:["4 image uploads","Active for 14 days","✅ YouTube video embedding"],extra:["8 image uploads","Active for 30 days","✅ YouTube video embedding","⭐ Highlighted listing"]},
+    selectedFeatures=features[packageName]||[];
+    csomagLeiras.innerHTML=`<h4 class="font-semibold text-gray-700 mb-2">Selected package includes:</h4><ul class="list-disc list-inside text-gray-600 space-y-1">${selectedFeatures.map(f=>`<li>${f}</li>`).join("")}</ul>`;
+    if(packageName==="premium"||packageName==="extra")videoUrlWrapper.classList.remove("hidden");else{videoUrlWrapper.classList.add("hidden");if(videoUrlInput)videoUrlInput.value=""}
+    const{data:{session}}=await supaClient.auth.getSession(),isAdmin=session&&session.user.email===ADMIN_EMAIL,freeSubmitSection=document.getElementById("free-submit-section"),paypalContainer=document.getElementById("paypal-button-container");
+    if(isAdmin||price==0){freeSubmitSection.style.display="block";paypalContainer.style.display="none";paypalContainer.innerHTML=""}
+    else{freeSubmitSection.style.display="none";paypalContainer.style.display="block";paypalContainer.innerHTML="";renderPayPalButton(price,packageName)}
 }
 
 async function handleKepKivalasztas(event) { // JAVÍTVA: Teljesen angol
-    const files = Array.from(event.target.files);
-    const maxKepek = parseInt(document.getElementById('max-kepek-szama').textContent);
-    if (kivalasztottKepek.length + files.length > maxKepek) {
-        showToast(`You can upload a maximum of ${maxKepek} images.`, 'error');
-        event.target.value = ''; return;
-    }
-    showToast(`Optimizing images... Please wait.`, 'info');
-    const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
-    try {
-        const compressedFiles = [];
-        for (const file of files) {
-            const compressedFile = await imageCompression(file, options);
-            compressedFiles.push(compressedFile);
-        }
-        kivalasztottKepek.push(...compressedFiles);
-        event.target.value = '';
-        renderKepElonezetek();
-    } catch (error) {
-        showToast('Error optimizing images.', 'error'); console.error(error);
-    }
+    const files = Array.from(event.target.files);
+    const maxKepek = parseInt(document.getElementById('max-kepek-szama').textContent);
+    if (kivalasztottKepek.length + files.length > maxKepek) {
+        showToast(`You can upload a maximum of ${maxKepek} images.`, 'error');
+        event.target.value = ''; return;
+    }
+    showToast(`Optimizing images... Please wait.`, 'info');
+    const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
+    try {
+        const compressedFiles = [];
+        for (const file of files) {
+            const compressedFile = await imageCompression(file, options);
+            compressedFiles.push(compressedFile);
+        }
+        kivalasztottKepek.push(...compressedFiles);
+        event.target.value = '';
+        renderKepElonezetek();
+    } catch (error) {
+        showToast('Error optimizing images.', 'error'); console.error(error);
+    }
 }
 
 function renderKepElonezetek(){const previewContainer=document.getElementById("kep-elonezetek");if(!previewContainer)return;previewContainer.innerHTML="";kivalasztottKepek.forEach((file,index)=>{const reader=new FileReader;reader.onload=e=>{const previewWrapper=document.createElement("div");previewWrapper.className="relative group aspect-w-1 aspect-h-1";const img=document.createElement("img");img.src=e.target.result;img.className="w-full h-full object-cover rounded-md border-2 border-gray-200";const deleteButton=document.createElement("button");deleteButton.type="button";deleteButton.innerHTML="&times;";deleteButton.className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none";deleteButton.onclick=()=>kepTorlese(index);previewWrapper.appendChild(img);previewWrapper.appendChild(deleteButton);previewContainer.appendChild(previewWrapper)};reader.readAsDataURL(file)})}
 function kepTorlese(index){kivalasztottKepek.splice(index,1);renderKepElonezetek()}
 
 async function processAdSubmission() { // JAVÍTVA: Teljesen angol
-    const { data: { session } } = await supaClient.auth.getSession();
-    if (!session) { showToast("You must be logged in to post an ad!", 'error'); return; }
-    const adData = getAdData(); if (!adData) return;
-    showToast('Upload in progress...', 'info');
-    try {
-        const kepUrlTomb = await uploadKepek(kivalasztottKepek);
-        await saveAdToDatabase(adData, kepUrlTomb);
-    } catch (error) { showToast(`An error occurred: ${error.message}`, 'error'); }
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session) { showToast("You must be logged in to post an ad!", 'error'); return; }
+    const adData = getAdData(); if (!adData) return;
+    showToast('Upload in progress...', 'info');
+    try {
+        const kepUrlTomb = await uploadKepek(kivalasztottKepek);
+        await saveAdToDatabase(adData, kepUrlTomb);
+    } catch (error) { showToast(`An error occurred: ${error.message}`, 'error'); }
 }
 
 function getAdData(){ // JAVÍTVA: Teljesen angol
-    const cim=document.getElementById("cim").value,leiras=document.getElementById("leiras").value;
-    if(!cim||!leiras){showToast("Title and Description fields are required!","error");return null}
-    return{cim,leiras,kategoria:document.getElementById("kategoria").value,ar:document.getElementById("ar").value||null,telefonszam:document.getElementById("telefonszam").value||null,weboldal:document.getElementById("weboldal").value||null,video_url:document.getElementById("video_url").value||null}
+    const cim=document.getElementById("cim").value,leiras=document.getElementById("leiras").value;
+    if(!cim||!leiras){showToast("Title and Description fields are required!","error");return null}
+    return{cim,leiras,kategoria:document.getElementById("kategoria").value,ar:document.getElementById("ar").value||null,telefonszam:document.getElementById("telefonszam").value||null,weboldal:document.getElementById("weboldal").value||null,video_url:document.getElementById("video_url").value||null}
 }
 async function uploadKepek(files){const{data:{session}}=await supaClient.auth.getSession();if(!session||files.length===0)return[];const uploadPromises=files.map(file=>{const fileName=`${session.user.id}/${Date.now()}_${file.name}`;return supaClient.storage.from("hirdetes-kepek").upload(fileName,file)}),results=await Promise.all(uploadPromises),urls=[];for(const result of results){if(result.error){console.error("Error uploading image:",result.error.message);throw new Error("Error uploading image.")}const{data}=supaClient.storage.from("hirdetes-kepek").getPublicUrl(result.data.path);urls.push(data.publicUrl)}return urls}
 async function saveAdToDatabase(adData,kepUrlTomb=[]){ // JAVÍTVA: Teljesen angol
-    const{data:{session}}=await supaClient.auth.getSession();
-    if(!session){showToast("Error: Not logged in!","error");return}
-    const csomagNev=document.getElementById("csomag").value.split("_")[0];
-    let napok={alap:7,premium:14,extra:30}[csomagNev]||7;
-  t; const lejaratiDatum=new Date;lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);
-    const{error}=await supaClient.from("hirdetesek").insert({...adData,user_id:session.user.id,email:session.user.email,csomag:csomagNev,kep_url_tomb:kepUrlTomb,lejárati_datum:lejaratiDatum.toISOString()});
-    if(error){showToast(`Error saving: ${error.message}`,"error");console.error("Supabase insert error:",error)}
-    else{showToast("Ad posted successfully!","success");window.location.hash="#home"}
+    const{data:{session}}=await supaClient.auth.getSession();
+    if(!session){showToast("Error: Not logged in!","error");return}
+    const csomagNev=document.getElementById("csomag").value.split("_")[0];
+    let napok={alap:7,premium:14,extra:30}[csomagNev]||7;
+    const lejaratiDatum=new Date;lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);
+    const{error}=await supaClient.from("hirdetesek").insert({...adData,user_id:session.user.id,email:session.user.email,csomag:csomagNev,kep_url_tomb:kepUrlTomb,lejárati_datum:lejaratiDatum.toISOString()});
+    if(error){showToast(`Error saving: ${error.message}`,"error");console.error("Supabase insert error:",error)}
+    else{showToast("Ad posted successfully!","success");window.location.hash="#home"}
 }
 function renderPayPalButton(price,packageName){ // JAVÍTVA: Teljesen angol
-    paypal.Buttons({
-        createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Invalid form data."));
-        return actions.order.create({purchase_units:[{description:`SzakiPiac package: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},
-        onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),
-        onError:err=>showToast("Error during PayPal payment.","error")
-    }).render("#paypal-button-container")
+    paypal.Buttons({
+        createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Invalid form data."));
+        return actions.order.create({purchase_units:[{description:`SzakiPiac package: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},
+        onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),
+        onError:err=>showToast("Error during PayPal payment.","error")
+    }).render("#paypal-button-container")
 }
 
 async function generateAdContent() { // JAVÍTVA: Teljesen angol
-    const keywordsInput = document.getElementById("gemini-keywords");
-    const keywords = keywordsInput.value;
-    const generateBtn = document.getElementById("generate-ad-btn");
-    const originalBtnContent = generateBtn.innerHTML;
-  Data.   if (!keywords.trim()) {
-        showToast("Please enter keywords!", "error"); return;
-    }
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generating...</span>`;
-    try {
-        const { data, error } = await supaClient.functions.invoke('generate-ad', {
-            body: { query: keywords }
-        });
-        if (error) throw error;
-        if (data.error) throw new Error(data.error);
-        if (data.title && data.description) {
-            document.getElementById("cim").value = data.title;
-            document.getElementById("leiras").value = data.description;
-            showToast("AI ad generated successfully!", "success");
-        } else {
-            throw new Error("Invalid format received from AI.");
-        }
-    } catch (error) {
-        console.error("Error calling Supabase function:", error);
-        showToast(`Error during generation. Please try again!`, "error");
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = originalBtnContent;
-    }
+    const keywordsInput = document.getElementById("gemini-keywords");
+    const keywords = keywordsInput.value;
+    const generateBtn = document.getElementById("generate-ad-btn");
+    const originalBtnContent = generateBtn.innerHTML;
+    if (!keywords.trim()) {
+        showToast("Please enter keywords!", "error"); return;
+    }
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = `<div class="gemini-loader"></div><span class="ml-2">Generating...</span>`;
+    try {
+        const { data, error } = await supaClient.functions.invoke('generate-ad', {
+            body: { query: keywords }
+        });
+        if (error) throw error;
+        if (data.error) throw new Error(data.error);
+        if (data.title && data.description) {
+            document.getElementById("cim").value = data.title;
+            document.getElementById("leiras").value = data.description;
+            showToast("AI ad generated successfully!", "success");
+        } else {
+            throw new Error("Invalid format received from AI.");
+        }
+    } catch (error) {
+        console.error("Error calling Supabase function:", error);
+        showToast(`Error during generation. Please try again!`, "error");
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = originalBtnContent;
+    }
 }
 
 
 async function handleAuthUI(){ // JAVÍTVA: Teljesen angol
-    const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");
-    let authHTML="";
-    if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Sign Out</button></div>`}
-    else{authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Sign In</a>`}
-    navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");
-    if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Signed out successfully!");window.location.hash="#home"}))
+    const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");
+    let authHTML="";
+    if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Sign Out</button></div>`}
+    else{authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Sign In</a>`}
+    navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");
+    if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Signed out successfully!");window.location.hash="#home"}))
 }
 function showToast(message,type="success"){const toast=document.getElementById("toast-notification");toast.textContent=message;toast.className=`fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 z-[110] ${type==="error"?"bg-red-500":"bg-green-500"}`;toast.classList.remove("translate-x-[120%]");setTimeout(()=>{toast.classList.add("translate-x-[120%]")},4e3)}
 window.openLightbox=imageUrl=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-img").src=imageUrl;lightbox.classList.remove("hidden");setTimeout(()=>lightbox.classList.remove("opacity-0"),10)};
 async function handleDeleteAd(adId){ // JAVÍTVA: Teljesen angol
-    if(!confirm("Are you sure you want to delete this ad? This action cannot be undone."))return;
-    try{
-        const{data:ad,error:selectError}=await supaClient.from("hirdetesek").select("kep_url_tomb,weboldal").eq("id",adId).single();
-        if(selectError)throw selectError;
-        if(ad.kep_url_tomb&&ad.kep_url_tomb.length>0){const filePaths=ad.kep_url_tomb.map(url=>(new URL(url)).pathname.split("/hirdetes-kepek/")[1]),{error:storageError}=await supaClient.storage.from("hirdetes-kepek").remove(filePaths);if(storageError)console.error("Error deleting images, but proceeding with ad deletion:",storageError)}
-        const{error:deleteError}=await supaClient.from("hirdetesek").delete().eq("id",adId);
-        if(deleteError)throw deleteError;
-        showToast("Ad deleted successfully.","success");
-        loadHirdetesek()
-    }catch(error){showToast(`Error deleting: ${error.message}`,"error");console.error("Delete ad error:",error)}
+    if(!confirm("Are you sure you want to delete this ad? This action cannot be undone."))return;
+    try{
+        const{data:ad,error:selectError}=await supaClient.from("hirdetesek").select("kep_url_tomb,weboldal").eq("id",adId).single();
+        if(selectError)throw selectError;
+        if(ad.kep_url_tomb&&ad.kep_url_tomb.length>0){const filePaths=ad.kep_url_tomb.map(url=>(new URL(url)).pathname.split("/hirdetes-kepek/")[1]),{error:storageError}=await supaClient.storage.from("hirdetes-kepek").remove(filePaths);if(storageError)console.error("Error deleting images, but proceeding with ad deletion:",storageError)}
+        const{error:deleteError}=await supaClient.from("hirdetesek").delete().eq("id",adId);
+        if(deleteError)throw deleteError;
+        showToast("Ad deleted successfully.","success");
+        loadHirdetesek()
+    }catch(error){showToast(`Error deleting: ${error.message}`,"error");console.error("Delete ad error:",error)}
 }
 async function showAdminPage(){ // JAVÍTVA: Teljesen angol
-    const container=document.getElementById("admin-page");
-    container.innerHTML=`<div class="flex justify-center py-10"><div class="loader"></div></div>`;
-    const{data:{session}}=await supaClient.auth.getSession();
-    if(!session||session.user.email!==ADMIN_EMAIL){container.innerHTML=`<p class="text-red-500 text-center">You do not have permission to view this page.</p>`;return}
-    try{
-        const{data:hirdetesek,error}=await supaClient.from("hirdetesek").select("*").order("created_at",{ascending:!1});
-        if(error)throw error;
-        container.innerHTML=`<h2 class="text-2xl font-bold mb-4">Admin - Manage Ads</h2><div class="bg-white rounded-lg shadow-sm overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr><th class="p-4">Title</th><th class="p-4">User</th><th class="p-4">Expires</th><th class="p-4">Actions</th></tr></thead><tbody>${hirdetesek.map(h=>`<tr class="border-b"><td class="p-4">${h.cim}</td><td class="p-4">${h.email}</td><td class="p-4 whitespace-nowrap">${h.lejárati_datum?(new Date(h.lejárati_datum)).toLocaleDateString("en-GB"):"N/A"}</td><td class="p-4 space-x-2"><button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Delete</button></td></tr>`).join("")}</tbody></table></div>`
-    }catch(err){container.innerHTML=`<p class="text-red-500 text-center">Error loading ads: ${err.message}</p>`}
+    const container=document.getElementById("admin-page");
+    container.innerHTML=`<div class="flex justify-center py-10"><div class="loader"></div></div>`;
+    const{data:{session}}=await supaClient.auth.getSession();
+    if(!session||session.user.email!==ADMIN_EMAIL){container.innerHTML=`<p class="text-red-500 text-center">You do not have permission to view this page.</p>`;return}
+    try{
+        const{data:hirdetesek,error}=await supaClient.from("hirdetesek").select("*").order("created_at",{ascending:!1});
+        if(error)throw error;
+        container.innerHTML=`<h2 class="text-2xl font-bold mb-4">Admin - Manage Ads</h2><div class="bg-white rounded-lg shadow-sm overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr><th class="p-4">Title</th><th class="p-4">User</th><th class="p-4">Expires</th><th class="p-4">Actions</th></tr></thead><tbody>${hirdetesek.map(h=>`<tr class="border-b"><td class="p-4">${h.cim}</td><td class="p-4">${h.email}</td><td class="p-4 whitespace-nowrap">${h.lejárati_datum?(new Date(h.lejárati_datum)).toLocaleDateString("en-GB"):"N/A"}</td><td class="p-4 space-x-2"><button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Delete</button></td></tr>`).join("")}</tbody></table></div>`
+    }catch(err){container.innerHTML=`<p class="text-red-500 text-center">Error loading ads: ${err.message}</p>`}
 }
 document.addEventListener("DOMContentLoaded",()=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-close").addEventListener("click",()=>{lightbox.classList.add("opacity-0");setTimeout(()=>lightbox.classList.add("hidden"),300)});handleAuthUI();handleRouteChange();window.addEventListener("hashchange",handleRouteChange);document.querySelectorAll(".nav-link, .nav-link-logo").forEach(link=>{link.addEventListener("click",e=>{e.preventDefault();window.location.hash=(new URL(link.href)).hash})});document.getElementById("mobile-menu-button").addEventListener("click",()=>{document.getElementById("mobile-menu")?.classList.toggle("hidden")});supaClient.auth.onAuthStateChange((event,session)=>{handleAuthUI();if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') handleRouteChange();})});
 
