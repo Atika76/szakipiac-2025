@@ -40,7 +40,7 @@
 <body class="bg-gray-50 text-gray-800">
 
     <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="container mx-auto px-2 sm:px-4 lg:px-6">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
@@ -151,7 +151,7 @@ let hirdetesekCache = [];
 // A linkek az URL-ben (#home, #rolunk) megegyeznek a router kulcsaival
 const router = {'#home': showHomePage, '#rolunk': showRolunkPage, '#kapcsolat': showKapcsolatPage, '#feltoltes': showFeltoltesPage, '#auth': showAuthPage, '#admin': showAdminPage};
 function showPage(pageId){document.querySelectorAll(".page-content").forEach(p=>{if(p.id!=="main-loader")p.style.display="none"});const activePage=document.getElementById(pageId+"-page");if(activePage)activePage.style.display="block"}
-async function handleRouteChange(){const hash=window.location.hash||"#home";document.querySelectorAll(".page-content").forEach(p=>p.style.display="none");const mainLoader=document.getElementById("main-loader");if(mainLoader)mainLoader.style.display="flex";const routeHandler=router[hash]||router["#home"];try{await routeHandler();if(mainLoader)mainLoader.style.display="none";showPage(hash.substring(1))}catch(err){console.error(`Hiba az oldal betöltésekor (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("bg-gray-100",link.getAttribute("href")===hash));document.getElementById("mobile-menu")?.classList.add("hidden")}
+async function handleRouteChange(){const hash=window.location.hash||"#home";document.querySelectorAll(".page-content").forEach(p=>p.style.display="none");const mainLoader=document.getElementById("main-loader");if(mainLoader)mainLoader.style.display="flex";const routeHandler=router[hash]||router["#home"];try{await routeHandler();if(mainLoader)mainLoader.style.display="none";showPage(hash.substring(1))}catch(err){console.error(`Error loading page (${hash}):`,err);if(mainLoader)mainLoader.style.display="none"}document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("bg-gray-100",link.getAttribute("href")===hash));document.getElementById("mobile-menu")?.classList.add("hidden")}
 
 // ===== OLDALAK MEGJELENÍTÉSE (MINDEN ANGOLRA FORDÍTVA) =====
 async function showHomePage(){ // JAVÍTVA: Teljesen angol
