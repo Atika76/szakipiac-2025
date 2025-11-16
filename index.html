@@ -134,6 +134,81 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
+// ===== AUTOSAVE / DRAFT (feltoltes oldal) =====
+const FELTOLTES_DRAFT_KEY = 'szakipiac_feltoltes_draft_v1';
+const DRAFT_FIELDS = ['cim','leiras','varos','iranyitoszam','kategoria','telefonszam','weboldal','video_url','ar','csomag','gemini-keywords'];
+
+function saveFeltoltesDraft() {
+  try {
+    const draft = {};
+    DRAFT_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      draft[id] = el.value;
+    });
+    localStorage.setItem(FELTOLTES_DRAFT_KEY, JSON.stringify({
+      data: draft,
+      savedAt: new Date().toISOString()
+    }));
+    // console.log('Draft saved');
+  } catch (e) {
+    console.error('Draft save error', e);
+  }
+}
+
+function restoreFeltoltesDraft() {
+  try {
+    const raw = localStorage.getItem(FELTOLTES_DRAFT_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.data) return false;
+    const draft = parsed.data;
+    DRAFT_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (draft[id] !== undefined) el.value = draft[id];
+    });
+    // ha volt csomag kiválasztás, frissítsük az állapotot:
+    if (document.getElementById('csomag')) handleCsomagValtas();
+    return true;
+  } catch (e) {
+    console.error('Draft restore error', e);
+    return false;
+  }
+}
+
+function clearFeltoltesDraft() {
+  try {
+    localStorage.removeItem(FELTOLTES_DRAFT_KEY);
+  } catch (e) {
+    console.error('Draft clear error', e);
+  }
+}
+
+function attachDraftHandlers() {
+  let timer = null;
+  const inputs = DRAFT_FIELDS.map(id => document.getElementById(id)).filter(Boolean);
+  inputs.forEach(el => {
+    el.addEventListener('input', () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(saveFeltoltesDraft, 800);
+    });
+  });
+
+  // mentés amikor elhagyják az oldalt (tab váltás, fül zárás)
+  window.addEventListener('beforeunload', (e) => {
+    saveFeltoltesDraft();
+    // opcionális figyelmeztetés:
+    // e.preventDefault();
+    // e.returnValue = '';
+  });
+}
+
+function initFeltoltesDraftIntegration() {
+  restoreFeltoltesDraft();
+  attachDraftHandlers();
+}
+
 // ===== ROUTER ÉS FŐ LOGIKA =====
 const router = {'#home': showHomePage, '#rolunk': showRolunkPage, '#kapcsolat': showKapcsolatPage, '#feltoltes': showFeltoltesPage, '#auth': showAuthPage, '#admin': showAdminPage};
 function showPage(pageId){document.querySelectorAll(".page-content").forEach(p=>{if(p.id!=="main-loader")p.style.display="none"});const activePage=document.getElementById(pageId+"-page");if(activePage)activePage.style.display="block"}
@@ -159,10 +234,9 @@ async function showHomePage(){
     </div>
     <div id="hirdetesek-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
     
-    // MÓDOSÍTVA: Most már a filter-city mezőt is figyeljük
     container.querySelector("#search-input").addEventListener("input",szuresAlkalmazasa);
     container.querySelector("#category-select").addEventListener("change",szuresAlkalmazasa);
-    container.querySelector("#filter-city").addEventListener("input",szuresAlkalmazasa); // ÚJ
+    container.querySelector("#filter-city").addEventListener("input",szuresAlkalmazasa);
     
     await loadHirdetesek()
 }
@@ -174,7 +248,6 @@ async function showAuthPage(){const container=document.getElementById("auth-page
 async function loadHirdetesek(){
     const hirdetesekLista=document.getElementById("hirdetesek-lista");
     try{
-        // Az adatbázisból való lekérdezés már nem szűr, csak betölt
         const{data,error} = await supaClient.from("hirdetesek").select("*").gte("lejárati_datum",(new Date).toISOString());
         if(error)throw error;
 
@@ -182,7 +255,7 @@ async function loadHirdetesek(){
         data.sort((a,b)=>{const ertekA=csomagErtekek[a.csomag]||0,ertekB=csomagErtekek[b.csomag]||0;if(ertekA!==ertekB)return ertekB-ertekA;return new Date(b.created_at)-new Date(a.created_at)});
         
         hirdetesekCache=data;
-        szuresAlkalmazasa(); // Átadjuk a szűrésnek az adatokat
+        szuresAlkalmazasa();
     }catch(error){
         if(hirdetesekLista)hirdetesekLista.innerHTML=`<p class="text-center text-red-600">Hiba a hirdetések betöltésekor.</p>`
     }
@@ -202,7 +275,6 @@ async function renderHirdetesek(hirdetesek){
         kiemelesClass=h.csomag==="extra"?"border-2 border-yellow-400":"",
         plecsniHTML=h.csomag==="extra"?`<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>`:"";
         
-        // *** ÚJ: Város megjelenítése ***
         const varosHTML = h.varos ? `<strong class="float-right">${h.varos}</strong>` : '';
 
         return`<div class="bg-white p-6 rounded-lg shadow-sm relative ${kiemelesClass}">
@@ -231,17 +303,14 @@ async function renderHirdetesek(hirdetesek){
 function szuresAlkalmazasa(){
     const searchText = (document.getElementById("search-input")?.value || "").toLowerCase();
     const category = document.getElementById("category-select")?.value || "";
-    // *** ÚJ: Város szűrő olvasása ***
     const city = (document.getElementById("filter-city")?.value || "").toLowerCase();
 
     const filtered = hirdetesekCache.filter(h => {
-        // MÓDOSÍTVA: A keresés a városra is kiterjed
         const matchesText = `${h.cim} ${h.leiras} ${h.varos || ''}`.toLowerCase().includes(searchText);
         const matchesCategory = !category || h.kategoria === category;
-        // *** ÚJ: Város szűrési feltétel ***
         const matchesCity = !city || (h.varos && h.varos.toLowerCase().includes(city));
         
-        return matchesText && matchesCategory && matchesCity; // MÓDOSÍTVA
+        return matchesText && matchesCategory && matchesCity;
     });
     renderHirdetesek(filtered);
 }
@@ -275,6 +344,9 @@ async function showFeltoltesPage() {
       <div id="payment-section" class="border-t pt-6"><div id="free-submit-section"><button type="button" id="free-submit-btn" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700">Hirdetés feladása</button></div><div id="paypal-button-container" class="hidden"></div></div>
     </form></div>`;
     setupFeltoltesListeners();
+
+    // === init autosave/restore for this form ===
+    initFeltoltesDraftIntegration();
 }
 
 function setupFeltoltesListeners(){const container=document.getElementById("feltoltes-page");container.querySelector("#generate-ad-btn").addEventListener("click",generateAdContent);const csomagSelect=container.querySelector("#csomag"),kepInput=container.querySelector("#kep-input"),freeSubmitBtn=container.querySelector("#free-submit-btn");csomagSelect.addEventListener("change",handleCsomagValtas);kepInput.addEventListener("change",handleKepKivalasztas);if(freeSubmitBtn)freeSubmitBtn.addEventListener("click",e=>{e.preventDefault();processAdSubmission()});handleCsomagValtas()}
@@ -333,17 +405,17 @@ async function processAdSubmission() {
 function getAdData(){
     const cim=document.getElementById("cim").value,
           leiras=document.getElementById("leiras").value,
-          varos=document.getElementById("varos").value; // ÚJ
-    
-    if(!cim || !leiras || !varos){ // MÓDOSÍTVA
-        showToast("A Cím, Leírás és Város mezők kitöltése kötelező!","error"); // MÓDOSÍTVA
+          varos=document.getElementById("varos").value;
+
+    if(!cim || !leiras || !varos){
+        showToast("A Cím, Leírás és Város mezők kitöltése kötelező!","error");
         return null;
     }
     return{
         cim,
         leiras,
-        varos, // ÚJ
-        iranyitoszam: document.getElementById("iranyitoszam").value||null, // ÚJ
+        varos,
+        iranyitoszam: document.getElementById("iranyitoszam").value||null,
         kategoria:document.getElementById("kategoria").value,
         ar:document.getElementById("ar").value||null,
         telefonszam:document.getElementById("telefonszam").value||null,
@@ -365,7 +437,7 @@ async function saveAdToDatabase(adData,kepUrlTomb=[]){
     lejaratiDatum.setDate(lejaratiDatum.getDate()+napok);
     
     const{error}=await supaClient.from("hirdetesek").insert({
-        ...adData, // Ez már tartalmazza a várost és irányítószámot
+        ...adData,
         user_id:session.user.id,
         email:session.user.email,
         csomag:csomagNev,
@@ -377,6 +449,8 @@ async function saveAdToDatabase(adData,kepUrlTomb=[]){
         showToast(`Hiba a mentéskor: ${error.message}`,"error");
         console.error("Supabase insert error:",error)
     }else{
+        // TÖRLJÜK A LOCALSTORAGE DRAFT-OT sikeres mentés után
+        clearFeltoltesDraft();
         showToast("Hirdetés sikeresen feladva!","success");
         window.location.hash="#home"
     }
@@ -431,7 +505,7 @@ async function generateAdContent() {
 }
 
 
-async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");let authHTML="";if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Kijelentkezés</button></div>`}else authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Bejelentkezés</a>`;navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Sikeres kijelentkezés!");window.location.hash="#home"}))}
+async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),navAuth=document.getElementById("nav-auth-section"),mobileNavAuth=document.getElementById("mobile-nav-auth-section");let authHTML="";if(session){const isAdmin=session.user.email===ADMIN_EMAIL;authHTML=`<div class="flex items-center gap-4"><span class="text-sm hidden lg:inline">${session.user.email}</span>${isAdmin?`<a href="#admin" class="text-sm font-medium text-yellow-600">Admin</a>`:""}<button id="logoutBtn" class="text-sm font-medium">Kijelentkezés</button></div>`}else authHTML=`<a href="#auth" class="text-base font-medium text-gray-500 hover:text-gray-900">Bejelentkezés</a>`;navAuth.innerHTML=authHTML;mobileNavAuth.innerHTML=authHTML.replace("hidden lg:inline","");if(session)document.querySelectorAll("#logoutBtn").forEach(btn=>btn.addEventListener("click",async()=>{await supaClient.auth.signOut();showToast("Sikeres kijelentkezés!");window.location.hash="#home"}))()}
 function showToast(message,type="success"){const toast=document.getElementById("toast-notification");toast.textContent=message;toast.className=`fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-transform duration-300 z-[110] ${type==="error"?"bg-red-500":"bg-green-500"}`;toast.classList.remove("translate-x-[120%]");setTimeout(()=>{toast.classList.add("translate-x-[120%]")},4e3)}
 window.openLightbox=imageUrl=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-img").src=imageUrl;lightbox.classList.remove("hidden");setTimeout(()=>lightbox.classList.remove("opacity-0"),10)};async function handleDeleteAd(adId){if(!confirm("Biztosan törölni szeretnéd ezt a hirdetést? Ez a művelet nem vonható vissza."))return;try{const{data:ad,error:selectError}=await supaClient.from("hirdetesek").select("kep_url_tomb,weboldal").eq("id",adId).single();if(selectError)throw selectError;if(ad.kep_url_tomb&&ad.kep_url_tomb.length>0){const filePaths=ad.kep_url_tomb.map(url=>(new URL(url)).pathname.split("/hirdetes-kepek/")[1]),{error:storageError}=await supaClient.storage.from("hirdetes-kepek").remove(filePaths);if(storageError)console.error("Hiba a képek törlésekor, de a hirdetést ettől még töröljük:",storageError)}const{error:deleteError}=await supaClient.from("hirdetesek").delete().eq("id",adId);if(deleteError)throw deleteError;showToast("Hirdetés sikeresen törölve.","success");loadHirdetesek()}catch(error){showToast(`Hiba a törlés során: ${error.message}`,"error");console.error("Delete ad error:",error)}}
 async function showAdminPage(){const container=document.getElementById("admin-page");container.innerHTML=`<div class="flex justify-center py-10"><div class="loader"></div></div>`;const{data:{session}}=await supaClient.auth.getSession();if(!session||session.user.email!==ADMIN_EMAIL){container.innerHTML=`<p class="text-red-500 text-center">Nincs jogosultságod az oldal megtekintéséhez.</p>`;return}try{const{data:hirdetesek,error}=await supaClient.from("hirdetesek").select("*").order("created_at",{ascending:!1});if(error)throw error;container.innerHTML=`<h2 class="text-2xl font-bold mb-4">Adminisztráció - Hirdetések kezelése</h2><div class="bg-white rounded-lg shadow-sm overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr><th class="p-4">Cím</th><th class="p-4">Felhasználó</th><th class="p-4">Lejárat</th><th class="p-4">Műveletek</th></tr></thead><tbody>${hirdetesek.map(h=>`<tr class="border-b"><td class="p-4">${h.cim}</td><td class="p-4">${h.email}</td><td class="p-4 whitespace-nowrap">${h.lejárati_datum?(new Date(h.lejárati_datum)).toLocaleDateString("hu-HU"):"N/A"}</td><td class="p-4 space-x-2"><button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Törlés</button></td></tr>`).join("")}</tbody></table></div>`}catch(err){container.innerHTML=`<p class="text-red-500 text-center">Hiba a hirdetések betöltésekor: ${err.message}</p>`}}
