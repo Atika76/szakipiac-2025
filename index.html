@@ -44,6 +44,7 @@
         <span class="opacity-60 mx-1">|</span>
         <a href="/En/index.html#home" class="text-gray-600 hover:underline">EN</a>
     </div>
+    
     <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -123,9 +124,10 @@
     <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
 
 <script type="module">
-// ===== Segédfüggvények =====
+// ===== YOUTUBE VIDEO HELP =====
 function getYouTubeEmbedUrl(url){if(!url)return null;try{const urlObj=new URL(url);let videoId;if(urlObj.hostname==="youtu.be")videoId=urlObj.pathname.slice(1);else if(urlObj.hostname.includes("youtube.com")&&urlObj.searchParams.has("v"))videoId=urlObj.searchParams.get("v");return videoId?`https://www.youtube.com/embed/${videoId}`:null}catch(e){console.error("Invalid video URL:",e);return null}}
 
+// ===== REKLÁM SLIDER =====
 const reklamok=[{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png",alt:"Hirdess a SzakiPiac-2025 oldalon!"},{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png",alt:"SzakiPiac-2025: Hirdess, találj, dolgozz!"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",alt:"Alza.hu – Vásárolj online!"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",alt:"eMAG – Óriási választék!"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",alt:"Temu"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png",alt:"Lidl"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png",alt:"Aldi"}];let reklamIndex=0,reklamTimer=null;function renderReklamSlide(index){const slides=document.getElementById("reklam-slides");if(!slides||!reklamok.length)return;const ad=reklamok[index],linkClass=ad.url.startsWith("#")?"nav-link":"";slides.innerHTML=`<a href="${ad.url}" class="${linkClass} block w-full h-[250px] transition-all duration-500" ${!linkClass?'target="_blank" rel="noopener sponsored"':""}><img src="${ad.img}" alt="${ad.alt||""}" class="w-full h-full object-contain p-2 bg-white rounded-md shadow" draggable="false"></a>`;const dots=document.getElementById("reklam-dots");if(dots)dots.innerHTML=reklamok.map((_,i)=>`<button class="w-3 h-3 rounded-full border-2 ${i===index?"bg-green-600 border-green-700":"bg-white border-gray-400"}" onclick="showReklamSlide(${i})" aria-label="Reklám ${i+1}"></button>`).join("")}
 function showReklamSlide(index){reklamIndex=index;renderReklamSlide(reklamIndex);resetReklamTimer()}
 function reklamPrev(){reklamIndex=(reklamIndex-1+reklamok.length)%reklamok.length;renderReklamSlide(reklamIndex);resetReklamTimer()}
@@ -133,19 +135,19 @@ function reklamNext(){reklamIndex=(reklamIndex+1)%reklamok.length;renderReklamSl
 function resetReklamTimer(){if(reklamTimer)clearInterval(reklamTimer);if(reklamok.length>1)reklamTimer=setInterval(()=>reklamNext(),4e3)}
 document.addEventListener("DOMContentLoaded",()=>{if(document.getElementById("reklam-slider")){renderReklamSlide(reklamIndex);const prev=document.getElementById("slider-prev"),next=document.getElementById("slider-next");if(prev)prev.addEventListener("click",reklamPrev);if(next)next.addEventListener("click",reklamNext);resetReklamTimer()}});window.showReklamSlide=showReklamSlide;
 
-// ===== KONFIGURÁCIÓ =====
+// ===== CONFIG =====
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
-// ===== VÁLTOZÓK =====
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
+
+// ===== DRAFT =====
 const FELTOLTES_DRAFT_KEY = 'szakipiac_feltoltes_draft_v1';
 const DRAFT_FIELDS = ['cim','leiras','varos','iranyitoszam','kategoria','telefonszam','weboldal','video_url','ar','csomag','gemini-keywords'];
 
-// ===== Draft Kezelés =====
 function saveFeltoltesDraft() { try { const draft = {}; DRAFT_FIELDS.forEach(id => { const el = document.getElementById(id); if (!el) return; draft[id] = el.value; }); localStorage.setItem(FELTOLTES_DRAFT_KEY, JSON.stringify({ data: draft, savedAt: new Date().toISOString() })); } catch (e) { console.error('Draft save error', e); } }
 function restoreFeltoltesDraft() { try { const raw = localStorage.getItem(FELTOLTES_DRAFT_KEY); if (!raw) return false; const parsed = JSON.parse(raw); if (!parsed || !parsed.data) return false; const draft = parsed.data; DRAFT_FIELDS.forEach(id => { const el = document.getElementById(id); if (!el) return; if (draft[id] !== undefined) el.value = draft[id]; }); if (document.getElementById('csomag')) handleCsomagValtas(); return true; } catch (e) { console.error('Draft restore error', e); return false; } }
 function clearFeltoltesDraft() { try { localStorage.removeItem(FELTOLTES_DRAFT_KEY); } catch (e) { console.error('Draft clear error', e); } }
@@ -187,7 +189,9 @@ async function renderHirdetesek(hirdetesek){
     const hirdetesekLista=document.getElementById("hirdetesek-lista");
     if(!hirdetesekLista)return;
     const{data:{session}}=await supaClient.auth.getSession();
+    
     if(!hirdetesek||hirdetesek.length===0){hirdetesekLista.innerHTML="<p class='text-center text-gray-500'>Nincs találat.</p>";return}
+    
     hirdetesekLista.innerHTML=hirdetesek.map(h=>{
         const embedUrl=getYouTubeEmbedUrl(h.video_url),videoHTML=embedUrl?`<div class="aspect-w-16 aspect-h-9 my-4 rounded-lg overflow-hidden shadow"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`:"",isOwner=session&&session.user.id===h.user_id,isAdmin=session&&session.user.email===ADMIN_EMAIL,kepekHTML=h.kep_url_tomb&&h.kep_url_tomb.length>0?`<div class="flex flex-wrap gap-2 mb-4">${h.kep_url_tomb.map(url=>`<img src="${url}" class="h-20 w-20 object-cover rounded-md cursor-pointer" onclick="openLightbox('${url}')">`).join("")}</div>`:"",deleteButtonHTML=isOwner||isAdmin?`<button onclick="handleDeleteAd('${h.id}')" class="px-3 py-1.5 text-sm text-white bg-red-600 rounded-md hover:bg-red-700">Törlés</button>`:"",kiemelesClass=h.csomag==="extra"?"border-2 border-yellow-400":"",plecsniHTML=h.csomag==="extra"?`<div class="absolute top-0 right-0 -mt-3 -mr-3 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-10">EXTRA</div>`:"";
         const varosHTML=h.varos?`<strong class="float-right">${h.varos}</strong>`:'';
@@ -208,9 +212,41 @@ async function handleKepKivalasztas(event){const files=Array.from(event.target.f
 function renderKepElonezetek(){const preview=document.getElementById("kep-elonezetek");if(!preview)return;preview.innerHTML="";kivalasztottKepek.forEach((file,i)=>{const r=new FileReader;r.onload=e=>{const div=document.createElement("div");div.className="relative";div.innerHTML=`<img src="${e.target.result}" class="w-full h-20 object-cover rounded"><button onclick="kepTorlese(${i})" class="absolute top-0 right-0 bg-red-600 text-white rounded-full w-6 h-6">&times;</button>`;preview.appendChild(div)};r.readAsDataURL(file)})}
 function kepTorlese(i){kivalasztottKepek.splice(i,1);renderKepElonezetek()}
 
+// --- A JAVÍTOTT KÉPFELTÖLTŐ FÜGGVÉNY ---
+async function uploadKepek(files) {
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session || files.length === 0) return [];
+
+    const uploadPromises = files.map(file => {
+        // 1. Fájl kiterjesztés kinyerése
+        const fileExt = file.name.split('.').pop();
+        
+        // 2. BIZTONSÁGOS NÉV GENERÁLÁSA (Időbélyeg + Véletlen szám)
+        // Így nem lesznek ékezetek, amik hibát okoznak
+        const safeName = `${Date.now()}_${Math.floor(Math.random() * 10000)}.${fileExt}`;
+        
+        const fileName = `${session.user.id}/${safeName}`;
+
+        return supaClient.storage.from("hirdetes-kepek").upload(fileName, file);
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const urls = [];
+
+    for (const result of results) {
+        if (result.error) {
+            console.error("Hiba a kép feltöltésekor:", result.error.message);
+            throw new Error(`Szerver hiba: ${result.error.message}`);
+        }
+        const { data } = supaClient.storage.from("hirdetes-kepek").getPublicUrl(result.data.path);
+        urls.push(data.publicUrl);
+    }
+    return urls;
+}
+
 async function processAdSubmission(){const{data:{session}}=await supaClient.auth.getSession();if(!session){showToast("Jelentkezz be!","error");return}const adData=getAdData();if(!adData)return;showToast("Feltöltés...","info");try{const urls=await uploadKepek(kivalasztottKepek);await saveAdToDatabase(adData,urls)}catch(e){showToast("Hiba: "+e.message,"error")}}
 function getAdData(){const cim=document.getElementById("cim").value,leiras=document.getElementById("leiras").value,varos=document.getElementById("varos").value;if(!cim||!leiras||!varos){showToast("Töltsd ki a kötelező mezőket!","error");return null}return{cim,leiras,varos,iranyitoszam:document.getElementById("iranyitoszam").value||null,kategoria:document.getElementById("kategoria").value,ar:document.getElementById("ar").value||null,telefonszam:document.getElementById("telefonszam").value||null,weboldal:document.getElementById("weboldal").value||null,video_url:document.getElementById("video_url").value||null}}
-async function uploadKepek(files){const{data:{session}}=await supaClient.auth.getSession();if(!session||!files.length)return[];return Promise.all(files.map(async f=>{const n=`${session.user.id}/${Date.now()}_${f.name}`,{data,error}=await supaClient.storage.from("hirdetes-kepek").upload(n,f);if(error)throw error;return supaClient.storage.from("hirdetes-kepek").getPublicUrl(data.path).data.publicUrl}))}
+
 async function saveAdToDatabase(data,urls=[]){const{data:{session}}=await supaClient.auth.getSession();const csomag=document.getElementById("csomag").value.split("_")[0];let napok={alap:7,premium:14,extra:30}[csomag]||7;const lejarat=new Date;lejarat.setDate(lejarat.getDate()+napok);const{error}=await supaClient.from("hirdetesek").insert({...data,user_id:session.user.id,email:session.user.email,csomag,kep_url_tomb:urls,lejárati_datum:lejarat.toISOString()});if(error)showToast("Hiba mentéskor","error");else{clearFeltoltesDraft();showToast("Kész!","success");window.location.hash="#home"}}
 function renderPayPalButton(p,n){paypal.Buttons({createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{currency_code:"HUF",value:p}}]}),onApprove:(d,a)=>a.order.capture().then(()=>processAdSubmission())}).render("#paypal-button-container")}
 async function generateAdContent(){const k=document.getElementById("gemini-keywords").value;if(!k)return;try{const{data,error}=await supaClient.functions.invoke('generate-ad',{body:{query:k}});if(error||data.error)throw error;document.getElementById("cim").value=data.title;document.getElementById("leiras").value=data.description;showToast("Generálva!","success")}catch(e){showToast("Hiba generáláskor","error")}}
