@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SzakiPiac-2025.hu</title>
+    <title>SzakiPiac-2025.hu - Találj megbízható szakembert!</title>
 
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -132,7 +132,7 @@ function showToast(message, type="success") {
     setTimeout(() => toast.classList.add("translate-x-[120%]"), 4000);
 }
 
-// 3. REKLÁM SLIDER (JAVÍTOTT)
+// 3. REKLÁM SLIDER
 const reklamok=[{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png"},{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png"}];
 let rIndex=0, rTimer=null;
 
@@ -182,7 +182,22 @@ async function showHomePage() {
             <div class="grid md:grid-cols-3 gap-4">
                 <input type="text" id="search" placeholder="Keresés..." class="w-full border p-2 rounded">
                 <input type="text" id="filter-city" placeholder="Város" class="w-full border p-2 rounded">
-                <select id="category-select" class="w-full border p-2 rounded"><option value="">Összes kategória</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select>
+                <select id="category-select" class="w-full border p-2 rounded">
+                    <option value="">Összes kategória</option>
+                    <option>Kőműves</option>
+                    <option>Burkoló</option>
+                    <option>Festő</option>
+                    <option>Villanyszerelő</option>
+                    <option>Víz-Gáz-Fűtés</option>
+                    <option>Ács / Tetőfedő</option>
+                    <option>Asztalos</option>
+                    <option>Kertépítés</option>
+                    <option>Takarítás</option>
+                    <option>Gépészet</option>
+                    <option>Lakberendezés</option>
+                    <option>Számítástechnika</option>
+                    <option>Egyéb</option>
+                </select>
             </div>
         </div>
         <div id="hirdetes-lista" class="space-y-6"><div class="loader mx-auto"></div></div>
@@ -238,7 +253,7 @@ async function showKapcsolatPage(){
     c.querySelector("#contact-form").addEventListener("submit", e=>{e.preventDefault();showToast("Köszönjük, üzenetét fogadtuk!","info");e.target.reset()});
 }
 
-// 6. HIRDETÉSEK BETÖLTÉSE
+// 6. HIRDETÉSEK BETÖLTÉSE (JAVÍTVA: Weboldal gomb!)
 async function loadAds() {
     const listEl = document.getElementById("hirdetes-lista");
     try {
@@ -277,7 +292,12 @@ function renderAds(list) {
                     ${images}
                     ${video}
                     <div class="mt-4 flex flex-wrap justify-between items-center border-t pt-4">
-                        <div class="flex gap-2"><a href="mailto:${h.email}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm">Email</a>${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm">Hívás</a>` : ""}</div>
+                        <div class="flex gap-2 flex-wrap">
+                            <a href="mailto:${h.email}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
+                            ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
+                            
+                            ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
+                        </div>
                         ${delBtn}
                     </div>
                 </div>
@@ -287,11 +307,19 @@ function renderAds(list) {
 }
 function filterAds() {
     const txt = document.getElementById("search").value.toLowerCase();
-    const filtered = hirdetesekCache.filter(h => (h.cim + h.leiras).toLowerCase().includes(txt));
+    const cat = document.getElementById("category-select").value;
+    const city = document.getElementById("filter-city").value.toLowerCase();
+    
+    const filtered = hirdetesekCache.filter(h => {
+        const mTxt = (h.cim + h.leiras).toLowerCase().includes(txt);
+        const mCat = !cat || cat === "Összes kategória" || h.kategoria === cat;
+        const mCity = !city || (h.varos && h.varos.toLowerCase().includes(city));
+        return mTxt && mCat && mCity;
+    });
     renderAds(filtered);
 }
 
-// 7. FELTÖLTÉS
+// 7. FELTÖLTÉS (JAVÍTOTT KATEGÓRIÁK)
 async function showFeltoltesPage() {
     const {data: {session}} = await supaClient.auth.getSession();
     const c = document.getElementById("feltoltes-page");
@@ -306,8 +334,27 @@ async function showFeltoltesPage() {
                 <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required>
                 <textarea id="leiras" placeholder="Leírás" class="w-full border p-2 rounded" rows="5" required></textarea>
                 <div class="grid md:grid-cols-2 gap-4"><input id="varos" placeholder="Város" class="w-full border p-2 rounded" required><input id="iranyitoszam" placeholder="Irányítószám" class="w-full border p-2 rounded"></div>
-                <div class="grid md:grid-cols-2 gap-4"><select id="kategoria" class="w-full border p-2 rounded" required><option value="">Kategória...</option><option>Építőipar</option><option>Egyéb</option></select><input id="telefonszam" placeholder="Telefonszám" class="w-full border p-2 rounded"></div>
-                <div class="grid md:grid-cols-2 gap-4"><input id="weboldal" placeholder="Weboldal" class="w-full border p-2 rounded"><div id="video-wrapper"><input id="video" placeholder="YouTube videó" class="w-full border p-2 rounded"></div></div>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <select id="kategoria" class="w-full border p-2 rounded" required>
+                        <option value="">Válassz kategóriát...</option>
+                        <option>Kőműves</option>
+                        <option>Burkoló</option>
+                        <option>Festő</option>
+                        <option>Villanyszerelő</option>
+                        <option>Víz-Gáz-Fűtés</option>
+                        <option>Ács / Tetőfedő</option>
+                        <option>Asztalos</option>
+                        <option>Kertépítés</option>
+                        <option>Takarítás</option>
+                        <option>Gépészet</option>
+                        <option>Lakberendezés</option>
+                        <option>Számítástechnika</option>
+                        <option>Egyéb</option>
+                    </select>
+                    <input id="telefonszam" placeholder="Telefonszám" class="w-full border p-2 rounded">
+                </div>
+                <div class="grid md:grid-cols-2 gap-4"><input id="weboldal" placeholder="Weboldal (pl. https://www.sajatoldal.hu)" class="w-full border p-2 rounded"><div id="video-wrapper"><input id="video" placeholder="YouTube videó" class="w-full border p-2 rounded"></div></div>
                 <input id="ar" type="number" placeholder="Ár (Ft)" class="w-full border p-2 rounded">
                 <div class="border p-4 rounded bg-gray-50"><label class="font-bold mb-2 block">Csomag:</label><select id="csomag" class="w-full border p-2 rounded mb-2" onchange="updatePackageInfo()"><option value="alap">Alap (Ingyen, 2 kép)</option><option value="premium">Prémium (990 Ft, 4 kép)</option><option value="extra">Extra (1990 Ft, 8 kép)</option></select><p id="package-info" class="text-sm text-gray-600"></p></div>
                 <div class="border-dashed border-2 border-gray-300 p-6 text-center rounded"><label class="cursor-pointer block"><span class="text-green-600 font-bold">Képek</span> (Max <span id="max-img">2</span>)<input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(this)"></label><div id="preview-container" class="flex gap-2 justify-center mt-4 flex-wrap"></div></div>
@@ -415,7 +462,7 @@ async function processUpload() {
     }
 }
 
-// 8. AUTH & ADMIN (JAVÍTOTT DÁTUMOS TÁBLÁZAT)
+// 8. AUTH & ADMIN
 async function showAuthPage() {
     const c = document.getElementById("auth-page");
     c.innerHTML = `<div class="bg-white p-8 rounded shadow-sm max-w-md mx-auto text-center"><h2 class="text-2xl font-bold mb-4">Bejelentkezés</h2><form id="login-form" class="space-y-4"><input type="email" name="email" placeholder="Email" class="w-full border p-2 rounded" required><input type="password" name="password" placeholder="Jelszó" class="w-full border p-2 rounded" required><button class="w-full bg-green-600 text-white p-2 rounded">Mehet</button></form></div>`;
@@ -500,9 +547,9 @@ async function init() {
 
     handleRouteChange();
     
-    renderReklam(); // SLIDER INDÍTÁS
-    document.getElementById("slider-prev").addEventListener("click", prevReklam);
-    document.getElementById("slider-next").addEventListener("click", nextReklam);
+    renderReklamSlide(0);
+    document.getElementById("slider-prev").addEventListener("click", reklamPrev);
+    document.getElementById("slider-next").addEventListener("click", reklamNext);
     resetReklamTimer();
 }
 
