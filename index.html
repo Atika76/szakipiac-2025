@@ -5,13 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SzakiPiac-2025.hu - Találj megbízható szakembert!</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-    <link rel="shortcut icon" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,7 +26,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="fixed bottom-4 right-4 z-[60] text-sm bg-white border border-gray-200 px-3 py-2 rounded-full shadow-lg flex gap-2 items-center">
+    <div class="fixed bottom-4 right-4 z-[60] text-xs bg-white border border-gray-200 px-3 py-2 rounded-full shadow-lg flex gap-2 items-center opacity-90 hover:opacity-100 transition">
         <span class="font-bold text-gray-900">HU</span>
         <span class="text-gray-300">|</span>
         <a href="/En/index.html#home" class="text-gray-500 hover:text-green-600 font-medium">EN</a>
@@ -44,7 +39,7 @@
                 <div class="flex items-center">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
                         <img class="h-8 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="SzakiPiac logó">
-                        <span class="block md:hidden xl:block">SzakiPiac-2025.hu</span>
+                        <span class="hidden sm:block">SzakiPiac-2025.hu</span>
                     </a>
                 </div>
                 
@@ -62,26 +57,26 @@
                 
                 <div id="nav-auth-section" class="hidden md:block ml-4"></div>
                 
-                <div class="md:hidden">
-                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none ring-1 ring-gray-200">
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-3 rounded-md text-gray-700 hover:text-black hover:bg-gray-100 focus:outline-none ring-1 ring-gray-300 shadow-sm bg-white">
                         <svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
                 </div>
             </div>
             
-            <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-gray-100">
-                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                    <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-3 rounded-md text-base font-medium">Főoldal</a>
-                    <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-3 rounded-md text-base font-medium">Rólunk</a>
-                    <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-3 rounded-md text-base font-medium">Kapcsolat</a>
+            <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0 z-50">
+                <div class="px-4 pt-4 pb-6 space-y-2">
+                    <a href="#home" class="nav-link text-gray-700 hover:bg-gray-50 block px-3 py-3 rounded-md text-base font-medium border-b border-gray-100">🏠 Főoldal</a>
+                    <a href="#rolunk" class="nav-link text-gray-700 hover:bg-gray-50 block px-3 py-3 rounded-md text-base font-medium border-b border-gray-100">ℹ️ Rólunk</a>
+                    <a href="#kapcsolat" class="nav-link text-gray-700 hover:bg-gray-50 block px-3 py-3 rounded-md text-base font-medium border-b border-gray-100">✉️ Kapcsolat</a>
                     
-                    <a href="kalkulator.html" class="text-orange-600 hover:bg-orange-50 block px-3 py-3 rounded-md text-base font-bold border border-orange-200 flex items-center gap-2">
-                        <span>🧮</span> AI Kalkulátor
+                    <a href="kalkulator.html" class="text-orange-600 bg-orange-50 block px-3 py-3 rounded-md text-base font-bold border border-orange-200 flex items-center gap-2">
+                        🧮 AI Árkalkulátor
                     </a>
 
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-3 rounded-md text-base font-medium mt-2 text-center">Hirdetés feltöltése</a>
+                    <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-3 rounded-md text-base font-medium mt-4 text-center shadow">📢 Hirdetés feltöltése</a>
                     
                     <div id="mobile-nav-auth-section" class="pt-4 mt-4 border-t border-gray-200 text-center"></div>
                 </div>
@@ -89,7 +84,8 @@
         </nav>
     </header>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
+        
         <div id="main-loader" class="page-content flex justify-center items-center py-20" style="display: none;">
             <div class="loader"></div>
         </div>
@@ -103,8 +99,9 @@
                 <div id="auth-page" class="page-content"></div>
                 <div id="admin-page" class="page-content"></div>
             </div>
+            
             <aside class="hidden lg:block space-y-6">
-              <div class="bg-white p-6 rounded-lg shadow-sm">
+              <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 sticky top-24">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Partnereink és ajánlataink</h3>
                 <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
                   <div id="reklam-slides"></div>
@@ -121,14 +118,14 @@
         </div>
     </main>
     
-    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-[100] hidden items-center justify-center opacity-0 lightbox"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span><img id="lightbox-img" class="max-w-[90%] max-h-[85%] rounded-lg"></div>
-    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-300 z-[110]"></div>
+    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-80 z-[100] hidden items-center justify-center opacity-0 lightbox backdrop-blur-sm"><span id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span><img id="lightbox-img" class="max-w-[95%] max-h-[90%] rounded-lg shadow-2xl"></div>
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-xl transform translate-x-[120%] transition-transform duration-300 z-[110] font-medium flex items-center gap-2"></div>
 
 <script type="module">
-// ===== YOUTUBE HELPER =====
+// ===== YOUTUBE VIDEO SEGÉD =====
 function getYouTubeEmbedUrl(url){if(!url)return null;try{const urlObj=new URL(url);let videoId;if(urlObj.hostname==="youtu.be")videoId=urlObj.pathname.slice(1);else if(urlObj.hostname.includes("youtube.com")&&urlObj.searchParams.has("v"))videoId=urlObj.searchParams.get("v");return videoId?`https://www.youtube.com/embed/${videoId}`:null}catch(e){console.error("Invalid video URL:",e);return null}}
 
-// ===== REKLÁM SLIDER =====
+// ===== REKLÁM SLIDER BEÁLLÍTÁSOK =====
 const reklamok=[{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png",alt:"Hirdess a SzakiPiac-2025 oldalon!"},{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png",alt:"SzakiPiac-2025: Hirdess, találj, dolgozz!"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg",alt:"Alza.hu – Vásárolj online!"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg",alt:"eMAG – Óriási választék!"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg",alt:"Temu"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png",alt:"Lidl"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png",alt:"Aldi"}];let reklamIndex=0,reklamTimer=null;function renderReklamSlide(index){const slides=document.getElementById("reklam-slides");if(!slides||!reklamok.length)return;const ad=reklamok[index],linkClass=ad.url.startsWith("#")?"nav-link":"";slides.innerHTML=`<a href="${ad.url}" class="${linkClass} block w-full h-[250px] transition-all duration-500" ${!linkClass?'target="_blank" rel="noopener sponsored"':""}><img src="${ad.img}" alt="${ad.alt||""}" class="w-full h-full object-contain p-2 bg-white rounded-md shadow" draggable="false"></a>`;const dots=document.getElementById("reklam-dots");if(dots)dots.innerHTML=reklamok.map((_,i)=>`<button class="w-3 h-3 rounded-full border-2 ${i===index?"bg-green-600 border-green-700":"bg-white border-gray-400"}" onclick="showReklamSlide(${i})" aria-label="Reklám ${i+1}"></button>`).join("")}
 function showReklamSlide(index){reklamIndex=index;renderReklamSlide(reklamIndex);resetReklamTimer()}
 function reklamPrev(){reklamIndex=(reklamIndex-1+reklamok.length)%reklamok.length;renderReklamSlide(reklamIndex);resetReklamTimer()}
@@ -136,7 +133,7 @@ function reklamNext(){reklamIndex=(reklamIndex+1)%reklamok.length;renderReklamSl
 function resetReklamTimer(){if(reklamTimer)clearInterval(reklamTimer);if(reklamok.length>1)reklamTimer=setInterval(()=>reklamNext(),4e3)}
 document.addEventListener("DOMContentLoaded",()=>{if(document.getElementById("reklam-slider")){renderReklamSlide(reklamIndex);const prev=document.getElementById("slider-prev"),next=document.getElementById("slider-next");if(prev)prev.addEventListener("click",reklamPrev);if(next)next.addEventListener("click",reklamNext);resetReklamTimer()}});window.showReklamSlide=showReklamSlide;
 
-// ===== CONFIG =====
+// ===== SUPABASE KONFIG =====
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -145,7 +142,7 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
-// ===== DRAFT SYSTEM =====
+// ===== DRAFT (MENTÉS) =====
 const FELTOLTES_DRAFT_KEY = 'szakipiac_feltoltes_draft_v1';
 const DRAFT_FIELDS = ['cim','leiras','varos','iranyitoszam','kategoria','telefonszam','weboldal','video_url','ar','csomag','gemini-keywords'];
 
@@ -160,7 +157,7 @@ const router = {'#home': showHomePage, '#rolunk': showRolunkPage, '#kapcsolat': 
 function showPage(pageId){document.querySelectorAll(".page-content").forEach(p=>{if(p.id!=="main-loader")p.style.display="none"});const activePage=document.getElementById(pageId+"-page");if(activePage)activePage.style.display="block"}
 async function handleRouteChange(){const hash=window.location.hash||"#home";document.querySelectorAll(".page-content").forEach(p=>p.style.display="none");const mainLoader=document.getElementById("main-loader");if(mainLoader)mainLoader.style.display="flex";const routeHandler=router[hash]||router["#home"];try{await routeHandler();if(mainLoader)mainLoader.style.display="none";showPage(hash.substring(1))}catch(err){console.error(`Hiba:`,err);if(mainLoader)mainLoader.style.display="none"}document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("bg-gray-100",link.getAttribute("href")===hash));document.getElementById("mobile-menu")?.classList.add("hidden")}
 
-// ===== OLDALAK =====
+// ===== OLDALAK MEGJELENÍTÉSE =====
 async function showHomePage(){
     const container=document.getElementById("home-page");
     container.innerHTML=`<div class="text-center mb-8"><h1 class="text-4xl font-bold">Üdvözlünk a <span class="text-green-600">SzakiPiac-2025.hu</span>-n!</h1><p class="mt-3 text-lg text-gray-500">Találj megbízható szakembert, vagy hirdess és szerezz új ügyfeleket!</p></div><div class="mb-12"><a href="#feltoltes" class="nav-link block group"><img src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png" alt="Hirdessen Nálunk!" class="w-full rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-300"></a></div><div class="bg-white p-6 rounded-lg shadow-sm mb-8"><h2 class="text-2xl font-bold text-center mb-4">Böngéssz a hirdetések között</h2><div class="grid md:grid-cols-3 gap-4"><input type="text" id="search-input" placeholder="Keresés..." class="w-full border-gray-300 rounded-md"><input type="text" id="filter-city" placeholder="Város" class="w-full border-gray-300 rounded-md" autocomplete="off"><select id="category-select" class="w-full border-gray-300 rounded-md"><option value="">Összes kategória</option><option>Építőipar</option><option>Villanyszerelés</option><option>Gépészet</option><option>Festés</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Kertépítés, karbantartás</option><option>Egyéb</option></select></div></div><div id="hirdetes-lista" class="space-y-6"><div class="flex justify-center py-10"><div class="loader"></div></div></div>`;
@@ -219,7 +216,6 @@ async function uploadKepek(files) {
     if (!session || files.length === 0) return [];
 
     const uploadPromises = files.map(file => {
-        // Ékezetmentes, biztonságos név generálása
         const fileExt = file.name.split('.').pop();
         const safeName = `${Date.now()}_${Math.floor(Math.random() * 10000)}.${fileExt}`;
         const fileName = `${session.user.id}/${safeName}`;
@@ -243,7 +239,7 @@ async function saveAdToDatabase(data,urls=[]){const{data:{session}}=await supaCl
 function renderPayPalButton(p,n){paypal.Buttons({createOrder:(d,a)=>a.order.create({purchase_units:[{amount:{currency_code:"HUF",value:p}}]}),onApprove:(d,a)=>a.order.capture().then(()=>processAdSubmission())}).render("#paypal-button-container")}
 async function generateAdContent(){const k=document.getElementById("gemini-keywords").value;if(!k)return;try{const{data,error}=await supaClient.functions.invoke('generate-ad',{body:{query:k}});if(error||data.error)throw error;document.getElementById("cim").value=data.title;document.getElementById("leiras").value=data.description;showToast("Generálva!","success")}catch(e){showToast("Hiba generáláskor","error")}}
 
-async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),nav=document.getElementById("nav-auth-section"),mobileNav=document.getElementById("mobile-nav-auth-section");const html=session?`<div class="flex items-center gap-2"><span>${session.user.email}</span><button onclick="logout()" class="text-sm font-bold">Kilépés</button></div>`:`<a href="#auth">Belépés</a>`;nav.innerHTML=html;mobileNav.innerHTML=html;}
+async function handleAuthUI(){const{data:{session}}=await supaClient.auth.getSession(),nav=document.getElementById("nav-auth-section"),mobileNav=document.getElementById("mobile-nav-auth-section");const html=session?`<div class="flex items-center gap-2"><span>${session.user.email}</span><button onclick="logout()" class="text-sm font-bold">Kilépés</button></div>`:`<a href="#auth">Belépés</a>`;if(nav)nav.innerHTML=html;if(mobileNav)mobileNav.innerHTML=html;}
 window.logout=async()=>{await supaClient.auth.signOut();showToast("Kilépve");window.location.reload()}
 function showToast(m,t="success"){const n=document.getElementById("toast-notification");n.textContent=m;n.className=`fixed top-5 right-5 text-white py-2 px-4 rounded ${t==="error"?"bg-red-500":"bg-green-500"}`;n.classList.remove("translate-x-[120%]");setTimeout(()=>n.classList.add("translate-x-[120%]"),4000)}
 window.openLightbox=u=>{document.getElementById("lightbox-img").src=u;document.getElementById("lightbox").classList.remove("hidden","opacity-0")}
