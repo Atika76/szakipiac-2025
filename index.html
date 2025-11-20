@@ -53,22 +53,36 @@
                         <span>SzakiPiac-2025.hu</span>
                     </a>
                 </div>
+                
                 <div class="hidden md:flex items-center space-x-1">
                     <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Főoldal</a>
                     <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Rólunk</a>
                     <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Kapcsolat</a>
-                    <a href="#feltoltes" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">Hirdetés feltöltése</a>
+                    
+                    <a href="kalkulator.html" class="nav-link text-orange-600 hover:bg-orange-50 px-3 py-2 rounded-md text-sm font-bold border border-orange-200 flex items-center gap-1 transition-all shadow-sm hover:shadow">
+                        <span>🧮</span> AI Kalkulátor
+                    </a>
+
+                    <a href="#feltoltes" class="nav-link bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium ml-2">Hirdetés feltöltése</a>
                 </div>
-                <div id="nav-auth-section" class="hidden md:block"></div>
+                
+                <div id="nav-auth-section" class="hidden md:block ml-4"></div>
+                
                 <div class="md:hidden">
                     <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
                 </div>
             </div>
+            
             <div id="mobile-menu" class="md:hidden hidden">
                 <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                     <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Főoldal</a>
                     <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Rólunk</a>
                     <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Kapcsolat</a>
+                    
+                    <a href="kalkulator.html" class="nav-link text-orange-600 hover:bg-orange-50 block px-3 py-2 rounded-md text-base font-bold border border-orange-200">
+                        🧮 AI Árkalkulátor
+                    </a>
+
                     <a href="#feltoltes" class="nav-link bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium">Hirdetés feltöltése</a>
                     <div id="mobile-nav-auth-section" class="pt-4 mt-4 border-t border-gray-200"></div>
                 </div>
@@ -126,7 +140,7 @@ document.addEventListener("DOMContentLoaded",()=>{if(document.getElementById("re
 
 // ===== KONFIGURÁCIÓ =====
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
@@ -150,7 +164,6 @@ function saveFeltoltesDraft() {
       data: draft,
       savedAt: new Date().toISOString()
     }));
-    // console.log('Draft saved');
   } catch (e) {
     console.error('Draft save error', e);
   }
@@ -168,7 +181,6 @@ function restoreFeltoltesDraft() {
       if (!el) return;
       if (draft[id] !== undefined) el.value = draft[id];
     });
-    // ha volt csomag kiválasztás, frissítsük az állapotot:
     if (document.getElementById('csomag')) handleCsomagValtas();
     return true;
   } catch (e) {
@@ -194,13 +206,8 @@ function attachDraftHandlers() {
       timer = setTimeout(saveFeltoltesDraft, 800);
     });
   });
-
-  // mentés amikor elhagyják az oldalt (tab váltás, fül zárás)
   window.addEventListener('beforeunload', (e) => {
     saveFeltoltesDraft();
-    // opcionális figyelmeztetés:
-    // e.preventDefault();
-    // e.returnValue = '';
   });
 }
 
@@ -401,7 +408,6 @@ async function processAdSubmission() {
     }
 }
 
-// *** MÓDOSÍTVA: Helymeghatározás (getAdData) ***
 function getAdData(){
     const cim=document.getElementById("cim").value,
           leiras=document.getElementById("leiras").value,
@@ -423,11 +429,9 @@ function getAdData(){
         video_url:document.getElementById("video_url").value||null
     }
 }
-// *** MÓDOSÍTÁS VÉGE ***
 
 async function uploadKepek(files){const{data:{session}}=await supaClient.auth.getSession();if(!session||files.length===0)return[];const uploadPromises=files.map(file=>{const fileName=`${session.user.id}/${Date.now()}_${file.name}`;return supaClient.storage.from("hirdetes-kepek").upload(fileName,file)}),results=await Promise.all(uploadPromises),urls=[];for(const result of results){if(result.error){console.error("Hiba a kép feltöltésekor:",result.error.message);throw new Error("Hiba a kép feltöltésekor.")}const{data}=supaClient.storage.from("hirdetes-kepek").getPublicUrl(result.data.path);urls.push(data.publicUrl)}return urls}
 
-// *** MÓDOSÍTVA: Helymeghatározás (saveAdToDatabase) ***
 async function saveAdToDatabase(adData,kepUrlTomb=[]){
     const{data:{session}}=await supaClient.auth.getSession();
     if(!session){showToast("Hiba: nem vagy bejelentkezve!","error");return}
@@ -449,17 +453,14 @@ async function saveAdToDatabase(adData,kepUrlTomb=[]){
         showToast(`Hiba a mentéskor: ${error.message}`,"error");
         console.error("Supabase insert error:",error)
     }else{
-        // TÖRLJÜK A LOCALSTORAGE DRAFT-OT sikeres mentés után
         clearFeltoltesDraft();
         showToast("Hirdetés sikeresen feladva!","success");
         window.location.hash="#home"
     }
 }
-// *** MÓDOSÍTÁS VÉGE ***
 
 function renderPayPalButton(price,packageName){paypal.Buttons({createOrder:(data,actions)=>{if(!getAdData())return Promise.reject(new Error("Hibás űrlapadatok."));return actions.order.create({purchase_units:[{description:`SzakiPiac csomag: ${packageName}`,amount:{currency_code:"HUF",value:price}}]})},onApprove:(data,actions)=>actions.order.capture().then(async()=>{await processAdSubmission()}),onError:err=>showToast("Hiba a PayPal fizetés során.","error")}).render("#paypal-button-container")}
 
-// ===== KREATÍV, VÁLTOZATOS SZÖVEGGENERÁTOR (JAVÍTOTT) =====
 async function generateAdContent() {
     const keywordsInput = document.getElementById("gemini-keywords");
     const keywords = keywordsInput.value;
@@ -511,7 +512,6 @@ window.openLightbox=imageUrl=>{const lightbox=document.getElementById("lightbox"
 async function showAdminPage(){const container=document.getElementById("admin-page");container.innerHTML=`<div class="flex justify-center py-10"><div class="loader"></div></div>`;const{data:{session}}=await supaClient.auth.getSession();if(!session||session.user.email!==ADMIN_EMAIL){container.innerHTML=`<p class="text-red-500 text-center">Nincs jogosultságod az oldal megtekintéséhez.</p>`;return}try{const{data:hirdetesek,error}=await supaClient.from("hirdetesek").select("*").order("created_at",{ascending:!1});if(error)throw error;container.innerHTML=`<h2 class="text-2xl font-bold mb-4">Adminisztráció - Hirdetések kezelése</h2><div class="bg-white rounded-lg shadow-sm overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr><th class="p-4">Cím</th><th class="p-4">Felhasználó</th><th class="p-4">Lejárat</th><th class="p-4">Műveletek</th></tr></thead><tbody>${hirdetesek.map(h=>`<tr class="border-b"><td class="p-4">${h.cim}</td><td class="p-4">${h.email}</td><td class="p-4 whitespace-nowrap">${h.lejárati_datum?(new Date(h.lejárati_datum)).toLocaleDateString("hu-HU"):"N/A"}</td><td class="p-4 space-x-2"><button onclick="handleDeleteAd('${h.id}')" class="text-red-600 hover:underline">Törlés</button></td></tr>`).join("")}</tbody></table></div>`}catch(err){container.innerHTML=`<p class="text-red-500 text-center">Hiba a hirdetések betöltésekor: ${err.message}</p>`}}
 document.addEventListener("DOMContentLoaded",()=>{const lightbox=document.getElementById("lightbox");document.getElementById("lightbox-close").addEventListener("click",()=>{lightbox.classList.add("opacity-0");setTimeout(()=>lightbox.classList.add("hidden"),300)});handleAuthUI();handleRouteChange();window.addEventListener("hashchange",handleRouteChange);document.querySelectorAll(".nav-link, .nav-link-logo").forEach(link=>{link.addEventListener("click",e=>{e.preventDefault();window.location.hash=(new URL(link.href)).hash})});document.getElementById("mobile-menu-button").addEventListener("click",()=>{document.getElementById("mobile-menu")?.classList.toggle("hidden")});supaClient.auth.onAuthStateChange((event,session)=>{handleAuthUI();if(event === 'SIGNED_IN' || event === 'SIGNED_OUT') handleRouteChange();})});
 
-// Globális függvények elérhetővé tétele, ha szükségesek a HTML-ben (onclick)
 window.handleDeleteAd = handleDeleteAd;
 </script>
 </body>
