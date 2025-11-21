@@ -324,7 +324,7 @@ function filterAds() {
     renderAds(filtered);
 }
 
-// 7. FELTÖLTÉS + AI JAVÍTÁS
+// 7. FELTÖLTÉS
 async function showFeltoltesPage() {
     const {data: {session}} = await supaClient.auth.getSession();
     const c = document.getElementById("feltoltes-page");
@@ -334,7 +334,7 @@ async function showFeltoltesPage() {
     c.innerHTML = `
         <div class="bg-white p-6 rounded shadow-sm">
             <h1 class="text-2xl font-bold mb-4">Hirdetés feladása</h1>
-            <div class="bg-indigo-50 p-4 rounded mb-6 border border-indigo-100"><h3 class="text-indigo-800 font-bold mb-2">✨ AI Szövegíró</h3><div class="flex gap-2"><input id="ai-keywords" placeholder="Pl: festés, Budapest" class="flex-grow border p-2 rounded"><button id="ai-btn" onclick="generateSmartAI()" class="bg-indigo-600 text-white px-4 rounded">Írd meg!</button></div></div>
+            <div class="bg-indigo-50 p-4 rounded mb-6 border border-indigo-100"><h3 class="text-indigo-800 font-bold mb-2">✨ AI Szövegíró</h3><div class="flex gap-2"><input id="ai-keywords" placeholder="Pl: szobafestés" class="flex-grow border p-2 rounded"><button id="ai-btn" onclick="generateAI()" class="bg-indigo-600 text-white px-4 rounded">Írd meg!</button></div></div>
             <form id="ad-form" class="space-y-4">
                 <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required>
                 <textarea id="leiras" placeholder="Leírás" class="w-full border p-2 rounded" rows="5" required></textarea>
@@ -366,21 +366,19 @@ async function showFeltoltesPage() {
             </form>
         </div>`;
 
-    // AI JAVÍTÁS: HELYI GENERÁLÁS (NEM SZERVER)
-    window.generateSmartAI = async () => {
-        const k = document.getElementById("ai-keywords").value.toLowerCase();
+    // JAVÍTOTT AI GENERÁTOR (HELYI MŰKÖDÉS)
+    window.generateAI = async () => {
+        const k = document.getElementById("ai-keywords").value;
         if(!k) return showToast("Írj be kulcsszót!", "error");
         const btn = document.getElementById("ai-btn");
         btn.innerText = "Generálás..."; btn.disabled = true;
         
         setTimeout(() => {
-            let t="", d="";
-            if(k.includes("fest")){ t="Profi Szobafestés - Tiszta Munka!"; d="Vállalok tisztasági festést, glettelést rövid határidővel, garanciával.\n✅ Ingyenes felmérés\n✅ Tiszta munkavégzés\n✅ Garancia"; }
-            else if(k.includes("villany")){ t="Villanyszerelés Azonnal"; d="Probléma van az árammal? Hívjon bizalommal! Hibaelhárítás, szerelés."; }
-            else { t=`Megbízható ${k} Szakember!`; d=`Tapasztalt szakemberként vállalok ${k} munkákat korrekt áron, garanciával.\nKeressen bizalommal!`; }
-            document.getElementById("cim").value = t; document.getElementById("leiras").value = d;
-            showToast("Hirdetés elkészült!"); btn.innerText = "Írd meg!"; btn.disabled = false;
-        }, 800);
+            document.getElementById("cim").value = `Profi ${k} megbízhatóan!`;
+            document.getElementById("leiras").value = `Megbízható szakembert keres? Vállalom ${k} munkák teljes körű kivitelezését rövid határidővel, garanciával.\n\n✅ Ingyenes felmérés\n✅ Precíz munkavégzés\n✅ Rejtett költségek nélkül\n\nKeressen bizalommal!`;
+            showToast("Hirdetés generálva!");
+            btn.innerText = "Írd meg!"; btn.disabled = false;
+        }, 1000);
     };
 
     window.updatePackageInfo = () => {
@@ -529,7 +527,6 @@ window.deleteAd = async (id) => {
 async function init() {
     const {data: {session}} = await supaClient.auth.getSession();
     const navAuth = document.getElementById("nav-auth-section");
-    const mobAuth = document.getElementById("mobile-nav-auth-section");
     
     const adminLink = (session && session.user.email === ADMIN_EMAIL) ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>' : '';
     
@@ -538,7 +535,6 @@ async function init() {
         : `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
         
     navAuth.innerHTML = authHTML;
-    mobAuth.innerHTML = authHTML;
 
     window.doLogout = async () => { await supaClient.auth.signOut(); window.location.reload(); };
     
@@ -561,7 +557,6 @@ async function init() {
     document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 
     handleRouteChange();
-    
     renderReklam();
     resetReklamTimer();
 }
