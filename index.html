@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SzakiPiac-2025.hu</title>
+    <title>SzakiPiac-2025.hu - Találj megbízható szakembert!</title>
 
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -39,7 +39,7 @@
                 <div class="flex items-center mr-8">
                     <a href="#home" class="nav-link-logo flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-800">
                         <img class="h-10 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="Logo">
-                    </a>
+                        </a>
                 </div>
                 
                 <div class="hidden md:flex items-center space-x-1 flex-grow justify-end">
@@ -132,7 +132,7 @@ function showToast(message, type="success") {
     setTimeout(() => toast.classList.add("translate-x-[120%]"), 4000);
 }
 
-// 3. REKLÁM SLIDER (JAVÍTOTT)
+// 3. REKLÁM SLIDER
 const reklamok=[{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png"},{url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png"},{url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg"},{url:"https://www.emag.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg"},{url:"https://www.temu.com/",img:"https://upload.wikimedia.org/wikipedia/commons/d/db/Temu_logo_icon.svg"},{url:"https://www.lidl.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png"},{url:"https://www.aldi.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png"}];
 let rIndex=0, rTimer=null;
 
@@ -277,7 +277,11 @@ function renderAds(list) {
                     ${images}
                     ${video}
                     <div class="mt-4 flex flex-wrap justify-between items-center border-t pt-4">
-                        <div class="flex gap-2"><a href="mailto:${h.email}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm">Email</a>${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm">Hívás</a>` : ""}</div>
+                        <div class="flex gap-2 flex-wrap">
+                            <a href="mailto:${h.email}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
+                            ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
+                            ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
+                        </div>
                         ${delBtn}
                     </div>
                 </div>
@@ -415,7 +419,7 @@ async function processUpload() {
     }
 }
 
-// 8. AUTH & ADMIN (JAVÍTOTT DÁTUMOS TÁBLÁZAT)
+// 8. AUTH & ADMIN
 async function showAuthPage() {
     const c = document.getElementById("auth-page");
     c.innerHTML = `<div class="bg-white p-8 rounded shadow-sm max-w-md mx-auto text-center"><h2 class="text-2xl font-bold mb-4">Bejelentkezés</h2><form id="login-form" class="space-y-4"><input type="email" name="email" placeholder="Email" class="w-full border p-2 rounded" required><input type="password" name="password" placeholder="Jelszó" class="w-full border p-2 rounded" required><button class="w-full bg-green-600 text-white p-2 rounded">Mehet</button></form></div>`;
@@ -470,7 +474,6 @@ window.deleteAd = async (id) => {
 async function init() {
     const {data: {session}} = await supaClient.auth.getSession();
     const navAuth = document.getElementById("nav-auth-section");
-    const mobAuth = document.getElementById("mobile-nav-auth-section");
     
     const adminLink = (session && session.user.email === ADMIN_EMAIL) ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>' : '';
     
@@ -479,7 +482,6 @@ async function init() {
         : `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
         
     navAuth.innerHTML = authHTML;
-    mobAuth.innerHTML = authHTML;
 
     window.doLogout = async () => { await supaClient.auth.signOut(); window.location.reload(); };
     
@@ -496,13 +498,15 @@ async function init() {
         document.getElementById("mobile-menu").classList.toggle("hidden");
     });
 
+    // SLIDER GOMBOK JAVÍTÁSA: AZONOSÍTÓK HELYES HASZNÁLATA
+    document.getElementById("slider-prev").addEventListener("click", prevReklam);
+    document.getElementById("slider-next").addEventListener("click", nextReklam);
+
     document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 
     handleRouteChange();
     
-    renderReklam(); // SLIDER INDÍTÁS
-    document.getElementById("slider-prev").addEventListener("click", prevReklam);
-    document.getElementById("slider-next").addEventListener("click", nextReklam);
+    renderReklam(); // INDÍTÁS
     resetReklamTimer();
 }
 
