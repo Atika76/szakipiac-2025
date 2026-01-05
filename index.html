@@ -149,7 +149,6 @@
 
 <script type="module">
 
-// 1. KONFIGURÁCIÓ
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -158,7 +157,6 @@ const ADMIN_EMAIL = "atika.76@windowslive.com";
 let kivalasztottKepek = [];
 let hirdetesekCache = [];
 
-// 2. SEGÉDFÜGGVÉNYEK
 function getYouTubeEmbedUrl(url){if(!url)return null;try{const urlObj=new URL(url);let videoId;if(urlObj.hostname==="youtu.be")videoId=urlObj.pathname.slice(1);else if(urlObj.hostname.includes("youtube.com")&&urlObj.searchParams.has("v"))videoId=urlObj.searchParams.get("v");return videoId?`https://www.youtube.com/embed/${videoId}`:null}catch(e){return null}}
 
 function showToast(message, type="success") {
@@ -169,24 +167,6 @@ function showToast(message, type="success") {
     setTimeout(() => toast.classList.add("translate-x-[120%]"), 4000);
 }
 
-// --- ÚJ: AUTOMATIKUS TÖRLÉS A LEJÁRT HIRDETÉSEKHEZ ---
-async function cleanupExpiredAds() {
-    try {
-        const now = new Date().toISOString();
-        // Töröljük az összes olyan sort, ahol a lejárati_datum régebbi (kisebb), mint a jelenlegi idő
-        const { error } = await supaClient
-            .from('hirdetesek')
-            .delete()
-            .lt('lejárati_datum', now);
-
-        if (error) throw error;
-        console.log("Lejárt hirdetések ellenőrizve és takarítva.");
-    } catch (e) {
-        console.error("Hiba az automata takarítás során:", e.message);
-    }
-}
-
-// 3. REKLÁM SLIDER
 const reklamok=[
     {url:"#feltoltes",img:"https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png"},
     {url:"https://www.alza.hu/",img:"https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg"},
@@ -204,7 +184,6 @@ function nextReklam(){ rIndex=(rIndex+1)%reklamok.length; renderReklam(); resetR
 function prevReklam(){ rIndex=(rIndex-1+reklamok.length)%reklamok.length; renderReklam(); resetReklamTimer(); }
 function resetReklamTimer(){ if(rTimer) clearInterval(rTimer); rTimer=setInterval(nextReklam, 4000); }
 
-// 4. ROUTER
 const router = { '#home': showHomePage, '#rolunk': showRolunkPage, '#kapcsolat': showKapcsolatPage, '#feltoltes': showFeltoltesPage, '#auth': showAuthPage, '#admin': showAdminPage };
 
 async function handleRouteChange() {
@@ -221,7 +200,6 @@ async function handleRouteChange() {
     if(loader) loader.style.display = "none";
 }
 
-// 5. OLDALAK RENDERELÉSE
 async function showHomePage() {
     const c = document.getElementById("home-page");
     c.innerHTML = `
@@ -251,7 +229,6 @@ async function showKapcsolatPage(){
     document.getElementById("kapcsolat-page").innerHTML=`<div class="bg-white p-8 rounded shadow-sm"><h1 class="text-3xl font-bold mb-6 text-green-700">Kapcsolat</h1><p>Email: szakipiac2025@gmail.com</p></div>`;
 }
 
-// 6. HIRDETÉS KEZELÉS
 async function loadAds() {
     const listEl = document.getElementById("hirdetes-lista");
     try {
@@ -301,7 +278,6 @@ function filterAds() {
     renderAds(filtered);
 }
 
-// 7. FELTÖLTÉS & AUTH
 async function showFeltoltesPage() {
     const {data: {session}} = await supaClient.auth.getSession();
     if(!session) { document.getElementById("feltoltes-page").innerHTML = `<div class="p-4 bg-blue-50 text-center rounded">Hirdetéshez <a href="#auth" class="font-bold underline">lépj be!</a></div>`; return; }
@@ -361,7 +337,6 @@ async function showAuthPage() {
     });
 }
 
-// 8. ADMIN PANEL
 async function showAdminPage() {
     const {data:{session}} = await supaClient.auth.getSession();
     if(!session || session.user.email !== ADMIN_EMAIL) { document.getElementById("admin-page").innerHTML = "Nincs jogod."; return; }
@@ -385,21 +360,60 @@ window.deleteAd = async (id) => {
 
 // 9. INDÍTÁS
 async function init() {
-    // OLDAL BETÖLTÉSEKOR TAKARÍTUNK
-    await cleanupExpiredAds();
+    // MODOSÍTÁS: Lejárt hirdetések automatikus és végleges törlése az adatbázisból (így az adminból is eltűnik)
+    try {
+        const now = new Date().toISOString();
+        await supaClient.from('hirdetesek').delete().lt('lejárati_datum', now);
+    } catch (e) {
+        console.error("Hiba a takarítás során:", e);
+    }
 
     const {data: {session}} = await supaClient.auth.getSession();
     const navAuth = document.getElementById("nav-auth-section");
-    navAuth.innerHTML = session ? `<button onclick="window.doLogout()" class="text-red-600">Kilépés (${session.user.email})</button>` : `<a href="#auth" class="text-green-600 font-bold">Belépés</a>`;
+    
+    let adminLink = '';
+    if (session && session.user.email === ADMIN_EMAIL) {
+        adminLink = `<a href="#admin" class="text-sm text-blue-600 hover:underline ml-2">Admin</a>`;
+    }
+
+    const authHTML = session 
+        ? `<div class="flex items-center gap-2"><span class="text-gray-600 font-medium">${session.user.email}</span>${adminLink}<button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline ml-2">Kilépés</button></div>` 
+        : `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
+        
+    navAuth.innerHTML = authHTML;
 
     window.doLogout = async () => { await supaClient.auth.signOut(); window.location.reload(); };
-    window.addEventListener("hashchange", handleRouteChange);
-    document.getElementById("mobile-menu-button").addEventListener("click", () => document.getElementById("mobile-menu").classList.toggle("hidden"));
     
+    window.addEventListener("hashchange", handleRouteChange);
+    document.querySelectorAll(".nav-link, .nav-link-logo").forEach(l => {
+        l.addEventListener("click", e => {
+            if(l.getAttribute('href') === 'kalkulator.html') return;
+            e.preventDefault();
+            window.location.hash = new URL(l.href).hash;
+        });
+    });
+
+    document.getElementById("mobile-menu-button").addEventListener("click", () => {
+        document.getElementById("mobile-menu").classList.toggle("hidden");
+    });
+
+    document.getElementById("btn-next").addEventListener("click", nextReklam);
+    document.getElementById("btn-prev").addEventListener("click", prevReklam);
+
+    document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
+
     handleRouteChange();
     renderReklam();
     resetReklamTimer();
 }
+
+window.openLightbox = (u) => {
+    const lb = document.getElementById("lightbox");
+    const img = document.getElementById("lightbox-img");
+    img.src = u;
+    lb.classList.remove("hidden");
+    setTimeout(() => lb.style.opacity = "1", 10);
+};
 
 init();
 </script>
