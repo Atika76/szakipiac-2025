@@ -551,6 +551,7 @@ async function showAuthPage() {
         } else {
             showToast("Sikeres belépés!");
             window.location.hash = "#home";
+            window.location.reload(); // <--- JAVÍTÁS: Frissítjük az oldalt a sikeres belépés után
         }
     });
 }
