@@ -3,29 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SzakiPiac – AI Árkalkulátor PRO+ (Tételes + Mentés + PDF)</title>
+  <title>SzakiPiac – AI Árkalkulátor PRO+ (Privát mód)</title>
 
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
-
-  <!-- Tailwind + Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- html2pdf (opcionális extra PDF mentéshez) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans"; }
     .loader { border: 4px solid #f3f3f3; border-top: 4px solid #111827; width: 34px; height: 34px; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
     @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
-    /* Print */
     @media print {
       .no-print { display: none !important; }
       body { background: white !important; }
@@ -34,20 +25,13 @@
       a[href]:after { content: "" !important; }
     }
 
-    /* Small UX */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   </style>
 
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          boxShadow: {
-            soft: "0 10px 30px rgba(0,0,0,.06)"
-          }
-        }
-      }
+      theme: { extend: { boxShadow: { soft: "0 10px 30px rgba(0,0,0,.06)" } } }
     }
   </script>
 </head>
@@ -80,7 +64,7 @@
   <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      <!-- LEFT (2 columns) -->
+      <!-- LEFT -->
       <section class="lg:col-span-2 space-y-6">
 
         <!-- TITLE -->
@@ -88,10 +72,11 @@
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                🧮 AI Árkalkulátor <span class="text-indigo-700">PRO+</span> – Tételes ajánlat
+                🧮 AI Árkalkulátor <span class="text-indigo-700">PRO+</span> <span class="text-gray-500 text-base font-bold">• Privát mód</span>
               </h1>
               <p class="text-gray-600 mt-1">
-                Tételek + rezsióradíj + haszon + ÁFA + anyag árrés + gyors csomagok + mentés + PDF.
+                Tételes lista + rezsióra + haszon + ÁFA + anyag árrés + gyors csomagok + mentés + PDF.
+                <span class="font-bold text-gray-800">A megrendelő adatok nem maradnak bent automatikusan.</span>
               </p>
             </div>
             <div class="flex gap-2 no-print">
@@ -101,7 +86,7 @@
           </div>
         </div>
 
-        <!-- QUICK PACKAGES (colorful + pro style) -->
+        <!-- QUICK PACKAGES -->
         <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6 no-print">
           <div class="flex items-center justify-between gap-4">
             <div>
@@ -109,69 +94,69 @@
               <p class="text-sm text-gray-600 mt-1">Állítsd be a globál mennyiséget, válassz csomagot – és kész a tételes lista.</p>
             </div>
             <div class="text-xs text-gray-500 hidden md:block">
-              Tipp: a csomagok az egységárakat példának adják – te finomítod.
+              Tipp: a csomagok egységárai példák – te finomítod.
             </div>
           </div>
 
           <div class="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            <button data-pkg="szerkezet" class="group rounded-2xl border bg-gradient-to-br from-blue-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="szerkezet" class="rounded-2xl border bg-gradient-to-br from-blue-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-blue-700 text-xl"><i class="fa-solid fa-trowel-bricks"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Szerkezet</div>
               <div class="text-[11px] text-gray-500 mt-1">4 tétel</div>
             </button>
-            <button data-pkg="festo" class="group rounded-2xl border bg-gradient-to-br from-yellow-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="festo" class="rounded-2xl border bg-gradient-to-br from-yellow-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-yellow-700 text-xl"><i class="fa-solid fa-paint-roller"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Festés</div>
               <div class="text-[11px] text-gray-500 mt-1">3 tétel</div>
             </button>
-            <button data-pkg="acs" class="group rounded-2xl border bg-gradient-to-br from-orange-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="acs" class="rounded-2xl border bg-gradient-to-br from-orange-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-orange-700 text-xl"><i class="fa-solid fa-hammer"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Ács</div>
               <div class="text-[11px] text-gray-500 mt-1">4 tétel</div>
             </button>
-            <button data-pkg="villany" class="group rounded-2xl border bg-gradient-to-br from-red-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="villany" class="rounded-2xl border bg-gradient-to-br from-red-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-red-700 text-xl"><i class="fa-solid fa-bolt"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Villany</div>
               <div class="text-[11px] text-gray-500 mt-1">1 tétel</div>
             </button>
-            <button data-pkg="viz" class="group rounded-2xl border bg-gradient-to-br from-cyan-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="viz" class="rounded-2xl border bg-gradient-to-br from-cyan-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-cyan-700 text-xl"><i class="fa-solid fa-faucet"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Víz</div>
               <div class="text-[11px] text-gray-500 mt-1">1 tétel</div>
             </button>
-            <button data-pkg="homlokzat" class="group rounded-2xl border bg-gradient-to-br from-emerald-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="homlokzat" class="rounded-2xl border bg-gradient-to-br from-emerald-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-emerald-700 text-xl"><i class="fa-solid fa-house-chimney"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Homlokzat</div>
               <div class="text-[11px] text-gray-500 mt-1">3 tétel</div>
             </button>
 
-            <button data-pkg="vakolas" class="group rounded-2xl border bg-gradient-to-br from-emerald-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="vakolas" class="rounded-2xl border bg-gradient-to-br from-emerald-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-emerald-700 text-xl"><i class="fa-solid fa-fill-drip"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Vakolás</div>
               <div class="text-[11px] text-gray-500 mt-1">2 tétel</div>
             </button>
-            <button data-pkg="aljzat" class="group rounded-2xl border bg-gradient-to-br from-indigo-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="aljzat" class="rounded-2xl border bg-gradient-to-br from-indigo-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-indigo-700 text-xl"><i class="fa-solid fa-water"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Aljzat</div>
               <div class="text-[11px] text-gray-500 mt-1">3 tétel</div>
             </button>
-            <button data-pkg="burkolo" class="group rounded-2xl border bg-gradient-to-br from-purple-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="burkolo" class="rounded-2xl border bg-gradient-to-br from-purple-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-purple-700 text-xl"><i class="fa-solid fa-border-all"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Burkolás</div>
               <div class="text-[11px] text-gray-500 mt-1">3 tétel</div>
             </button>
-            <button data-pkg="karton" class="group rounded-2xl border bg-gradient-to-br from-gray-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="karton" class="rounded-2xl border bg-gradient-to-br from-gray-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-gray-800 text-xl"><i class="fa-solid fa-square"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Karton</div>
               <div class="text-[11px] text-gray-500 mt-1">2 tétel</div>
             </button>
-            <button data-pkg="laminalt" class="group rounded-2xl border bg-gradient-to-br from-amber-50 to-white p-4 hover:shadow-soft transition">
+            <button data-pkg="laminalt" class="rounded-2xl border bg-gradient-to-br from-amber-50 to-white p-4 hover:shadow-soft transition">
               <div class="text-amber-700 text-xl"><i class="fa-solid fa-bars"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-gray-800">Laminált</div>
               <div class="text-[11px] text-gray-500 mt-1">3 tétel</div>
             </button>
 
-            <button id="btnAddCustomRow" class="group rounded-2xl border bg-gradient-to-br from-white to-white p-4 hover:shadow-soft transition">
+            <button id="btnAddCustomRow" class="rounded-2xl border bg-gradient-to-br from-white to-white p-4 hover:shadow-soft transition">
               <div class="text-indigo-700 text-xl"><i class="fa-solid fa-plus"></i></div>
               <div class="mt-2 text-[11px] font-black tracking-widest uppercase text-indigo-700">Egyedi</div>
               <div class="text-[11px] text-gray-500 mt-1">új tétel</div>
@@ -184,11 +169,11 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1">
                 <div>
                   <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Globál mennyiség</label>
-                  <input id="global_qty" type="number" min="0" step="0.01" value="50" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold">
+                  <input id="global_qty" type="number" min="0" step="0.01" value="50" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off" />
                 </div>
                 <div>
                   <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Egység</label>
-                  <select id="global_unit" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold">
+                  <select id="global_unit" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off">
                     <option value="m²" selected>m²</option>
                     <option value="m³">m³</option>
                     <option value="fm">fm</option>
@@ -199,7 +184,7 @@
                 </div>
                 <div>
                   <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Anyag árrés (%)</label>
-                  <input id="material_margin" type="number" min="0" step="0.1" value="10" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold">
+                  <input id="material_margin" type="number" min="0" step="0.1" value="10" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off" />
                   <div class="text-xs text-gray-500 mt-1">Csak az “Anyag” típusú tételekre.</div>
                 </div>
                 <div>
@@ -223,38 +208,52 @@
         <!-- PROJECT + CLIENT -->
         <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
           <h2 class="text-lg font-extrabold text-gray-900 mb-4">Projekt adatok</h2>
+
+          <!-- PRIVACY NOTE -->
+          <div class="mb-4 text-xs text-gray-600 bg-gray-50 border rounded-xl p-3">
+            <span class="font-extrabold">Privát mód:</span> ez az oldal nem ment automatikusan megrendelő adatokat a böngészőbe.
+            Minden belépésnél tiszta űrlappal indul.
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="text-sm font-semibold text-gray-700">Projekt neve</label>
-              <input id="project_name" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: Fürdőszoba felújítás" />
+              <input id="project_name" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: Fürdőszoba felújítás" autocomplete="off" />
             </div>
             <div>
               <label class="text-sm font-semibold text-gray-700">Pénznem</label>
-              <select id="currency" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold">
-                <option value="HUF">HUF (Ft)</option>
+              <select id="currency" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" autocomplete="off">
+                <option value="HUF" selected>HUF (Ft)</option>
                 <option value="EUR">EUR (€)</option>
               </select>
             </div>
 
+            <!-- MEGRENDELŐ: üresen indul mindig -->
             <div>
               <label class="text-sm font-semibold text-gray-700">Megrendelő neve</label>
-              <input id="client_name" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: Kovács Péter" />
+              <input id="client_name" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Megrendelő neve" autocomplete="off" />
             </div>
             <div>
               <label class="text-sm font-semibold text-gray-700">Megrendelő e-mail</label>
-              <input id="client_email" type="email" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="pl: ugyfel@email.hu" />
+              <input id="client_email" type="email" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="pl: ugyfel@email.hu" autocomplete="off" />
             </div>
             <div>
               <label class="text-sm font-semibold text-gray-700">Megrendelő telefon</label>
-              <input id="client_phone" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="+36..." />
+              <input id="client_phone" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="+36..." autocomplete="off" />
             </div>
             <div>
               <label class="text-sm font-semibold text-gray-700">Város</label>
-              <input id="client_city" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: Budapest" />
+              <input id="client_city" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: Budapest" autocomplete="off" />
             </div>
             <div class="md:col-span-2">
               <label class="text-sm font-semibold text-gray-700">Cím</label>
-              <input id="client_address" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: 1111 Budapest, Példa utca 1." />
+              <input id="client_address" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl: 1111 Budapest, Példa utca 1." autocomplete="off" />
+            </div>
+
+            <div class="md:col-span-2 no-print">
+              <button id="btnClearClient" class="w-full px-4 py-2 rounded-xl bg-gray-100 text-gray-800 font-extrabold hover:bg-gray-200">
+                <i class="fa-solid fa-eraser mr-2"></i>Megrendelő mezők ürítése
+              </button>
             </div>
           </div>
         </div>
@@ -266,19 +265,19 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="border rounded-2xl p-4 bg-gray-50">
               <label class="text-sm font-semibold text-gray-700">Rezsióradíj (nettó) / óra</label>
-              <input id="overhead_rate" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" />
+              <input id="overhead_rate" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" autocomplete="off" />
               <p class="text-xs text-gray-500 mt-2">Munka típusnál az “Óra” mezővel számol.</p>
             </div>
 
             <div class="border rounded-2xl p-4 bg-gray-50">
               <label class="text-sm font-semibold text-gray-700">Haszon (%)</label>
-              <input id="profit_percent" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" step="0.1" />
+              <input id="profit_percent" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" step="0.1" autocomplete="off" />
               <p class="text-xs text-gray-500 mt-2">Nettó alapon: (anyag+munka+rezsi-kedv) * %.</p>
             </div>
 
             <div class="border rounded-2xl p-4 bg-gray-50">
               <label class="text-sm font-semibold text-gray-700">Kedvezmény (nettó)</label>
-              <input id="discount_net" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" />
+              <input id="discount_net" type="number" class="mt-1 w-full border rounded-xl px-3 py-2 font-semibold" value="0" min="0" autocomplete="off" />
               <p class="text-xs text-gray-500 mt-2">Fix nettó összeg levonása.</p>
             </div>
           </div>
@@ -287,7 +286,7 @@
             <div class="flex items-center gap-3">
               <input id="vat_enabled" type="checkbox" class="h-5 w-5" checked />
               <label class="font-semibold">ÁFA hozzáadása</label>
-              <select id="vat_rate" class="border rounded-xl px-3 py-2 font-semibold">
+              <select id="vat_rate" class="border rounded-xl px-3 py-2 font-semibold" autocomplete="off">
                 <option value="27" selected>27%</option>
                 <option value="5">5%</option>
                 <option value="0">0%</option>
@@ -336,7 +335,7 @@
           </div>
 
           <div class="mt-4 text-xs text-gray-500">
-            Tipp: “Anyag” és “Munka” külön egységárral megy, így pipecen lehet kalkulálni. Munka típusnál a rezsi “Óra” alapján jön hozzá.
+            Tipp: “Anyag” és “Munka” külön egységárral megy. Munka típusnál a rezsi “Óra” alapján adódik hozzá.
           </div>
         </div>
 
@@ -377,11 +376,9 @@
         <!-- AUTH -->
         <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6 no-print">
           <h2 class="text-lg font-extrabold text-gray-900 mb-4">Belépés / Fiók</h2>
-
           <div id="authBox">
             <div class="text-gray-600 text-sm">Betöltés...</div>
           </div>
-
           <div class="mt-4 text-xs text-gray-500">
             Számolni belépés nélkül is tudsz, de menteni csak belépve lehet.
           </div>
@@ -476,16 +473,22 @@
 
 <script type="module">
 /* =========================
-   1) KONFIG
+   1) PRIVÁT MÓD (NINCS localStorage mentés)
+========================= */
+const PRIVATE_MODE = true;
+
+/* =========================
+   2) SUPABASE KONFIG
+   (ha nálad más, cseréld ki ezt a 2 sort)
 ========================= */
 const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8"; // publishable key
+const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
 const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
 /* =========================
-   2) SEGÉDEK
+   3) SEGÉDEK
 ========================= */
 const $ = (id) => document.getElementById(id);
 
@@ -525,7 +528,7 @@ function escapeHtml(s) {
 }
 
 /* =========================
-   3) QUICK PACKAGES
+   4) QUICK PACKAGES
 ========================= */
 const QUICK = {
   szerkezet: [
@@ -582,22 +585,22 @@ const QUICK = {
 };
 
 /* =========================
-   4) STATE
+   5) STATE
 ========================= */
-let items = []; 
+let items = [];
 const DEFAULT_ROW = () => ({
   name: "",
   type: "anyag",     // anyag | munka | egyeb
   qty: 1,
   unit: "db",
-  mat_unit_price: 0, // anyag egységár
-  lab_unit_price: 0, // munka egységár
+  mat_unit_price: 0,
+  lab_unit_price: 0,
   hours: 0,
   selected: false
 });
 
 /* =========================
-   5) CALC
+   6) CALC
 ========================= */
 function materialMarginFactor() {
   const pct = Math.max(0, safeNum($("material_margin").value));
@@ -609,7 +612,6 @@ function rowNet(it) {
   const mat = safeNum(it.mat_unit_price);
   const lab = safeNum(it.lab_unit_price);
   const matWithMargin = (it.type === "anyag") ? (mat * materialMarginFactor()) : mat;
-  // nettó sor: qty*(anyag+munka)
   return qty * (matWithMargin + lab);
 }
 
@@ -628,7 +630,6 @@ function totals() {
   }, 0);
 
   const sumLab = items.reduce((acc, it) => {
-    // Munka lehet munka típus vagy beírt munka egységár más típusban is – de itt “munkának” számoljuk a lab_unit_price részt.
     const qty = safeNum(it.qty);
     const lab = safeNum(it.lab_unit_price);
     return acc + qty * lab;
@@ -640,7 +641,6 @@ function totals() {
   const overheadNet = totalHours() * overheadRate;
 
   const discountNet = Math.max(0, safeNum($("discount_net").value));
-
   const baseNet = Math.max(0, subtotalNet + overheadNet - discountNet);
 
   const profitPct = Math.max(0, safeNum($("profit_percent").value));
@@ -654,45 +654,31 @@ function totals() {
 
   const grossTotal = netTotal + vatAmount;
 
-  return {
-    currency,
-    sumMat,
-    sumLab,
-    subtotalNet,
-    overheadNet,
-    discountNet,
-    profitNet,
-    vatRate,
-    vatAmount,
-    netTotal,
-    grossTotal,
-    totalHours: totalHours()
-  };
+  return { currency, sumMat, sumLab, subtotalNet, overheadNet, discountNet, profitNet, vatRate, vatAmount, netTotal, grossTotal, totalHours: totalHours() };
 }
 
 /* =========================
-   6) RENDER TABLE
+   7) RENDER TABLE
 ========================= */
 function renderItems() {
   const body = $("itemsBody");
   body.innerHTML = "";
 
   items.forEach((it, idx) => {
+    const disabledHours = it.type !== "munka";
     const tr = document.createElement("tr");
     tr.className = "border-b last:border-b-0";
-
-    const disabledHours = it.type !== "munka";
     tr.innerHTML = `
       <td class="p-2 no-print">
         <input data-k="selected" data-i="${idx}" type="checkbox" class="h-5 w-5" ${it.selected ? "checked" : ""}>
       </td>
 
       <td class="p-2">
-        <input data-k="name" data-i="${idx}" class="w-full border rounded-xl px-2 py-2" placeholder="Pl: Burkolás 20m²" value="${escapeHtml(it.name)}">
+        <input data-k="name" data-i="${idx}" class="w-full border rounded-xl px-2 py-2" placeholder="Pl: Burkolás 20m²" value="${escapeHtml(it.name)}" autocomplete="off">
       </td>
 
       <td class="p-2">
-        <select data-k="type" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold">
+        <select data-k="type" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold" autocomplete="off">
           <option value="anyag" ${it.type==="anyag"?"selected":""}>Anyag</option>
           <option value="munka" ${it.type==="munka"?"selected":""}>Munka</option>
           <option value="egyeb" ${it.type==="egyeb"?"selected":""}>Egyéb</option>
@@ -700,27 +686,27 @@ function renderItems() {
       </td>
 
       <td class="p-2">
-        <input data-k="qty" data-i="${idx}" type="number" min="0" step="0.01" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.qty}">
+        <input data-k="qty" data-i="${idx}" type="number" min="0" step="0.01" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.qty}" autocomplete="off">
       </td>
 
       <td class="p-2">
-        <input data-k="unit" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold" placeholder="db / m² / fm" value="${escapeHtml(it.unit)}">
+        <input data-k="unit" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold" placeholder="db / m² / fm" value="${escapeHtml(it.unit)}" autocomplete="off">
       </td>
 
       <td class="p-2">
-        <input data-k="mat_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.mat_unit_price}">
+        <input data-k="mat_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.mat_unit_price}" autocomplete="off">
         <div class="text-[11px] text-gray-500 mt-1">${it.type==="anyag" ? `árrés: +${Math.max(0, safeNum($("material_margin").value)).toFixed(1)}%` : "—"}</div>
       </td>
 
       <td class="p-2">
-        <input data-k="lab_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.lab_unit_price}">
+        <input data-k="lab_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.lab_unit_price}" autocomplete="off">
         <div class="text-[11px] text-gray-500 mt-1">munka/egység</div>
       </td>
 
       <td class="p-2">
         <input data-k="hours" data-i="${idx}" type="number" min="0" step="0.25"
           class="w-full border rounded-xl px-2 py-2 font-semibold ${disabledHours ? "bg-gray-100 text-gray-400" : "bg-white"}"
-          value="${it.hours}" ${disabledHours ? "disabled" : ""}>
+          value="${it.hours}" ${disabledHours ? "disabled" : ""} autocomplete="off">
       </td>
 
       <td class="p-2 font-extrabold text-gray-900">
@@ -731,20 +717,17 @@ function renderItems() {
         <button data-del="${idx}" class="px-3 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 font-extrabold">✖</button>
       </td>
     `;
-
     body.appendChild(tr);
   });
 
-  // Listeners
   body.querySelectorAll("input[data-k], select[data-k]").forEach(el => {
     el.addEventListener("input", (e) => {
       const i = Number(e.target.dataset.i);
       const k = e.target.dataset.k;
 
       let v;
-      if (k === "selected") {
-        v = e.target.checked;
-      } else {
+      if (k === "selected") v = e.target.checked;
+      else {
         v = e.target.value;
         if (["qty","mat_unit_price","lab_unit_price","hours"].includes(k)) v = safeNum(v);
       }
@@ -753,12 +736,10 @@ function renderItems() {
 
       if (k === "type") {
         if (items[i].type !== "munka") items[i].hours = 0;
-        // kis UX: ha munka, akkor általában lab_unit_price-be írják a munkadíjat, anyag meg 0
         renderItems();
       }
 
       calcAndRender();
-      saveDraftLocal();
     });
   });
 
@@ -769,13 +750,12 @@ function renderItems() {
       if (!items.length) items.push(DEFAULT_ROW());
       renderItems();
       calcAndRender();
-      saveDraftLocal();
     });
   });
 }
 
 /* =========================
-   7) PRINT / UI UPDATE
+   8) PRINT + UI UPDATE
 ========================= */
 function calcAndRender() {
   const t = totals();
@@ -790,7 +770,6 @@ function calcAndRender() {
   $("sum_vat").textContent = fmtMoney(t.vatAmount, t.currency);
   $("sum_gross_total").textContent = fmtMoney(t.grossTotal, t.currency);
 
-  // print
   $("p_sum_mat").textContent = fmtMoney(t.sumMat, t.currency);
   $("p_sum_lab").textContent = fmtMoney(t.sumLab, t.currency);
   $("p_sum_overhead").textContent = fmtMoney(t.overheadNet, t.currency);
@@ -815,8 +794,7 @@ function calcAndRender() {
     ? clientLines.map(x => `<div>${escapeHtml(x)}</div>`).join("")
     : "<div>—</div>";
 
-  const pi = $("print_items");
-  pi.innerHTML = items.map(it => `
+  $("print_items").innerHTML = items.map(it => `
     <tr class="border-b">
       <td class="p-2 font-semibold">${escapeHtml(it.name || "—")}</td>
       <td class="p-2">${escapeHtml(it.type)}</td>
@@ -835,12 +813,9 @@ function calcAndRender() {
 }
 
 /* =========================
-   8) DRAFT (LOCAL)
+   9) JSON Export/Import (manuális)
 ========================= */
-const DRAFT_KEY = "szakipiac_kalkulator_proplus_draft_v1";
-
-function draftPayload() {
-  const t = totals();
+function payloadNow() {
   return {
     project_name: $("project_name").value || "",
     currency: $("currency").value,
@@ -862,12 +837,12 @@ function draftPayload() {
       global_unit: $("global_unit").value
     },
     items: items.map(x => ({...x})),
-    totals: t,
+    totals: totals(),
     saved_at: new Date().toISOString()
   };
 }
 
-function applyDraft(p) {
+function applyPayload(p) {
   $("project_name").value = p?.project_name ?? "";
   $("currency").value = p?.currency ?? "HUF";
 
@@ -892,25 +867,8 @@ function applyDraft(p) {
   calcAndRender();
 }
 
-function saveDraftLocal() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload())); } catch(e) {}
-}
-
-function loadDraftLocal() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return false;
-    applyDraft(JSON.parse(raw));
-    return true;
-  } catch(e) { return false; }
-}
-
-/* =========================
-   9) JSON EXPORT/IMPORT
-========================= */
 function exportJson() {
-  const payload = draftPayload();
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(payloadNow(), null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -924,10 +882,9 @@ function importJson(file) {
   r.onload = () => {
     try {
       const p = JSON.parse(r.result);
-      applyDraft(p);
-      saveDraftLocal();
+      applyPayload(p);
       toast("Import kész ✅");
-    } catch (e) {
+    } catch {
       toast("Hibás JSON!", "error");
     }
   };
@@ -976,8 +933,8 @@ function renderAuthBox(session) {
     box.innerHTML = `
       <div class="space-y-3">
         <div class="text-sm text-gray-600">Belépés (ha nincs fiók, ugyanitt regisztrál)</div>
-        <input id="auth_email" type="email" class="w-full border rounded-xl px-3 py-2" placeholder="Email" />
-        <input id="auth_pass" type="password" class="w-full border rounded-xl px-3 py-2" placeholder="Jelszó" />
+        <input id="auth_email" type="email" class="w-full border rounded-xl px-3 py-2" placeholder="Email" autocomplete="off">
+        <input id="auth_pass" type="password" class="w-full border rounded-xl px-3 py-2" placeholder="Jelszó" autocomplete="new-password">
         <button id="btnLogin" class="w-full px-4 py-2 rounded-xl bg-green-600 text-white font-extrabold hover:bg-green-700">Belépés</button>
         <button id="btnSignup" class="w-full px-4 py-2 rounded-xl bg-gray-900 text-white font-extrabold hover:bg-black">Regisztráció</button>
       </div>
@@ -1031,13 +988,10 @@ function renderAuthBox(session) {
 ========================= */
 async function saveToSupabase() {
   const session = await refreshSession();
-  if (!session) {
-    toast("Mentéshez jelentkezz be!", "error");
-    return;
-  }
+  if (!session) return toast("Mentéshez jelentkezz be!", "error");
 
   const t = totals();
-  const payload = draftPayload();
+  const payload = payloadNow();
 
   const row = {
     user_id: session.user.id,
@@ -1064,10 +1018,7 @@ async function saveToSupabase() {
   };
 
   const { error } = await supa.from("ajanlatok").insert([row]);
-  if (error) {
-    toast("Mentési hiba: " + error.message, "error");
-    return;
-  }
+  if (error) return toast("Mentési hiba: " + error.message, "error");
 
   toast("Mentve ✅");
   await loadSaved();
@@ -1089,13 +1040,12 @@ async function loadSaved() {
 
   list.innerHTML = `<div class="loader"></div>`;
 
-  let q = supa
+  const { data, error } = await supa
     .from("ajanlatok")
     .select("id, created_at, project_name, client_name, total_gross, currency, user_email")
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const { data, error } = await q;
   if (error) {
     list.innerHTML = `<div class="text-red-600">Hiba: ${escapeHtml(error.message)}</div>`;
     return;
@@ -1149,8 +1099,7 @@ async function loadOne(id) {
   if (error) return toast("Betöltés hiba: " + error.message, "error");
   if (!data?.payload) return toast("Nincs payload!", "error");
 
-  applyDraft(data.payload);
-  saveDraftLocal();
+  applyPayload(data.payload);
   toast("Betöltve ✅");
 }
 
@@ -1161,28 +1110,31 @@ function addRow() {
   items.push(DEFAULT_ROW());
   renderItems();
   calcAndRender();
-  saveDraftLocal();
 }
 
 function clearRows() {
   items = [DEFAULT_ROW()];
   renderItems();
   calcAndRender();
-  saveDraftLocal();
 }
 
-function resetAll() {
-  if (!confirm("Biztosan alaphelyzet? (draft is törlődik)")) return;
-  localStorage.removeItem(DRAFT_KEY);
-
-  $("project_name").value = "";
-  $("currency").value = "HUF";
-
+function clearClientFields() {
   $("client_name").value = "";
   $("client_email").value = "";
   $("client_phone").value = "";
   $("client_city").value = "";
   $("client_address").value = "";
+  calcAndRender();
+  toast("Megrendelő mezők ürítve ✅", "info");
+}
+
+function resetAll() {
+  if (!confirm("Biztosan alaphelyzet?")) return;
+
+  $("project_name").value = "";
+  $("currency").value = "HUF";
+
+  clearClientFields();
 
   $("overhead_rate").value = 0;
   $("profit_percent").value = 0;
@@ -1210,18 +1162,14 @@ function exampleItems() {
   ];
   renderItems();
   calcAndRender();
-  saveDraftLocal();
   toast("Példa tételek betöltve ✅", "info");
 }
 
-/* Global selection */
 function selectAll(flag){
   items = items.map(it => ({...it, selected: !!flag}));
   renderItems();
-  saveDraftLocal();
 }
 
-/* Apply global qty/unit to selected rows */
 function applyGlobal(){
   const q = Math.max(0, safeNum($("global_qty").value));
   const u = $("global_unit").value || "m²";
@@ -1239,11 +1187,9 @@ function applyGlobal(){
 
   renderItems();
   calcAndRender();
-  saveDraftLocal();
   toast(`Ráhúzva ${changed} sorra ✅`);
 }
 
-/* Add quick package */
 function addPackage(key){
   const pkg = QUICK[key];
   if (!pkg) return;
@@ -1254,7 +1200,7 @@ function addPackage(key){
   pkg.forEach(p => {
     items.push({
       name: p.name,
-      type: "anyag", // alapból: anyag+munka egységárra bontjuk, így jobb
+      type: "anyag",
       qty: q,
       unit: forcedUnit || p.unit || "m²",
       mat_unit_price: safeNum(p.mat),
@@ -1266,7 +1212,6 @@ function addPackage(key){
 
   renderItems();
   calcAndRender();
-  saveDraftLocal();
   toast("Csomag hozzáadva ✅");
 }
 
@@ -1274,7 +1219,6 @@ function addPackage(key){
    13) PDF
 ========================= */
 function pdfPro() {
-  // A printArea-t mentjük PDF-be html2pdf-fel – szebb, mint sima print
   const el = document.getElementById("printArea");
   const opt = {
     margin: 0.25,
@@ -1287,24 +1231,32 @@ function pdfPro() {
 }
 
 /* =========================
-   14) BOOT
+   14) PRIVÁT INDÍTÁS (kényszer ürítés)
+========================= */
+function privacyHardClear() {
+  // Biztos üres indulás: megrendelő mezők nullázása
+  $("client_name").value = "";
+  $("client_email").value = "";
+  $("client_phone").value = "";
+  $("client_city").value = "";
+  $("client_address").value = "";
+}
+
+/* =========================
+   15) BOOT
 ========================= */
 async function boot() {
   const session = await refreshSession();
   renderAuthNav(session);
   renderAuthBox(session);
 
-  // draft
-  const hasDraft = loadDraftLocal();
-  if (!hasDraft) {
-    items = [DEFAULT_ROW()];
-    renderItems();
-    calcAndRender();
-  } else {
-    // draft már renderelt
-  }
+  // Mindig tiszta indulás (Privát mód)
+  items = [DEFAULT_ROW()];
+  renderItems();
+  privacyHardClear();
+  calcAndRender();
 
-  // settings listeners
+  // listeners
   [
     "project_name","currency","client_name","client_email","client_phone","client_city","client_address",
     "overhead_rate","profit_percent","discount_net","vat_enabled","vat_rate",
@@ -1312,11 +1264,10 @@ async function boot() {
   ].forEach(id => {
     const el = $(id);
     if (!el) return;
-    el.addEventListener("input", () => { calcAndRender(); saveDraftLocal(); });
-    el.addEventListener("change", () => { calcAndRender(); saveDraftLocal(); });
+    el.addEventListener("input", () => calcAndRender());
+    el.addEventListener("change", () => calcAndRender());
   });
 
-  // buttons
   $("btnAddRow").onclick = addRow;
   $("btnAddRowTop").onclick = addRow;
   $("btnAddCustomRow").onclick = addRow;
@@ -1331,6 +1282,8 @@ async function boot() {
   $("btnSave").onclick = saveToSupabase;
   $("btnRefreshSaved").onclick = loadSaved;
 
+  $("btnClearClient").onclick = clearClientFields;
+
   $("importJson").addEventListener("change", (e) => {
     const f = e.target.files?.[0];
     if (f) importJson(f);
@@ -1341,12 +1294,10 @@ async function boot() {
   $("btnSelectNone").onclick = () => selectAll(false);
   $("btnApplyGlobal").onclick = applyGlobal;
 
-  // pkg buttons
   document.querySelectorAll("[data-pkg]").forEach(b => {
     b.addEventListener("click", () => addPackage(b.dataset.pkg));
   });
 
-  calcAndRender();
   await loadSaved();
 }
 
