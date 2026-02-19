@@ -3,996 +3,742 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SzakiPiac-2025.hu – AI Árkalkulátor (Tételes ajánlat)</title>
+  <title>Építőipari Árkalkulátor – PRO (SzakiPiac)</title>
 
-  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter','sans-serif'] },
+          colors: { brand: { DEFAULT:'#ea580c', dark:'#c2410c' } }
+        }
+      }
+    };
+  </script>
 
   <style>
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2d3748; width: 34px; height: 34px; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
-    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    body { background:#0b1220; color:#e5e7eb; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+    .glass { background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(148, 163, 184, 0.18); backdrop-filter: blur(12px); }
+    .field { background:#0f172a; border:1px solid rgba(148,163,184,.25); color:#fff; }
+    .field:focus { outline:none; border-color:#ea580c; box-shadow:0 0 0 3px rgba(234,88,12,.18); }
+    .chip { background: rgba(148,163,184,.12); border: 1px solid rgba(148,163,184,.18); }
+    .pkg { background:#0f172a; border:1px solid rgba(148,163,184,.25); transition:transform .15s, border-color .15s; }
+    .pkg:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.6); }
+    .btn { background:#ea580c; }
+    .btn:hover { background:#c2410c; }
 
-    /* Nyomtatás */
+    .blur-lock { filter: blur(8px); pointer-events:none; user-select:none; }
+    #lock-screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,.86); backdrop-filter: blur(6px); z-index:99999; }
+
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
     @media print {
-      .no-print { display: none !important; }
-      body { background: white !important; }
-      .print-area { box-shadow: none !important; border: none !important; }
-      .print-pad { padding: 0 !important; }
-      a[href]:after { content: "" !important; }
+      body { background:#fff; color:#000; }
+      .no-print { display:none !important; }
+      .glass { background:#fff !important; border:none !important; box-shadow:none !important; }
+      .field, select, textarea { background:transparent !important; border:none !important; color:#000 !important; box-shadow:none !important; }
+      .print-only { display:block !important; }
+      .print-watermark { display:block !important; }
+      #print-area * { color:#000 !important; }
     }
+    .print-only { display:none; }
   </style>
 </head>
 
-<body class="bg-gray-50 text-gray-800">
-  <!-- HEADER -->
-  <header class="bg-white shadow-md sticky top-0 z-50 no-print">
-    <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center gap-3">
-          <a href="index.html#home" class="flex items-center gap-2 font-bold text-gray-800">
-            <img class="h-9 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="Logo">
-            <span class="hidden sm:inline">SzakiPiac-2025.hu</span>
-          </a>
-        </div>
-        <div class="flex items-center gap-2">
-          <a href="index.html#home" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">🏠 Főoldal</a>
-          <a href="index.html#feltoltes" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">📢 Hirdetés</a>
-          <div id="nav-auth" class="ml-2 text-sm"></div>
-        </div>
+<body class="min-h-screen">
+
+<!-- ===== BELÉPÉS / REGISZTRÁCIÓ ===== -->
+<div id="lock-screen" class="no-print">
+  <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-brand/20 border border-brand/40 flex items-center justify-center">
+        <i class="fa-solid fa-user-shield text-brand text-2xl"></i>
       </div>
-    </nav>
-  </header>
-
-  <!-- TOAST -->
-  <div id="toast" class="fixed top-5 right-5 z-[200] text-white py-3 px-5 rounded-lg shadow-xl transform translate-x-[120%] transition-transform duration-300 no-print"></div>
-
-  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-      <!-- BAL OLDAL: BEÁLLÍTÁS + TÉTELEK -->
-      <section class="lg:col-span-2 space-y-6">
-
-        <!-- CÍM -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">🧮 AI Árkalkulátor – Tételes ajánlat</h1>
-              <p class="text-gray-600 mt-1">Tételek + rezsióradíj + haszon + ÁFA + mentés + PDF/nyomtatás.</p>
-            </div>
-            <div class="flex gap-2 no-print">
-              <button id="btnAddRowTop" class="px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black">+ Tétel</button>
-              <button id="btnReset" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200">Alaphelyzet</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- PROJEKT + MEGRENDELŐ -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-          <h2 class="text-lg font-bold text-gray-900 mb-4">Projekt adatok</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Projekt neve</label>
-              <input id="project_name" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Pl: Fürdőszoba felújítás" />
-            </div>
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Pénznem</label>
-              <select id="currency" class="mt-1 w-full border rounded-lg px-3 py-2">
-                <option value="HUF">HUF (Ft)</option>
-                <option value="EUR">EUR (€)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Megrendelő neve</label>
-              <input id="client_name" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Pl: Kovács Péter" />
-            </div>
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Megrendelő e-mail</label>
-              <input id="client_email" type="email" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="pl: ugyfel@email.hu" />
-            </div>
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Megrendelő telefon</label>
-              <input id="client_phone" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="+36..." />
-            </div>
-            <div>
-              <label class="text-sm font-semibold text-gray-700">Város</label>
-              <input id="client_city" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Pl: Budapest" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-sm font-semibold text-gray-700">Cím</label>
-              <input id="client_address" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Pl: 1111 Budapest, Példa utca 1." />
-            </div>
-          </div>
-        </div>
-
-        <!-- BEÁLLÍTÁSOK -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-          <h2 class="text-lg font-bold text-gray-900 mb-4">Számítás beállításai</h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="border rounded-xl p-4 bg-gray-50">
-              <label class="text-sm font-semibold text-gray-700">Rezsióradíj (nettó) / óra</label>
-              <input id="overhead_rate" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="0" min="0" />
-              <p class="text-xs text-gray-500 mt-2">A rendszer ezt a munkaórák alapján hozzáadja.</p>
-            </div>
-
-            <div class="border rounded-xl p-4 bg-gray-50">
-              <label class="text-sm font-semibold text-gray-700">Haszon (%)</label>
-              <input id="profit_percent" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="0" min="0" step="0.1" />
-              <p class="text-xs text-gray-500 mt-2">Nettó alapon számolva (anyag+munka+rezsi - kedvezmény).</p>
-            </div>
-
-            <div class="border rounded-xl p-4 bg-gray-50">
-              <label class="text-sm font-semibold text-gray-700">Kedvezmény (nettó)</label>
-              <input id="discount_net" type="number" class="mt-1 w-full border rounded-lg px-3 py-2" value="0" min="0" />
-              <p class="text-xs text-gray-500 mt-2">Fix nettó összeg levonása.</p>
-            </div>
-          </div>
-
-          <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <input id="vat_enabled" type="checkbox" class="h-5 w-5" checked />
-              <label class="font-semibold">ÁFA hozzáadása</label>
-              <select id="vat_rate" class="border rounded-lg px-3 py-2">
-                <option value="27" selected>27%</option>
-                <option value="5">5%</option>
-                <option value="0">0%</option>
-              </select>
-            </div>
-
-            <div class="flex gap-2 no-print">
-              <button id="btnExample" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700">Példa tételek</button>
-              <button id="btnExportJson" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200">Export JSON</button>
-              <label class="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 cursor-pointer">
-                Import JSON
-                <input id="importJson" type="file" accept="application/json" class="hidden">
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- TÉTELEK -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-          <div class="flex items-center justify-between gap-4 mb-4">
-            <h2 class="text-lg font-bold text-gray-900">Tételes lista</h2>
-            <div class="flex gap-2 no-print">
-              <button id="btnAddRow" class="px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black">+ Tétel</button>
-              <button id="btnClearRows" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200">Összes törlése</button>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="bg-gray-50 text-left">
-                  <th class="p-2 min-w-[220px]">Megnevezés</th>
-                  <th class="p-2 min-w-[120px]">Típus</th>
-                  <th class="p-2 min-w-[90px]">Menny.</th>
-                  <th class="p-2 min-w-[110px]">Egység</th>
-                  <th class="p-2 min-w-[130px]">Egységár (nettó)</th>
-                  <th class="p-2 min-w-[120px]">Óra (ha munka)</th>
-                  <th class="p-2 min-w-[140px]">Részösszeg (nettó)</th>
-                  <th class="p-2 min-w-[80px]" title="Törlés">✖</th>
-                </tr>
-              </thead>
-              <tbody id="itemsBody"></tbody>
-            </table>
-          </div>
-
-          <div class="mt-4 text-xs text-gray-500">
-            Tipp: „Munka” típusnál az egységár lehet óradíj vagy darabár, az „Óra” mezőből pedig rezsi számolódik.
-          </div>
-        </div>
-
-      </section>
-
-      <!-- JOBB OLDAL: ÖSSZEGZÉS + NYOMTATÁS + MENTÉS -->
-      <aside class="space-y-6">
-
-        <!-- ÖSSZEGZÉS -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-          <h2 class="text-lg font-bold text-gray-900 mb-4">Összegzés</h2>
-
-          <div class="space-y-2 text-sm">
-            <div class="flex justify-between"><span class="text-gray-600">Tételek összesen (nettó)</span><span id="sum_subtotal" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span class="text-gray-600">Rezsióradíj összesen (nettó)</span><span id="sum_overhead" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span class="text-gray-600">Kedvezmény (nettó)</span><span id="sum_discount" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span class="text-gray-600">Haszon (nettó)</span><span id="sum_profit" class="font-bold">0 Ft</span></div>
-
-            <div class="border-t pt-3 mt-3"></div>
-
-            <div class="flex justify-between text-base"><span class="text-gray-700 font-semibold">Nettó végösszeg</span><span id="sum_net_total" class="font-extrabold">0 Ft</span></div>
-            <div class="flex justify-between"><span class="text-gray-600">ÁFA</span><span id="sum_vat" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between text-lg"><span class="text-gray-900 font-bold">Bruttó végösszeg</span><span id="sum_gross_total" class="font-extrabold text-green-700">0 Ft</span></div>
-          </div>
-
-          <div class="mt-5 grid grid-cols-1 gap-2 no-print">
-            <button id="btnPrint" class="px-4 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700">🖨️ Nyomtatás / PDF</button>
-            <button id="btnSave" class="px-4 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-black">💾 Mentés Supabase-be</button>
-          </div>
-
-          <div id="saveHint" class="mt-3 text-xs text-gray-500 no-print"></div>
-        </div>
-
-        <!-- AUTH -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6 no-print">
-          <h2 class="text-lg font-bold text-gray-900 mb-4">Belépés / Fiók</h2>
-
-          <div id="authBox">
-            <div class="text-gray-600 text-sm">Betöltés...</div>
-          </div>
-
-          <div class="mt-4 text-xs text-gray-500">
-            Számolni belépés nélkül is tudsz, de menteni csak belépve lehet.
-          </div>
-        </div>
-
-        <!-- MENTETT AJÁNLATOK -->
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6 no-print">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-bold text-gray-900">Mentett ajánlatok</h2>
-            <button id="btnRefreshSaved" class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 font-semibold text-sm">Frissítés</button>
-          </div>
-
-          <div id="savedList" class="space-y-2 text-sm text-gray-700">
-            <div class="text-gray-500">Jelentkezz be a listához.</div>
-          </div>
-
-          <div id="adminNote" class="mt-3 hidden text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            Admin módban minden ajánlatot látsz.
-          </div>
-        </div>
-
-      </aside>
+      <div>
+        <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-bold">Építőipari árkalkulátor</div>
+        <div class="text-xl font-extrabold">Belépés / Regisztráció</div>
+        <div class="text-xs text-slate-400 mt-1">Ingyenes teszt indulás – csak szakembereknek.</div>
+      </div>
     </div>
 
-    <!-- PRINT AREA -->
-    <section class="mt-8 print-area bg-white border border-gray-100 rounded-xl shadow-sm p-6 print-pad">
-      <div class="flex items-start justify-between gap-6">
-        <div>
-          <div class="flex items-center gap-3">
-            <img class="h-10 w-auto" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="Logo">
-            <div>
-              <div class="font-extrabold text-gray-900 text-lg">SzakiPiac-2025.hu</div>
-              <div class="text-sm text-gray-600">Árajánlat / Kalkuláció</div>
-            </div>
-          </div>
-          <div class="mt-3 text-sm text-gray-700">
-            <div><span class="font-semibold">Projekt:</span> <span id="print_project">—</span></div>
-            <div><span class="font-semibold">Dátum:</span> <span id="print_date">—</span></div>
-          </div>
-        </div>
+    <div class="mt-6 space-y-4">
+      <div>
+        <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">E-mail</label>
+        <input id="authEmail" type="email" autocomplete="email" class="field w-full mt-2 p-4 rounded-2xl" placeholder="pl. te@pelda.hu" />
+      </div>
 
-        <div class="text-sm text-gray-700">
-          <div class="font-bold text-gray-900 mb-1">Megrendelő</div>
-          <div id="print_client" class="space-y-0.5">
-            <div>—</div>
+      <div>
+        <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Jelszó</label>
+        <input id="authPassword" type="password" autocomplete="current-password" class="field w-full mt-2 p-4 rounded-2xl" placeholder="Legalább 8 karakter" />
+      </div>
+
+      <div id="authError" class="hidden text-red-300 text-sm font-bold"></div>
+      <div id="authInfo" class="hidden text-emerald-300 text-sm font-bold"></div>
+
+      <div class="flex gap-3">
+        <button id="btnLogin" class="btn w-1/2 py-3 rounded-2xl font-extrabold">
+          <i class="fa-solid fa-right-to-bracket mr-2"></i> Belépés
+        </button>
+        <button id="btnRegister" class="chip w-1/2 py-3 rounded-2xl font-extrabold hover:bg-white/10 transition">
+          <i class="fa-solid fa-user-plus mr-2"></i> Regisztráció
+        </button>
+      </div>
+
+      <div id="devHint" class="hidden text-xs text-orange-200">
+        DEV mód aktív: GitHub Pages teszt – belépés kihagyva.
+      </div>
+
+      <div class="text-xs text-slate-400 leading-relaxed">
+        Tipp: regisztráció után előfordulhat e-mail megerősítés (Supabase beállítástól függ).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" class="blur-lock">
+  <div id="onboardingBanner" class="hidden mx-auto max-w-6xl px-4 pt-4 no-print">
+    <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 flex items-start gap-3">
+      <div class="mt-0.5 text-orange-300"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+      <div class="flex-1">
+        <div class="font-black tracking-wide">Gyors kezdés</div>
+        <div class="text-sm text-slate-300 mt-1 leading-relaxed">
+          1) Írd be a <span class="font-bold">mennyiséget</span> (pl. 50 m²),
+          2) válassz <span class="font-bold">csomagot</span>,
+          3) ellenőrizd a tételeket, majd <span class="font-bold">PDF mentés</span>.
+        </div>
+      </div>
+      <button id="onboardingClose" class="text-slate-400 hover:text-white px-2 py-1 rounded-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+          <img src="logo.jpg" alt="Logo" class="max-w-full max-h-full object-contain" onerror="this.style.display='none'"/>
+          <i class="fa-solid fa-compass-drafting text-brand text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight">
+            Építőipari <span class="text-brand">Árkalkulátor</span>
+          </h1>
+          <div class="mt-2">
+            <span id="headerOwner"
+              class="inline-block px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-black tracking-widest uppercase
+              shadow-[0_0_14px_rgba(16,185,129,0.65)] border border-emerald-400/40"></span>
           </div>
         </div>
       </div>
 
-      <div class="mt-6 border-t pt-4">
-        <h3 class="font-bold text-gray-900 mb-3">Tételek</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+      <div class="flex flex-wrap gap-2 no-print">
+        <button onclick="resetAll()" class="chip px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition">
+          <i class="fa-solid fa-broom mr-2"></i> Törlés
+        </button>
+        <button onclick="logout()" class="chip px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i> Kijelentkezés
+        </button>
+
+        <input id="loadJsonInput" type="file" accept="application/json" class="hidden" />
+        <button id="btnSaveJson" class="bg-white/10 hover:bg-white/15 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest border border-white/10 transition">
+          <i class="fa-solid fa-floppy-disk mr-2"></i> Mentés
+        </button>
+        <button id="btnLoadJson" class="bg-white/10 hover:bg-white/15 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest border border-white/10 transition">
+          <i class="fa-solid fa-folder-open mr-2"></i> Betöltés
+        </button>
+        <button onclick="generatePDF()" class="bg-brand hover:bg-brand-dark px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg transition">
+          <i class="fa-solid fa-file-pdf mr-2"></i> PDF mentés
+        </button>
+      </div>
+    </div>
+
+    <div class="print-only mb-4">
+      <div style="border:1px solid #ddd; padding:12px; border-radius:10px;">
+        <div style="font-weight:800; font-size:16px;">Árajánlat / Kalkuláció</div>
+        <div style="margin-top:6px; font-size:12px;">
+          <div><b>Ügyfél:</b> <span id="p_clientName">—</span></div>
+          <div><b>Projekt:</b> <span id="p_projectName">—</span></div>
+          <div><b>Dátum:</b> <span id="p_docDate">—</span></div>
+          <div><b>Kivitelező:</b> <span id="p_vendor">—</span></div>
+          <div style="margin-top:6px;"><b>Licenc:</b> <span id="printOwnerName">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="print-area" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="space-y-6">
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center justify-between">
+            <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black">Adatok</div>
+            <div class="text-[11px] text-slate-500 font-bold">Dátum: <span id="today"></span></div>
+          </div>
+          <div class="mt-4 space-y-3">
+            <input id="clientName" class="field w-full p-3 rounded-2xl text-sm" placeholder="Ügyfél neve" />
+            <input id="projectName" class="field w-full p-3 rounded-2xl text-sm" placeholder="Projekt leírása" />
+            <input id="docDate" type="date" class="field w-full p-3 rounded-2xl text-sm" />
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black flex items-center gap-2">
+            <i class="fa-solid fa-ruler-combined text-brand"></i> Mennyiség (gyors)
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Írd be a felületet, majd kattints egy csomagra.</p>
+
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Alapterület / felület</label>
+              <input id="globalQty" type="number" value="50" min="0" step="0.01" class="field w-full mt-2 p-3 rounded-2xl text-sm font-bold" />
+            </div>
+            <div>
+              <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Egység</label>
+              <select id="globalUnit" class="field w-full mt-2 p-3 rounded-2xl text-sm font-bold">
+                <option value="m2" selected>m²</option>
+                <option value="m3">m³</option>
+                <option value="fm">fm</option>
+                <option value="db">db</option>
+                <option value="óra">óra</option>
+                <option value="alkalom">alkalom</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button onclick="applyGlobalToSelected()" class="chip px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition">
+              <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Ráteszem a kijelöltekre
+            </button>
+            <button onclick="selectAllRows(true)" class="chip px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition">Mind kijelöl</button>
+            <button onclick="selectAllRows(false)" class="chip px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition">Kijelölés törlés</button>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-brand"></i> Szorzók
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">ÁFA (%)</label>
+              <select id="taxRate" onchange="calculateTotal()" class="field w-full mt-2 p-3 rounded-2xl text-sm font-bold">
+                <option value="0">0 (AAM)</option>
+                <option value="5">5</option>
+                <option value="27" selected>27</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Anyag árrés (%)</label>
+              <input id="materialMargin" type="number" value="10" min="0" step="0.1" oninput="calculateTotal()" class="field w-full mt-2 p-3 rounded-2xl text-sm font-bold" />
+            </div>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black flex items-center gap-2">
+            <i class="fa-solid fa-briefcase text-brand"></i> Kivitelező adatai
+          </div>
+          <textarea id="vendorDetails" rows="6" class="field w-full mt-4 p-3 rounded-2xl text-sm" placeholder="Cégnév, cím, adószám, számlaszám, elérhetőség..."></textarea>
+        </div>
+
+        <div class="glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black flex items-center gap-2">
+            <i class="fa-solid fa-file-lines text-brand"></i> Megjegyzés (PDF-re is)
+          </div>
+          <textarea id="offerNote" rows="4" class="field w-full mt-4 p-3 rounded-2xl text-sm"
+            placeholder="Pl.: Az árajánlat tájékoztató jellegű, a végleges ár a helyszíni felmérés után módosulhat."></textarea>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2 space-y-6">
+        <div class="glass rounded-3xl p-6 no-print">
+          <div class="flex items-center justify-between gap-4">
+            <div class="text-xs uppercase tracking-[0.25em] text-slate-400 font-black flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-brand"></i> Gyors csomagok
+            </div>
+            <div class="text-xs text-slate-400">Tipp: előbb állítsd be a <span class="text-orange-300 font-bold">Mennyiség</span> mezőt.</div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <button onclick="addQuickPackage('szerkezetepites')" class="pkg rounded-2xl p-4 text-blue-300 border-blue-500/20">
+              <i class="fa-solid fa-trowel-bricks text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Szerkezet</div>
+            </button>
+            <button onclick="addQuickPackage('szobafestes')" class="pkg rounded-2xl p-4 text-yellow-300 border-yellow-500/20">
+              <i class="fa-solid fa-paint-roller text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Festés</div>
+            </button>
+            <button onclick="addQuickPackage('acs_munka')" class="pkg rounded-2xl p-4 text-orange-300 border-orange-500/20">
+              <i class="fa-solid fa-hammer text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Ács</div>
+            </button>
+            <button onclick="addQuickPackage('villanyszereles')" class="pkg rounded-2xl p-4 text-red-300 border-red-500/20">
+              <i class="fa-solid fa-bolt text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Villany</div>
+            </button>
+            <button onclick="addQuickPackage('vizvezetek')" class="pkg rounded-2xl p-4 text-cyan-300 border-cyan-500/20">
+              <i class="fa-solid fa-faucet text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Víz</div>
+            </button>
+            <button onclick="addQuickPackage('hoszigeteles')" class="pkg rounded-2xl p-4 text-green-300 border-green-500/20">
+              <i class="fa-solid fa-house-chimney text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Homlokzat</div>
+            </button>
+
+            <button onclick="addQuickPackage('vakolas')" class="pkg rounded-2xl p-4 text-emerald-300 border-emerald-500/20">
+              <i class="fa-solid fa-fill-drip text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Vakolás</div>
+            </button>
+            <button onclick="addQuickPackage('aljzat')" class="pkg rounded-2xl p-4 text-indigo-300 border-indigo-500/20">
+              <i class="fa-solid fa-water text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Aljzat</div>
+            </button>
+            <button onclick="addQuickPackage('hidegburkolas')" class="pkg rounded-2xl p-4 text-purple-300 border-purple-500/20">
+              <i class="fa-solid fa-border-all text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Burkolás</div>
+            </button>
+            <button onclick="addQuickPackage('gipszkarton')" class="pkg rounded-2xl p-4 text-slate-200 border-slate-500/20">
+              <i class="fa-solid fa-square text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Karton</div>
+            </button>
+            <button onclick="addQuickPackage('laminalt')" class="pkg rounded-2xl p-4 text-amber-300 border-amber-500/20">
+              <i class="fa-solid fa-bars text-xl"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-slate-200">Laminált</div>
+            </button>
+            <button onclick="addNewRow()" class="pkg rounded-2xl p-4 text-white border-white/10">
+              <i class="fa-solid fa-plus text-xl text-brand"></i><div class="mt-2 text-[10px] uppercase tracking-widest font-black text-brand">Egyedi</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 overflow-x-auto">
+          <table class="w-full min-w-[880px]">
             <thead>
-              <tr class="bg-gray-50 text-left">
-                <th class="p-2">Megnevezés</th>
-                <th class="p-2">Típus</th>
-                <th class="p-2">Menny.</th>
-                <th class="p-2">Egység</th>
-                <th class="p-2">Egységár (nettó)</th>
-                <th class="p-2">Részösszeg (nettó)</th>
+              <tr class="border-b border-white/10 text-[10px] uppercase tracking-widest font-black text-slate-400">
+                <th class="py-3 w-9 no-print text-center">✓</th>
+                <th class="py-3 text-left">Leírás</th>
+                <th class="py-3 text-center w-28">Mennyiség</th>
+                <th class="py-3 text-center w-24">Egység</th>
+                <th class="py-3 text-right w-28">Anyag / egység</th>
+                <th class="py-3 text-right w-28">Munka / egység</th>
+                <th class="py-3 text-right w-32">Sor összesen</th>
+                <th class="py-3 w-12 no-print"></th>
               </tr>
             </thead>
-            <tbody id="print_items"></tbody>
+            <tbody id="itemsBody" class="divide-y divide-white/5"></tbody>
           </table>
         </div>
-      </div>
 
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="text-sm text-gray-600">
-          <div class="font-bold text-gray-900 mb-2">Megjegyzés</div>
-          <p>Az ajánlat tájékoztató jellegű. Pontos felmérés után változhat.</p>
-        </div>
-
-        <div class="border rounded-xl p-4 bg-gray-50">
-          <div class="space-y-1 text-sm">
-            <div class="flex justify-between"><span>Tételek (nettó)</span><span id="p_sum_subtotal" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span>Rezsióra (nettó)</span><span id="p_sum_overhead" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span>Kedvezmény (nettó)</span><span id="p_sum_discount" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between"><span>Haszon (nettó)</span><span id="p_sum_profit" class="font-bold">0 Ft</span></div>
-            <div class="border-t pt-2 mt-2"></div>
-            <div class="flex justify-between"><span class="font-semibold">Nettó végösszeg</span><span id="p_sum_net_total" class="font-extrabold">0 Ft</span></div>
-            <div class="flex justify-between"><span>ÁFA</span><span id="p_sum_vat" class="font-bold">0 Ft</span></div>
-            <div class="flex justify-between text-base"><span class="font-bold">Bruttó végösszeg</span><span id="p_sum_gross_total" class="font-extrabold text-green-700">0 Ft</span></div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="glass rounded-3xl p-5">
+            <div class="text-[11px] uppercase tracking-widest text-slate-400 font-black">Nettó anyag</div>
+            <div id="totalMaterial" class="text-xl font-black mt-1">0 Ft</div>
+            <div class="text-[11px] text-slate-500 mt-1">(árréssel)</div>
+          </div>
+          <div class="glass rounded-3xl p-5">
+            <div class="text-[11px] uppercase tracking-widest text-slate-400 font-black">Nettó munkadíj</div>
+            <div id="totalLabor" class="text-xl font-black mt-1">0 Ft</div>
+          </div>
+          <div class="glass rounded-3xl p-5">
+            <div class="text-[11px] uppercase tracking-widest text-slate-400 font-black">ÁFA</div>
+            <div id="totalTax" class="text-xl font-black mt-1">0 Ft</div>
+          </div>
+          <div class="bg-brand/90 rounded-3xl p-5 shadow-2xl">
+            <div class="text-[11px] uppercase tracking-widest text-orange-200 font-black">Bruttó végösszeg</div>
+            <div id="grandTotal" class="text-3xl font-black mt-1">0 Ft</div>
           </div>
         </div>
+
+        <div class="print-watermark hidden text-[10px] text-slate-500 mt-4">
+          Licencelve: <span id="wmOwnerName"></span> • SzakiPiac
+          <div class="mt-1">Készítette: <span class="font-bold">SzakiPiac-2025.hu</span> • <span class="font-bold">szakipiac2025@gmail.com</span></div>
+          <div class="mt-2 text-slate-400" id="wmNote"></div>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
+</div>
 
-<script type="module">
-/* =========================
-   1) KONFIG
-========================= */
-const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8"; // publishable key
-const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+  // ================= CONFIG =================
+  const DEV_MODE = true; // GitHub Pages teszthez: true. Éleshez: false + töltsd ki a Supabase adatokat.
+  const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-const ADMIN_EMAIL = "atika.76@windowslive.com";
-
-/* =========================
-   2) SEGÉDEK
-========================= */
-const $ = (id) => document.getElementById(id);
-
-function toast(msg, type="ok") {
-  const el = $("toast");
-  const cls = type === "error" ? "bg-red-600" : (type === "info" ? "bg-gray-900" : "bg-green-600");
-  el.className = `fixed top-5 right-5 z-[200] text-white py-3 px-5 rounded-lg shadow-xl transform transition-transform duration-300 no-print ${cls}`;
-  el.textContent = msg;
-  el.classList.remove("translate-x-[120%]");
-  setTimeout(()=>el.classList.add("translate-x-[120%]"), 3500);
-}
-
-function fmtMoney(n, currency) {
-  const v = Number(n || 0);
-  if (currency === "EUR") {
-    return new Intl.NumberFormat("hu-HU", { style:"currency", currency:"EUR", maximumFractionDigits: 2 }).format(v);
+  function setOwnerDisplays(text) {
+    document.getElementById('headerOwner').innerText = text || "";
+    document.getElementById('printOwnerName').innerText = text || "—";
+    document.getElementById('wmOwnerName').innerText = text || "—";
   }
-  return (Math.round(v)).toLocaleString("hu-HU") + " Ft";
-}
+  function lockApp(){ document.getElementById('lock-screen').style.display=''; document.getElementById('app').classList.add('blur-lock'); }
+  function unlockApp(){ document.getElementById('lock-screen').style.display='none'; document.getElementById('app').classList.remove('blur-lock'); }
 
-function safeNum(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
+  function showAuthError(msg){ const e=document.getElementById('authError'); const i=document.getElementById('authInfo'); i.classList.add('hidden'); e.textContent=msg; e.classList.remove('hidden'); }
+  function showAuthInfo(msg){ const i=document.getElementById('authInfo'); const e=document.getElementById('authError'); e.classList.add('hidden'); i.textContent=msg; i.classList.remove('hidden'); }
 
-function todayHU() {
-  return new Date().toLocaleDateString("hu-HU", { year:"numeric", month:"2-digit", day:"2-digit" });
-}
+  function hasRealSupabaseAuth(){
+    return !!SUPABASE_URL && !!SUPABASE_ANON_KEY &&
+      !SUPABASE_URL.includes("YOUR_PROJECT_ID") &&
+      !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+  }
 
-/* =========================
-   3) STATE
-========================= */
-let items = []; // {name,type,qty,unit,unit_price,hours}
-const DEFAULT_ROW = () => ({
-  name: "",
-  type: "anyag", // anyag | munka | egyeb
-  qty: 1,
-  unit: "db",
-  unit_price: 0,
-  hours: 0
-});
+  async function setupAuth(){
+    // DEV: engedjük azonnal, gombok nélkül is
+    if(DEV_MODE){
+      document.getElementById('devHint').classList.remove('hidden');
+      const ownerLine = localStorage.getItem("ownerLine") || "DEV • Offline teszt (GitHub Pages)";
+      localStorage.setItem("ownerLine", ownerLine);
+      setOwnerDisplays(ownerLine);
+      unlockApp();
+      showOnboardingIfNeeded();
+      return;
+    }
 
-/* =========================
-   4) UI: TÁBLÁZAT
-========================= */
-function rowSubtotalNet(it) {
-  // nettó részösszeg: qty * unit_price
-  return safeNum(it.qty) * safeNum(it.unit_price);
-}
+    // ÉLES: kell Supabase
+    if(!hasRealSupabaseAuth()){
+      lockApp();
+      showAuthError("Hiányzik a Supabase beállítás (SUPABASE_URL / SUPABASE_ANON_KEY).");
+      return;
+    }
 
-function totalHours() {
-  return items.reduce((acc, it) => acc + (it.type === "munka" ? safeNum(it.hours) : 0), 0);
-}
+    window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function renderItems() {
-  const body = $("itemsBody");
-  body.innerHTML = "";
+    const emailEl=document.getElementById('authEmail');
+    const passEl=document.getElementById('authPassword');
+    const btnLogin=document.getElementById('btnLogin');
+    const btnRegister=document.getElementById('btnRegister');
 
-  items.forEach((it, idx) => {
-    const tr = document.createElement("tr");
-    tr.className = "border-b last:border-b-0";
+    async function doLogin(){
+      const email=(emailEl.value||"").trim();
+      const password=(passEl.value||"");
+      if(!email||!password) return showAuthError("Add meg az e-mailt és a jelszót.");
+      showAuthInfo("Beléptetés...");
+      const {data,error}=await window.sb.auth.signInWithPassword({email,password});
+      if(error) return showAuthError(error.message);
+      if(data?.session){
+        localStorage.setItem("ownerLine", email);
+        setOwnerDisplays(email);
+        unlockApp();
+        showOnboardingIfNeeded();
+      }
+    }
 
-    tr.innerHTML = `
-      <td class="p-2">
-        <input data-k="name" data-i="${idx}" class="w-full border rounded-lg px-2 py-1.5" placeholder="Pl: Burkolás 20m2" value="${escapeHtml(it.name)}">
-      </td>
-      <td class="p-2">
-        <select data-k="type" data-i="${idx}" class="w-full border rounded-lg px-2 py-1.5">
-          <option value="anyag" ${it.type==="anyag"?"selected":""}>Anyag</option>
-          <option value="munka" ${it.type==="munka"?"selected":""}>Munka</option>
-          <option value="egyeb" ${it.type==="egyeb"?"selected":""}>Egyéb</option>
+    async function doRegister(){
+      const email=(emailEl.value||"").trim();
+      const password=(passEl.value||"");
+      if(!email||!password) return showAuthError("Add meg az e-mailt és a jelszót.");
+      if(password.length<8) return showAuthError("A jelszó legyen legalább 8 karakter.");
+      showAuthInfo("Regisztráció...");
+      const {data,error}=await window.sb.auth.signUp({email,password});
+      if(error) return showAuthError(error.message);
+      if(data?.session){
+        localStorage.setItem("ownerLine", email);
+        setOwnerDisplays(email);
+        unlockApp();
+        showOnboardingIfNeeded();
+      }else{
+        showAuthInfo("Regisztráció kész. Nézd meg az e-mailt megerősítéshez, majd lépj be.");
+      }
+    }
+
+    btnLogin.addEventListener('click', doLogin);
+    btnRegister.addEventListener('click', doRegister);
+    passEl.addEventListener('keypress', (e)=>{ if(e.key==='Enter') doLogin(); });
+
+    const {data:sess}=await window.sb.auth.getSession();
+    if(sess?.session){
+      const email=sess.session.user?.email||"Belépve";
+      localStorage.setItem("ownerLine", email);
+      setOwnerDisplays(email);
+      unlockApp();
+      showOnboardingIfNeeded();
+    }else{
+      lockApp();
+    }
+
+    window.sb.auth.onAuthStateChange((_event, session)=>{
+      if(session){
+        const email=session.user?.email||"Belépve";
+        localStorage.setItem("ownerLine", email);
+        setOwnerDisplays(email);
+        unlockApp();
+      }else{
+        lockApp();
+      }
+    });
+  }
+
+  // ===== Kalkulátor logika =====
+  const quickPackages = {
+    szerkezetepites: [
+      { name:'Gépi alapárok ásás', m:0, l:3500 },
+      { name:'Sávalap betonozás (C16/20)', m:35000, l:15500 },
+      { name:'Főfalazás (30-as tégla)', m:12500, l:8500 },
+      { name:'Válaszfalazás (10-es tégla)', m:6800, l:5500 }
+    ],
+    szobafestes: [
+      { name:'Felület előkészítés, alapozás', m:450, l:850 },
+      { name:'Glettelés 2 rétegben', m:1100, l:2200 },
+      { name:'Festés 2 rétegben (fehér)', m:850, l:1600 }
+    ],
+    acs_munka: [
+      { name:'Tetőszerkezet építés (faanyaggal)', m:15500, l:17500 },
+      { name:'Tetőlécezés és fóliázás', m:3950, l:3450 },
+      { name:'Cserépfedés alapcserepekkel', m:8800, l:5800 },
+      { name:'Ereszcsatorna rendszer szerelés', m:5800, l:4800 }
+    ],
+    villanyszereles: [{ name:'Alapszerelés kiállásonként', m:5500, l:14500 }],
+    vizvezetek: [{ name:'Vízvezeték kiállás készítés', m:19500, l:23500 }],
+    hoszigeteles: [
+      { name:'Homlokzati hőszigetelés (15cm EPS)', m:10500, l:8800 },
+      { name:'Hálózás és glettelés', m:2800, l:3500 },
+      { name:'Homlokzati színezés (szilikon)', m:4200, l:4800 }
+    ],
+    vakolas: [
+      { name:'Gépi vakolás (oldalfal)', m:3800, l:5200 },
+      { name:'Kézi javító vakolás', m:3100, l:6800 }
+    ],
+    aljzat: [
+      { name:'Aljzatkiegyenlítés (önterülő)', m:3200, l:2500 },
+      { name:'Szerelőbeton / Vasalt aljzat', m:8500, l:6500 },
+      { name:'Estrich betonozás', m:4500, l:4200 }
+    ],
+    hidegburkolas: [
+      { name:'Padlóburkolás (hideg)', m:6200, l:9800 },
+      { name:'Oldalfal burkolás (csempézés)', m:6800, l:11500 },
+      { name:'Lábazat rakás', m:1800, l:2500 }
+    ],
+    gipszkarton: [
+      { name:'Válaszfal építés (dupla lap)', m:9500, l:8200 },
+      { name:'Álmennyezet készítés', m:8200, l:9500 }
+    ],
+    laminalt: [
+      { name:'Laminált padló fektetés (alátéttel)', m:4800, l:3500 },
+      { name:'Szegélyléc rakás (folyóméter)', m:1200, l:1800 },
+      { name:'Szilózás / Akrylozás', m:450, l:950 }
+    ]
+  };
+
+  function fmtFt(v){ return Math.round(Number(v)||0).toLocaleString('hu-HU') + ' Ft'; }
+  function escapeHtml(s){
+    return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
+  }
+
+  function addNewRow(name='', unit='m2', qty=1, mat=0, lab=0){
+    const tbody=document.getElementById('itemsBody');
+    const tr=document.createElement('tr');
+    tr.className="hover:bg-white/5 transition";
+    tr.innerHTML=`
+      <td class="py-3 no-print text-center"><input type="checkbox" class="rowSel accent-orange-500 w-4 h-4"></td>
+      <td class="py-3"><input type="text" value="${escapeHtml(name)}" class="bg-transparent w-full focus:outline-none text-sm font-semibold text-white" placeholder="Munkafolyamat / tétel"></td>
+      <td class="py-3 text-center"><input type="number" value="${qty}" min="0" step="0.01" oninput="calculateTotal()" class="bg-transparent w-24 text-center focus:outline-none text-sm font-black text-orange-200"></td>
+      <td class="py-3 text-center">
+        <select onchange="calculateTotal()" class="bg-transparent focus:outline-none text-sm font-bold text-slate-200">
+          <option value="m2" ${unit==='m2'?'selected':''}>m²</option>
+          <option value="m3" ${unit==='m3'?'selected':''}>m³</option>
+          <option value="fm" ${unit==='fm'?'selected':''}>fm</option>
+          <option value="db" ${unit==='db'?'selected':''}>db</option>
+          <option value="óra" ${unit==='óra'?'selected':''}>óra</option>
+          <option value="alkalom" ${unit==='alkalom'?'selected':''}>alkalom</option>
         </select>
       </td>
-      <td class="p-2">
-        <input data-k="qty" data-i="${idx}" type="number" min="0" step="0.01" class="w-full border rounded-lg px-2 py-1.5" value="${it.qty}">
-      </td>
-      <td class="p-2">
-        <input data-k="unit" data-i="${idx}" class="w-full border rounded-lg px-2 py-1.5" placeholder="db / m2 / fm" value="${escapeHtml(it.unit)}">
-      </td>
-      <td class="p-2">
-        <input data-k="unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-lg px-2 py-1.5" value="${it.unit_price}">
-      </td>
-      <td class="p-2">
-        <input data-k="hours" data-i="${idx}" type="number" min="0" step="0.25" class="w-full border rounded-lg px-2 py-1.5 ${it.type!=="munka"?"bg-gray-100 text-gray-400":"bg-white"}" value="${it.hours}" ${it.type!=="munka"?"disabled":""}>
-      </td>
-      <td class="p-2 font-bold text-gray-900">
-        <span>${fmtMoney(rowSubtotalNet(it), $("currency").value)}</span>
-      </td>
-      <td class="p-2">
-        <button data-del="${idx}" class="px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 font-bold">✖</button>
-      </td>
-    `;
+      <td class="py-3 text-right"><input type="number" value="${mat}" min="0" step="1" oninput="calculateTotal()" class="bg-transparent w-28 text-right focus:outline-none text-sm"></td>
+      <td class="py-3 text-right"><input type="number" value="${lab}" min="0" step="1" oninput="calculateTotal()" class="bg-transparent w-28 text-right focus:outline-none text-sm"></td>
+      <td class="py-3 text-right font-black text-slate-200" data-subtotal>0 Ft</td>
+      <td class="py-3 no-print text-right">
+        <button onclick="this.closest('tr').remove(); calculateTotal();" class="text-slate-500 hover:text-red-400 transition px-2">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    calculateTotal();
+  }
 
-    body.appendChild(tr);
-  });
+  function addQuickPackage(type){
+    const qty=Number(document.getElementById('globalQty').value||0);
+    const unit=document.getElementById('globalUnit').value||'m2';
+    (quickPackages[type]||[]).forEach(item=>addNewRow(item.name, unit, (qty>0?qty:1), item.m, item.l));
+  }
 
-  // input listeners
-  body.querySelectorAll("input[data-k], select[data-k]").forEach(el => {
-    el.addEventListener("input", (e) => {
-      const i = Number(e.target.dataset.i);
-      const k = e.target.dataset.k;
-      let v = e.target.value;
+  function calculateTotal(){
+    let tMat=0,tLab=0;
+    const margin=1+(Number(document.getElementById('materialMargin').value||0)/100);
+    const taxRate=Number(document.getElementById('taxRate').value||0)/100;
 
-      if (k === "qty" || k === "unit_price" || k === "hours") v = safeNum(v);
+    document.querySelectorAll('#itemsBody tr').forEach(row=>{
+      const qty=Number(row.querySelector('td:nth-child(3) input')?.value||0);
+      const mat=Number(row.querySelector('td:nth-child(5) input')?.value||0);
+      const lab=Number(row.querySelector('td:nth-child(6) input')?.value||0);
+      const matWithMargin=mat*margin;
+      const rowMat=qty*matWithMargin;
+      const rowLab=qty*lab;
+      const rowSubtotal=rowMat+rowLab;
+      tMat+=rowMat; tLab+=rowLab;
+      row.querySelector('[data-subtotal]').textContent=fmtFt(rowSubtotal);
+    });
 
-      items[i][k] = v;
+    const net=tMat+tLab;
+    const tax=net*taxRate;
+    const gross=net+tax;
 
-      // type váltásnál hours mező állapot friss
-      if (k === "type") {
-        if (items[i].type !== "munka") items[i].hours = 0;
-        renderItems();
+    document.getElementById('totalMaterial').textContent=fmtFt(tMat);
+    document.getElementById('totalLabor').textContent=fmtFt(tLab);
+    document.getElementById('totalTax').textContent=fmtFt(tax);
+    document.getElementById('grandTotal').textContent=fmtFt(gross);
+
+    const note=(document.getElementById('offerNote')?.value||"").trim();
+    document.getElementById('wmNote').innerText = note || "Az árajánlat tájékoztató jellegű, a végleges ár a helyszíni felmérés után módosulhat.";
+    syncPrintHeader();
+  }
+
+  function selectAllRows(state){ document.querySelectorAll('.rowSel').forEach(cb=>cb.checked=!!state); }
+  function applyGlobalToSelected(){
+    const qty=Number(document.getElementById('globalQty').value||0);
+    const unit=document.getElementById('globalUnit').value||'m2';
+    document.querySelectorAll('#itemsBody tr').forEach(row=>{
+      const cb=row.querySelector('.rowSel');
+      if(cb?.checked){
+        row.querySelector('td:nth-child(3) input').value = (qty>0?qty:1);
+        row.querySelector('td:nth-child(4) select').value = unit;
       }
-
-      calcAndRender();
-      saveDraftLocal();
     });
-  });
-
-  body.querySelectorAll("button[data-del]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = Number(btn.dataset.del);
-      items.splice(i, 1);
-      if (!items.length) items.push(DEFAULT_ROW());
-      renderItems();
-      calcAndRender();
-      saveDraftLocal();
-    });
-  });
-}
-
-function escapeHtml(s) {
-  return (s || "").toString()
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-/* =========================
-   5) SZÁMÍTÁS
-========================= */
-function calcTotals() {
-  const currency = $("currency").value;
-
-  const subtotalNet = items.reduce((acc, it) => acc + rowSubtotalNet(it), 0);
-
-  const overheadRate = safeNum($("overhead_rate").value); // nettó / óra
-  const ohNet = totalHours() * overheadRate;
-
-  const discountNet = Math.max(0, safeNum($("discount_net").value));
-
-  // alap nettó (tételek+rezsi-kedv)
-  const baseNet = Math.max(0, subtotalNet + ohNet - discountNet);
-
-  const profitPct = Math.max(0, safeNum($("profit_percent").value));
-  const profitNet = baseNet * (profitPct / 100);
-
-  const netTotal = Math.max(0, baseNet + profitNet);
-
-  const vatEnabled = $("vat_enabled").checked;
-  const vatRate = vatEnabled ? Math.max(0, safeNum($("vat_rate").value)) : 0;
-  const vatAmount = netTotal * (vatRate / 100);
-
-  const grossTotal = netTotal + vatAmount;
-
-  return {
-    currency,
-    subtotalNet,
-    overheadNet: ohNet,
-    discountNet,
-    profitNet,
-    vatRate,
-    vatAmount,
-    netTotal,
-    grossTotal,
-    totalHours: totalHours()
-  };
-}
-
-function calcAndRender() {
-  const t = calcTotals();
-
-  $("sum_subtotal").textContent = fmtMoney(t.subtotalNet, t.currency);
-  $("sum_overhead").textContent = fmtMoney(t.overheadNet, t.currency);
-  $("sum_discount").textContent = "-" + fmtMoney(t.discountNet, t.currency);
-  $("sum_profit").textContent = fmtMoney(t.profitNet, t.currency);
-
-  $("sum_net_total").textContent = fmtMoney(t.netTotal, t.currency);
-  $("sum_vat").textContent = fmtMoney(t.vatAmount, t.currency);
-  $("sum_gross_total").textContent = fmtMoney(t.grossTotal, t.currency);
-
-  // print
-  $("p_sum_subtotal").textContent = fmtMoney(t.subtotalNet, t.currency);
-  $("p_sum_overhead").textContent = fmtMoney(t.overheadNet, t.currency);
-  $("p_sum_discount").textContent = "-" + fmtMoney(t.discountNet, t.currency);
-  $("p_sum_profit").textContent = fmtMoney(t.profitNet, t.currency);
-  $("p_sum_net_total").textContent = fmtMoney(t.netTotal, t.currency);
-  $("p_sum_vat").textContent = fmtMoney(t.vatAmount, t.currency);
-  $("p_sum_gross_total").textContent = fmtMoney(t.grossTotal, t.currency);
-
-  // print header
-  $("print_project").textContent = $("project_name").value || "—";
-  $("print_date").textContent = todayHU();
-
-  const clientLines = [
-    $("client_name").value,
-    $("client_email").value,
-    $("client_phone").value,
-    $("client_city").value,
-    $("client_address").value
-  ].filter(Boolean);
-
-  $("print_client").innerHTML = clientLines.length
-    ? clientLines.map(x => `<div>${escapeHtml(x)}</div>`).join("")
-    : "<div>—</div>";
-
-  // print items
-  const pi = $("print_items");
-  pi.innerHTML = items.map(it => `
-    <tr class="border-b">
-      <td class="p-2 font-semibold">${escapeHtml(it.name || "—")}</td>
-      <td class="p-2">${escapeHtml(it.type)}</td>
-      <td class="p-2">${escapeHtml(it.qty)}</td>
-      <td class="p-2">${escapeHtml(it.unit)}</td>
-      <td class="p-2">${escapeHtml(fmtMoney(it.unit_price, t.currency))}</td>
-      <td class="p-2 font-bold">${escapeHtml(fmtMoney(rowSubtotalNet(it), t.currency))}</td>
-    </tr>
-  `).join("");
-
-  // hint
-  const { data: { session } } = window.__session || { data: { session: null } };
-  $("saveHint").textContent = session
-    ? `Belépve: ${session.user.email} • Munkaórák összesen: ${t.totalHours.toFixed(2)} óra`
-    : `Mentéshez belépés kell • Munkaórák összesen: ${t.totalHours.toFixed(2)} óra`;
-}
-
-/* =========================
-   6) DRAFT (LOCAL)
-========================= */
-const DRAFT_KEY = "szakipiac_kalkulator_draft_v1";
-
-function getDraftPayload() {
-  const t = calcTotals();
-  return {
-    project_name: $("project_name").value || "",
-    currency: $("currency").value,
-    client: {
-      name: $("client_name").value || "",
-      email: $("client_email").value || "",
-      phone: $("client_phone").value || "",
-      city: $("client_city").value || "",
-      address: $("client_address").value || ""
-    },
-    settings: {
-      overhead_rate: safeNum($("overhead_rate").value),
-      profit_percent: safeNum($("profit_percent").value),
-      discount_net: safeNum($("discount_net").value),
-      vat_enabled: $("vat_enabled").checked,
-      vat_rate: safeNum($("vat_rate").value)
-    },
-    items: items.map(x => ({...x})),
-    totals: t,
-    saved_at: new Date().toISOString()
-  };
-}
-
-function applyDraftPayload(p) {
-  $("project_name").value = p?.project_name ?? "";
-  $("currency").value = p?.currency ?? "HUF";
-
-  $("client_name").value = p?.client?.name ?? "";
-  $("client_email").value = p?.client?.email ?? "";
-  $("client_phone").value = p?.client?.phone ?? "";
-  $("client_city").value = p?.client?.city ?? "";
-  $("client_address").value = p?.client?.address ?? "";
-
-  $("overhead_rate").value = p?.settings?.overhead_rate ?? 0;
-  $("profit_percent").value = p?.settings?.profit_percent ?? 0;
-  $("discount_net").value = p?.settings?.discount_net ?? 0;
-
-  $("vat_enabled").checked = p?.settings?.vat_enabled ?? true;
-  $("vat_rate").value = (p?.settings?.vat_rate ?? 27).toString();
-
-  items = Array.isArray(p?.items) && p.items.length ? p.items : [DEFAULT_ROW()];
-  renderItems();
-  calcAndRender();
-}
-
-function saveDraftLocal() {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(getDraftPayload()));
-  } catch (e) {}
-}
-
-function loadDraftLocal() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return false;
-    const p = JSON.parse(raw);
-    applyDraftPayload(p);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-/* =========================
-   7) JSON EXPORT/IMPORT
-========================= */
-function exportJson() {
-  const payload = getDraftPayload();
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `szakipiac_ajanlat_${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importJson(file) {
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      const p = JSON.parse(r.result);
-      applyDraftPayload(p);
-      saveDraftLocal();
-      toast("Import kész ✅");
-    } catch (e) {
-      toast("Hibás JSON!", "error");
-    }
-  };
-  r.readAsText(file);
-}
-
-/* =========================
-   8) AUTH UI
-========================= */
-async function refreshSession() {
-  const res = await supa.auth.getSession();
-  window.__session = res; // cache
-  return res.data.session;
-}
-
-function renderAuthNav(session) {
-  const nav = $("nav-auth");
-  if (!nav) return;
-
-  if (!session) {
-    nav.innerHTML = `<span class="text-sm text-gray-600">🔒 Nincs belépve</span>`;
-    return;
+    calculateTotal();
   }
 
-  const isAdmin = session.user.email === ADMIN_EMAIL;
-  nav.innerHTML = `
-    <div class="flex items-center gap-3">
-      <span class="text-sm font-bold truncate max-w-[180px]">${escapeHtml(session.user.email)}</span>
-      ${isAdmin ? `<span class="text-xs font-extrabold text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-1 rounded-full">ADMIN</span>` : ""}
-      <button id="btnLogoutTop" class="text-sm text-red-600 hover:underline font-semibold">Kilépés</button>
-    </div>
-  `;
+  function resetAll(){
+    if(!confirm('Biztosan törölsz mindent?')) return;
+    document.getElementById('itemsBody').innerHTML='';
+    document.getElementById('clientName').value='';
+    document.getElementById('projectName').value='';
+    document.getElementById('vendorDetails').value='';
+    document.getElementById('offerNote').value='';
+    document.getElementById('globalQty').value=50;
+    document.getElementById('globalUnit').value='m2';
+    document.getElementById('materialMargin').value=10;
+    document.getElementById('taxRate').value=27;
+    document.getElementById('docDate').valueAsDate=new Date();
+    calculateTotal();
+  }
 
-  $("btnLogoutTop").addEventListener("click", async () => {
-    await supa.auth.signOut();
-    toast("Kiléptél.");
-    await boot();
-  });
-}
+  function syncPrintHeader(){
+    const c=(document.getElementById('clientName')?.value||"").trim()||"—";
+    const p=(document.getElementById('projectName')?.value||"").trim()||"—";
+    const d=(document.getElementById('docDate')?.value||"").trim()||"—";
+    const v=(document.getElementById('vendorDetails')?.value||"").trim().replace(/\n+/g," • ")||"—";
+    document.getElementById('p_clientName').innerText=c;
+    document.getElementById('p_projectName').innerText=p;
+    document.getElementById('p_docDate').innerText=d;
+    document.getElementById('p_vendor').innerText=v;
+    const owner=localStorage.getItem('ownerLine')||"—";
+    document.getElementById('printOwnerName').innerText=owner;
+    document.getElementById('wmOwnerName').innerText=owner;
+  }
 
-function renderAuthBox(session) {
-  const box = $("authBox");
-  if (!box) return;
+  function generatePDF(){
+    syncPrintHeader();
+    const opt={ margin:0.25, filename:'Epitoipari_arakalkulator.pdf',
+      image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'in',format:'a4',orientation:'portrait'} };
+    html2pdf().set(opt).from(document.body).save();
+  }
 
-  if (!session) {
-    box.innerHTML = `
-      <div class="space-y-3">
-        <div class="text-sm text-gray-600">Belépés (ha nincs fiók, ugyanitt regisztrál)</div>
-        <input id="auth_email" type="email" class="w-full border rounded-lg px-3 py-2" placeholder="Email" />
-        <input id="auth_pass" type="password" class="w-full border rounded-lg px-3 py-2" placeholder="Jelszó" />
-        <button id="btnLogin" class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700">Belépés</button>
-        <button id="btnSignup" class="w-full px-4 py-2 rounded-lg bg-gray-900 text-white font-bold hover:bg-black">Regisztráció</button>
-      </div>
-    `;
+  function collectOfferState(){
+    const rows=[];
+    document.querySelectorAll('#itemsBody tr').forEach(tr=>{
+      const inputs=tr.querySelectorAll('input, select');
+      rows.push({ name:inputs[1]?.value??"", qty:inputs[2]?.value??"", unit:inputs[3]?.value??"m2", mat:inputs[4]?.value??"", lab:inputs[5]?.value??"" });
+    });
+    return {
+      meta:{ saved_at:new Date().toISOString(), owner_line:(localStorage.getItem('ownerLine')||""), app:"SzakiPiac Kalkulátor PRO", version:"1.0" },
+      form:{
+        clientName:document.getElementById('clientName').value||"",
+        projectName:document.getElementById('projectName').value||"",
+        docDate:document.getElementById('docDate').value||"",
+        vendorDetails:document.getElementById('vendorDetails').value||"",
+        offerNote:document.getElementById('offerNote').value||"",
+        taxRate:document.getElementById('taxRate').value||"27",
+        materialMargin:document.getElementById('materialMargin').value||"10",
+        globalQty:document.getElementById('globalQty').value||"50",
+        globalUnit:document.getElementById('globalUnit').value||"m2"
+      },
+      rows
+    };
+  }
+  function applyOfferState(state){
+    const f=state.form||{};
+    document.getElementById('clientName').value=f.clientName||"";
+    document.getElementById('projectName').value=f.projectName||"";
+    document.getElementById('docDate').value=f.docDate||"";
+    document.getElementById('vendorDetails').value=f.vendorDetails||"";
+    document.getElementById('offerNote').value=f.offerNote||"";
+    document.getElementById('taxRate').value=f.taxRate||"27";
+    document.getElementById('materialMargin').value=f.materialMargin||"10";
+    document.getElementById('globalQty').value=f.globalQty||"50";
+    document.getElementById('globalUnit').value=f.globalUnit||"m2";
+    const tbody=document.getElementById('itemsBody');
+    tbody.innerHTML="";
+    (state.rows||[]).forEach(r=>addNewRow(String(r.name||""), String(r.unit||"m2"), Number(r.qty||0), Number(r.mat||0), Number(r.lab||0)));
+    calculateTotal();
+  }
+  function downloadJson(filename,obj){
+    const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function initSaveLoad(){
+    const btnSave=document.getElementById("btnSaveJson");
+    const btnLoad=document.getElementById("btnLoadJson");
+    const input=document.getElementById("loadJsonInput");
+    btnSave.addEventListener("click",()=>{
+      const state=collectOfferState();
+      const ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+      downloadJson(`ajanlat_${ts}.json`, state);
+    });
+    btnLoad.addEventListener("click",()=>input.click());
+    input.addEventListener("change", async ()=>{
+      const f=input.files?.[0]; if(!f) return;
+      try{ applyOfferState(JSON.parse(await f.text())); alert("Ajánlat betöltve."); }
+      catch(e){ alert("Betöltés hiba: érvénytelen fájl."); }
+      finally{ input.value=""; }
+    });
+  }
 
-    $("btnLogin").addEventListener("click", async () => {
-      const email = $("auth_email").value.trim();
-      const password = $("auth_pass").value;
-      if (!email || !password) return toast("Add meg az emailt és jelszót!", "error");
+  function showOnboardingIfNeeded(){
+    const key="onboardingDismissed";
+    const banner=document.getElementById("onboardingBanner");
+    if(!banner) return;
+    if(localStorage.getItem(key)==="true") return;
+    banner.classList.remove("hidden");
+  }
+  function initOnboarding(){
+    const key="onboardingDismissed";
+    document.getElementById("onboardingClose").addEventListener("click",()=>{
+      document.getElementById("onboardingBanner").classList.add("hidden");
+      localStorage.setItem(key,"true");
+    });
+  }
 
-      const { error } = await supa.auth.signInWithPassword({ email, password });
-      if (error) return toast(error.message, "error");
+  async function logout(){
+    try{ if(window.sb) await window.sb.auth.signOut(); }catch(e){}
+    location.reload();
+  }
 
-      toast("Sikeres belépés ✅");
-      await boot();
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    const d=new Date();
+    document.getElementById('today').innerText=d.toLocaleDateString('hu-HU');
+    document.getElementById('docDate').valueAsDate=d;
+
+    setOwnerDisplays(localStorage.getItem("ownerLine")||"");
+
+    initOnboarding();
+    initSaveLoad();
+
+    ['clientName','projectName','docDate','vendorDetails','offerNote'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', ()=>{ syncPrintHeader(); if(id==='offerNote') calculateTotal(); });
     });
 
-    $("btnSignup").addEventListener("click", async () => {
-      const email = $("auth_email").value.trim();
-      const password = $("auth_pass").value;
-      if (!email || !password) return toast("Add meg az emailt és jelszót!", "error");
+    await setupAuth();
 
-      const { error } = await supa.auth.signUp({ email, password });
-      if (error) return toast(error.message, "error");
-
-      toast("Regisztráció kész ✅ Most jelentkezz be!", "info");
-    });
-
-    return;
-  }
-
-  const isAdmin = session.user.email === ADMIN_EMAIL;
-  box.innerHTML = `
-    <div class="space-y-2">
-      <div class="text-sm text-gray-700">Belépve mint:</div>
-      <div class="font-extrabold text-gray-900 break-all">${escapeHtml(session.user.email)}</div>
-      ${isAdmin ? `<div class="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-lg">Admin módban minden ajánlatot meg tudsz nézni.</div>` : ""}
-      <button id="btnLogout" class="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700">Kilépés</button>
-    </div>
-  `;
-
-  $("btnLogout").addEventListener("click", async () => {
-    await supa.auth.signOut();
-    toast("Kiléptél.");
-    await boot();
+    calculateTotal();
+    syncPrintHeader();
   });
-}
-
-/* =========================
-   9) SUPABASE: MENTÉS + LISTA
-========================= */
-async function saveToSupabase() {
-  const session = await refreshSession();
-  if (!session) {
-    toast("Mentéshez jelentkezz be!", "error");
-    return;
-  }
-
-  const t = calcTotals();
-  const payload = getDraftPayload();
-
-  const row = {
-    user_id: session.user.id,
-    user_email: session.user.email,
-
-    project_name: payload.project_name,
-    client_name: payload.client.name,
-    client_email: payload.client.email,
-    client_phone: payload.client.phone,
-    client_city: payload.client.city,
-    client_address: payload.client.address,
-
-    currency: payload.currency,
-
-    subtotal_net: t.subtotalNet,
-    overhead_net: t.overheadNet,
-    profit_net: t.profitNet,
-    discount_net: t.discountNet,
-    vat_rate: t.vatRate,
-    vat_amount: t.vatAmount,
-    total_gross: t.grossTotal,
-
-    payload
-  };
-
-  const { error } = await supa.from("ajanlatok").insert([row]);
-  if (error) {
-    toast("Mentési hiba: " + error.message, "error");
-    return;
-  }
-
-  toast("Mentve ✅");
-  await loadSaved();
-}
-
-async function loadSaved() {
-  const session = await refreshSession();
-  const list = $("savedList");
-  const note = $("adminNote");
-
-  if (!session) {
-    list.innerHTML = `<div class="text-gray-500">Jelentkezz be a listához.</div>`;
-    note.classList.add("hidden");
-    return;
-  }
-
-  const isAdmin = session.user.email === ADMIN_EMAIL;
-  note.classList.toggle("hidden", !isAdmin);
-
-  list.innerHTML = `<div class="loader"></div>`;
-
-  let q = supa
-    .from("ajanlatok")
-    .select("id, created_at, project_name, client_name, total_gross, currency, user_email")
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  // nem admin: sajátját látja RLS miatt
-  const { data, error } = await q;
-  if (error) {
-    list.innerHTML = `<div class="text-red-600">Hiba: ${escapeHtml(error.message)}</div>`;
-    return;
-  }
-
-  if (!data || !data.length) {
-    list.innerHTML = `<div class="text-gray-500">Nincs mentett ajánlat.</div>`;
-    return;
-  }
-
-  list.innerHTML = data.map(r => {
-    const dt = new Date(r.created_at).toLocaleString("hu-HU");
-    const owner = isAdmin ? `<div class="text-xs text-gray-500">Tulaj: ${escapeHtml(r.user_email || "")}</div>` : "";
-    return `
-      <div class="border rounded-lg p-3 bg-gray-50">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="font-bold text-gray-900">${escapeHtml(r.project_name || "—")}</div>
-            <div class="text-xs text-gray-600">${dt} • ${escapeHtml(r.client_name || "—")}</div>
-            ${owner}
-          </div>
-          <div class="text-right">
-            <div class="font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
-            <div class="flex gap-2 mt-2 justify-end">
-              <button data-load="${r.id}" class="px-3 py-1.5 rounded-lg bg-white border hover:bg-gray-100 font-semibold text-sm">Betölt</button>
-              <button data-del="${r.id}" class="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 font-semibold text-sm">Töröl</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  list.querySelectorAll("button[data-load]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.load;
-      await loadOne(id);
-    });
-  });
-  list.querySelectorAll("button[data-del]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.del;
-      if (!confirm("Biztos törlöd?")) return;
-      const { error } = await supa.from("ajanlatok").delete().eq("id", id);
-      if (error) return toast("Törlés hiba: " + error.message, "error");
-      toast("Törölve ✅");
-      await loadSaved();
-    });
-  });
-}
-
-async function loadOne(id) {
-  const { data, error } = await supa.from("ajanlatok").select("payload").eq("id", id).single();
-  if (error) return toast("Betöltés hiba: " + error.message, "error");
-  if (!data?.payload) return toast("Nincs payload!", "error");
-
-  applyDraftPayload(data.payload);
-  saveDraftLocal();
-  toast("Betöltve ✅");
-}
-
-/* =========================
-   10) GOMBOK / ESEMÉNYEK
-========================= */
-function addRow() {
-  items.push(DEFAULT_ROW());
-  renderItems();
-  calcAndRender();
-  saveDraftLocal();
-}
-
-function clearRows() {
-  items = [DEFAULT_ROW()];
-  renderItems();
-  calcAndRender();
-  saveDraftLocal();
-}
-
-function resetAll() {
-  if (!confirm("Biztosan alaphelyzet? (draft is törlődik)")) return;
-  localStorage.removeItem(DRAFT_KEY);
-
-  $("project_name").value = "";
-  $("currency").value = "HUF";
-
-  $("client_name").value = "";
-  $("client_email").value = "";
-  $("client_phone").value = "";
-  $("client_city").value = "";
-  $("client_address").value = "";
-
-  $("overhead_rate").value = 0;
-  $("profit_percent").value = 0;
-  $("discount_net").value = 0;
-  $("vat_enabled").checked = true;
-  $("vat_rate").value = "27";
-
-  items = [DEFAULT_ROW()];
-  renderItems();
-  calcAndRender();
-  toast("Alaphelyzet kész ✅");
-}
-
-function exampleItems() {
-  items = [
-    { name: "Csemperagasztó (25kg)", type: "anyag", qty: 6, unit: "zsák", unit_price: 4200, hours: 0 },
-    { name: "Fugázóanyag", type: "anyag", qty: 3, unit: "csomag", unit_price: 2600, hours: 0 },
-    { name: "Burkolás (fal)", type: "munka", qty: 18, unit: "m²", unit_price: 8500, hours: 12 },
-    { name: "Burkolás (padló)", type: "munka", qty: 6, unit: "m²", unit_price: 9500, hours: 6 },
-    { name: "Szállítás", type: "egyeb", qty: 1, unit: "alk.", unit_price: 15000, hours: 0 },
-  ];
-  renderItems();
-  calcAndRender();
-  saveDraftLocal();
-  toast("Példa tételek betöltve ✅", "info");
-}
-
-/* =========================
-   11) BOOT
-========================= */
-async function boot() {
-  const session = await refreshSession();
-  renderAuthNav(session);
-  renderAuthBox(session);
-
-  // draft
-  const hasDraft = loadDraftLocal();
-  if (!hasDraft) {
-    items = [DEFAULT_ROW()];
-    renderItems();
-    calcAndRender();
-  } else {
-    // draft már renderelt
-  }
-
-  // events for settings inputs
-  ["project_name","currency","client_name","client_email","client_phone","client_city","client_address","overhead_rate","profit_percent","discount_net","vat_enabled","vat_rate"]
-    .forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      el.addEventListener("input", () => { calcAndRender(); saveDraftLocal(); });
-      el.addEventListener("change", () => { calcAndRender(); saveDraftLocal(); });
-    });
-
-  // buttons
-  $("btnAddRow").onclick = addRow;
-  $("btnAddRowTop").onclick = addRow;
-  $("btnClearRows").onclick = () => { if (confirm("Összes tételt törlöd?")) clearRows(); };
-  $("btnReset").onclick = resetAll;
-  $("btnExample").onclick = exampleItems;
-  $("btnExportJson").onclick = exportJson;
-  $("btnPrint").onclick = () => window.print();
-  $("btnSave").onclick = saveToSupabase;
-  $("btnRefreshSaved").onclick = loadSaved;
-
-  $("importJson").addEventListener("change", (e) => {
-    const f = e.target.files?.[0];
-    if (f) importJson(f);
-    e.target.value = "";
-  });
-
-  calcAndRender();
-  await loadSaved();
-}
-
-// start
-boot();
 </script>
+
 </body>
 </html>
