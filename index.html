@@ -727,12 +727,12 @@
         return;
       }
 
-      // ✅ 1) Látogatói statisztika (RPC)
+      // ✅ 1) Látogatói statisztika (RPC) - FIX: tömbből az első sor + helyes mezőnevek
       let stats = null;
       try {
         const { data: statsData, error: statsErr } = await supaClient.rpc("get_visitor_stats");
         if (statsErr) throw statsErr;
-        stats = statsData || null;
+        stats = (statsData && statsData[0]) ? statsData[0] : null;   // ✅ EZ HIÁNYZOTT
       } catch (e) {
         console.warn("Visitor stats error:", e?.message || e);
       }
@@ -748,11 +748,11 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="text-sm text-gray-500">Összes oldalmegtekintés</div>
-            <div class="text-2xl font-bold text-gray-900">${(stats.pageviews_total ?? 0).toLocaleString("hu-HU")}</div>
+            <div class="text-2xl font-bold text-gray-900">${(stats.total_pageviews ?? 0).toLocaleString("hu-HU")}</div>
           </div>
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="text-sm text-gray-500">Egyedi látogatók (visitor_id)</div>
-            <div class="text-2xl font-bold text-gray-900">${(stats.unique_total ?? 0).toLocaleString("hu-HU")}</div>
+            <div class="text-2xl font-bold text-gray-900">${(stats.unique_visitors ?? 0).toLocaleString("hu-HU")}</div>
           </div>
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="text-sm text-gray-500">Mai oldalmegtekintés</div>
