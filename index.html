@@ -653,20 +653,24 @@
           const res = await fetch("https://tzmcofiuqeanftviquwp.functions.supabase.co/generate-ad", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: k, lang: "hu", mode })
+            body: JSON.stringify({ keywords: k, lang: "hu", mode })
           });
 
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
 
-          // A function "title" + "description" mezőket ad vissza
-          if (data?.title) document.getElementById("cim").value = data.title;
-          if (data?.description) document.getElementById("leiras").value = data.description;
+          // A function többféle kulcsnévvel adhat vissza (régi/új verzió kompatibilitás)
+          const title = data?.title || data?.cim || "";
+          const desc = data?.description || data?.leiras || "";
+          const cta = data?.cta ? ("\n\n" + data.cta) : "";
+
+          if (title) document.getElementById("cim").value = title;
+          if (desc) document.getElementById("leiras").value = desc + cta;
 
           showToast("Hirdetés generálva!", "success");
         } catch(err){
           console.error(err);
-          showToast("Nem sikerült generálni. Próbáld újra!", "error");
+          showToast("Nem sikerült generálni: " + (err?.message || "ismeretlen hiba"), "error");
         } finally{
           btn.innerText = "Írd meg!";
           btn.disabled = false;
