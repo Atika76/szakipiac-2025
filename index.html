@@ -650,10 +650,10 @@
         btn.disabled = true;
 
         try{
-          const res = await fetch("https://tzmcofiuqeanftviquwp.functions.supabase.co/generate-ad", {
+          const res = await fetch("https://tzmcofiuqeanftviquwp.supabase.co/functions/v1/generate-ad", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ keywords: k, lang: "hu", mode })
+            body: JSON.stringify({ query: k })
           });
 
           const data = await res.json();
