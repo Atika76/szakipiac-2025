@@ -566,6 +566,20 @@
               <input id="ai-keywords" placeholder="Pl: szobafestés" class="flex-grow border p-2 rounded">
               <button id="ai-btn" onclick="generateAI()" class="bg-indigo-600 text-white px-4 rounded">Írd meg!</button>
             </div>
+
+            <div class="mt-3">
+              <div class="text-sm font-semibold text-indigo-900 mb-2">Szöveg típusa:</div>
+              <div class="flex flex-wrap gap-4 text-sm text-indigo-900">
+                <label class="flex items-center gap-2">
+                  <input type="radio" name="aiMode" value="quick" checked>
+                  Gyors szöveg
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="radio" name="aiMode" value="premium">
+                  Prémium marketing szöveg
+                </label>
+              </div>
+            </div>
           </div>
           <form id="ad-form" class="space-y-4">
             <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required>
@@ -626,18 +640,37 @@
           </form>
         </div>`;
 
-      window.generateAI = async () => {
-        const k = document.getElementById("ai-keywords").value;
+            window.generateAI = async () => {
+        const k = (document.getElementById("ai-keywords").value || "").trim();
         if (!k) return showToast("Írj be kulcsszót!", "error");
-        const btn = document.getElementById("ai-btn");
-        btn.innerText = "Generálás..."; btn.disabled = true;
 
-        setTimeout(() => {
-          document.getElementById("cim").value = `Profi ${k} megbízhatóan!`;
-          document.getElementById("leiras").value = `Megbízható szakembert keres? Vállalom ${k} munkák teljes körű kivitelezését rövid határidővel, garanciával.\n\n✅ Ingyenes felmérés\n✅ Precíz munkavégzés\n✅ Rejtett költségek nélkül\n\nKeressen bizalommal!`;
+        const mode = (document.querySelector('input[name="aiMode"]:checked') || {}).value || "quick";
+        const btn = document.getElementById("ai-btn");
+        btn.innerText = (mode === "premium") ? "Prémium generálás..." : "Generálás...";
+        btn.disabled = true;
+
+        try{
+          const res = await fetch("https://tzmcofiuqeanftviquwp.functions.supabase.co/generate-ad", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: k, lang: "hu", mode })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
+
+          // A function "title" + "description" mezőket ad vissza
+          if (data?.title) document.getElementById("cim").value = data.title;
+          if (data?.description) document.getElementById("leiras").value = data.description;
+
           showToast("Hirdetés generálva!", "success");
-          btn.innerText = "Írd meg!"; btn.disabled = false;
-        }, 1000);
+        } catch(err){
+          console.error(err);
+          showToast("Nem sikerült generálni. Próbáld újra!", "error");
+        } finally{
+          btn.innerText = "Írd meg!";
+          btn.disabled = false;
+        }
       };
 
       window.updatePackageInfo = () => {
