@@ -14,11 +14,13 @@ serve(async (req) => {
 
   try {
     // 1. Beolvassuk a nyelvet (lang) is a kérésből
-    const { query, lang } = await req.json();
+    const { query, lang, mode } = await req.json();
     
     if (!query) {
       throw new Error("A 'query' paraméter hiányzik.");
     }
+
+    const modeNorm = (mode || 'quick').toString().toLowerCase();
 
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     if (!googleApiKey) {
@@ -26,21 +28,38 @@ serve(async (req) => {
     }
 
     // 2. Két különböző promptot hozunk létre
-    const prompt_hu = `Írj egy profi, figyelemfelkeltő hirdetési szöveget magyarul a SzakiPiac-2025.hu oldalra a következő kulcsszavak alapján: "${query}". 
-    A válaszod két részből álljon: egy rövid, ütős Cím, majd egy új sorban egy hosszabb, részletes Leírás. 
-    A leírás legyen legalább 3-4 mondat, és tegeződő hangnemet használj. 
-    Ne írj semmi mást, csak a címet és a leírást. 
-    A válaszod első sora legyen a CÍM, utána egy sortörés, majd a LEÍRÁS.`;
+    const prompt_hu_quick = `Írj rövid, tömör, mégis profi hirdetési szöveget magyarul a SzakiPiac-2025.hu oldalra a következő kulcsszavak alapján: "${query}".
+A válaszod két részből álljon: egy rövid, ütős Cím, majd egy új sorban egy rövid Leírás.
+A leírás legyen kb. 2-3 mondat, tegeződő hangnemmel, és legyen benne egy rövid felhívás (pl. keressen bizalommal).
+Ne írj semmi mást, csak a címet és a leírást.
+A válaszod első sora legyen a CÍM, utána egy sortörés, majd a LEÍRÁS.`;
 
-    const prompt_en = `Write a professional, eye-catching advertisement text in English for SzakiPiac-2025.hu based on the following keywords: "${query}".
-    Your response must consist of two parts: a short, catchy Title, and on a new line, a longer, detailed Description.
-    The description should be at least 3-4 sentences long.
-    Do not write anything else, only the title and the description.
-    The first line of your response must be the TITLE, followed by a line break, then the DESCRIPTION.`;
+const prompt_hu_premium = `Írj prémium, marketing fókuszú, meggyőző hirdetési szöveget magyarul a SzakiPiac-2025.hu oldalra a következő kulcsszavak alapján: "${query}".
+A válaszod két részből álljon: egy rövid, ütős Cím, majd egy új sorban egy hosszabb, részletes Leírás.
+A leírás legyen tegeződő hangnemű, minimum 180-250 szó, és tartalmazza az alábbiakat:
+- Figyelemfelkeltő bevezetés (1-2 mondat)
+- Szolgáltatások / vállalt munkák felsorolása (felsorolással, "•" jelekkel)
+- Bizalomépítés (garancia, pontosság, tiszta munka, minőségi anyagok)
+- Rövid folyamat (pl. ingyenes felmérés/ajánlat → kezdés → átadás)
+- Erős lezárás, cselekvésre ösztönzés (keressen/írjon/hívjon)
+Ne írj semmi mást, csak a címet és a leírást.
+A válaszod első sora legyen a CÍM, utána egy sortörés, majd a LEÍRÁS.`;
+
+const prompt_en_quick = `Write a short, professional advertisement in English for the SzakiPiac-2025.hu site based on: "${query}".
+Your answer must have two parts: a catchy Title, then a new line and a short Description (2-3 sentences).
+Do not write anything else. First line: TITLE, then a line break, then DESCRIPTION.`;
+
+const prompt_en_premium = `Write a premium, conversion-focused advertisement in English for the SzakiPiac-2025.hu site based on: "${query}".
+Your answer must have two parts: a catchy Title, then a new line and a detailed Description (180-250 words).
+Include: benefits, bullet list of services, trust builders (warranty, punctuality, clean work), and a strong call to action.
+Do not write anything else. First line: TITLE, then a line break, then DESCRIPTION.`;
 
     // 3. Kiválasztjuk a megfelelő promptot a 'lang' alapján
     // Ha a 'lang' nem 'en', akkor alapértelmezetten magyar lesz
-    const prompt = (lang === 'en') ? prompt_en : prompt_hu;
+    const usePremium = (modeNorm === 'premium');
+    const prompt = (lang === 'en')
+      ? (usePremium ? prompt_en_premium : prompt_en_quick)
+      : (usePremium ? prompt_hu_premium : prompt_hu_quick);
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
 
