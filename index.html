@@ -369,7 +369,9 @@
         <div class="bg-white p-6 rounded shadow mb-8">
           <h2 class="text-2xl font-bold text-gray-800 mb-2">Felújítási árak és kalkulátorok (2026)</h2>
           <p class="text-gray-600 mb-4">Részletes útmutatók + AI alapú kalkulációk, hogy ne érjen meglepetés.</p>
-          <div class="grid md:grid-cols-3 gap-3">
+
+          <!-- ✅ Itt volt a módosítás: 6 kártyához szebb tördelés -->
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             <a href="mennyibe-kerul-a-felujitas.html" class="border rounded-lg p-4 hover:bg-gray-50">
               <div class="font-semibold text-gray-800">Mennyibe kerül a felújítás?</div>
               <div class="text-sm text-gray-600 mt-1">Átlagárak + gyors becslés</div>
@@ -382,8 +384,23 @@
               <div class="font-semibold text-gray-800">Szigetelés árak</div>
               <div class="text-sm text-gray-600 mt-1">m² árak, megtérülés</div>
             </a>
+
+            <!-- ✅ ÚJ LINKek (ez hiányzott, ezért nem látszott a főoldalon) -->
+            <a href="60-nm-lakas-felujitas-koltseg-2026.html" class="border rounded-lg p-4 hover:bg-gray-50">
+              <div class="font-semibold text-gray-800">60 nm lakás felújítás költsége</div>
+              <div class="text-sm text-gray-600 mt-1">Anyag + munkadíj becslés (2026)</div>
+            </a>
+            <a href="panel-lakas-felujitas-ara-2026.html" class="border rounded-lg p-4 hover:bg-gray-50">
+              <div class="font-semibold text-gray-800">Panel lakás felújítás ára</div>
+              <div class="text-sm text-gray-600 mt-1">Árak, tippek, példák (2026)</div>
+            </a>
+            <a href="szobafestes-ar-negyzetmeter-2026.html" class="border rounded-lg p-4 hover:bg-gray-50">
+              <div class="font-semibold text-gray-800">Szobafestés ár / m²</div>
+              <div class="text-sm text-gray-600 mt-1">Aktuális nm árak (2026)</div>
+            </a>
           </div>
         </div>
+
         <div id="hirdetes-lista" class="space-y-6"><div class="loader mx-auto"></div></div>
       `;
       document.getElementById("search").addEventListener("input", filterAds);
@@ -640,7 +657,7 @@
           </form>
         </div>`;
 
-            window.generateAI = async () => {
+      window.generateAI = async () => {
         const k = (document.getElementById("ai-keywords").value || "").trim();
         if (!k) return showToast("Írj be kulcsszót!", "error");
 
@@ -659,7 +676,6 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
 
-          // A function többféle kulcsnévvel adhat vissza (régi/új verzió kompatibilitás)
           const title = data?.title || data?.cim || "";
           const desc = data?.description || data?.leiras || "";
           const cta = data?.cta ? ("\n\n" + data.cta) : "";
@@ -782,7 +798,6 @@
 
         if (error) throw error;
 
-        // ✅ feltöltés event
         trackEvent("ad_created", { csomag, images: imgUrls.length });
 
         showToast("Sikeres feltöltés!", "success");
@@ -832,17 +847,15 @@
         return;
       }
 
-      // ✅ 1) Látogatói statisztika (RPC) - FIX: tömbből az első sor + helyes mezőnevek
       let stats = null;
       try {
         const { data: statsData, error: statsErr } = await supaClient.rpc("get_visitor_stats");
         if (statsErr) throw statsErr;
-        stats = (statsData && statsData[0]) ? statsData[0] : null;   // ✅ EZ HIÁNYZOTT
+        stats = (statsData && statsData[0]) ? statsData[0] : null;
       } catch (e) {
         console.warn("Visitor stats error:", e?.message || e);
       }
 
-      // ✅ 2) Hirdetések
       const { data, error } = await supaClient.from("hirdetesek").select("*").order("created_at", { ascending: false });
       if (error) {
         document.getElementById("admin-page").innerHTML = `<p class='text-center text-red-500'>Hiba: ${error.message}</p>`;
@@ -921,7 +934,6 @@
        9) INDÍTÁS
     ========================= */
     async function init() {
-      // Lejárt hirdetések törlése
       try {
         const now = new Date().toISOString();
         await supaClient.from('hirdetesek').delete().lt('lejárati_datum', now);
@@ -968,12 +980,10 @@
 
       document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 
-      // első route + reklám
       handleRouteChange();
       renderReklam();
       resetReklamTimer();
 
-      // ✅ első pageview
       trackEvent("page_view", {
         page: window.location.hash || "#home",
         path: window.location.pathname,
