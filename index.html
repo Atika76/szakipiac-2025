@@ -593,26 +593,35 @@
     async function showFeltoltesPage() {
       const { data: { session } } = await supaClient.auth.getSession();
       const c = document.getElementById("feltoltes-page");
-      if (!session) {
-        c.innerHTML = `<div class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded text-center">A hirdetés feladásához <a href="#auth" class="font-bold underline">jelentkezz be!</a></div>`;
-        return;
-      }
+      const isLoggedIn = !!session;
+
+      // Mindig látható oldal: ha nincs belépés, a mezők tiltva vannak + kiírjuk a belépési CTA-t.
+      const disabledAttr = isLoggedIn ? "" : "disabled";
+      const disabledClass = isLoggedIn ? "" : "opacity-60 pointer-events-none select-none";
 
       kivalasztottKepek = [];
+
       c.innerHTML = `
         <div class="bg-white p-6 rounded shadow-sm">
           <h1 class="text-2xl font-bold mb-4">Hirdetés feladása</h1>
 
-<div class="bg-green-50 border border-green-200 text-green-900 p-4 rounded mb-6">
-  <h2 class="font-bold text-lg mb-1">🚀 Szerezz több munkát már ma!</h2>
-  <p class="text-sm text-green-800">Nem tudod, mit írj a hirdetésedbe? Nálunk az AI megírja helyetted – profi, bizalomépítő szöveggel.</p>
-  <div class="grid md:grid-cols-2 gap-2 text-sm mt-3">
-    <div>✔ Profi szöveg percek alatt</div>
-    <div>✔ Több megtekintés, több érdeklődő</div>
-    <div>✔ Gyors publikálás</div>
-    <div>✔ Kiemelés a jobb helyezésért</div>
-  </div>
-</div>
+          ${!isLoggedIn ? `
+            <div class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded mb-6">
+              A hirdetés feladásához <a href="#auth" class="font-bold underline">jelentkezz be / regisztrálj</a>.
+              (A felületet viszont meg tudod nézni belépés nélkül is.)
+            </div>
+          ` : ""}
+
+          <div class="bg-green-50 border border-green-200 text-green-900 p-4 rounded mb-6">
+            <h2 class="font-bold text-lg mb-1">🚀 Szerezz több munkát már ma!</h2>
+            <p class="text-sm text-green-800">Nem tudod, mit írj a hirdetésedbe? Nálunk az AI megírja helyetted – profi, bizalomépítő szöveggel.</p>
+            <div class="grid md:grid-cols-2 gap-2 text-sm mt-3">
+              <div>✔ Profi szöveg percek alatt</div>
+              <div>✔ Több megtekintés, több érdeklődő</div>
+              <div>✔ Gyors publikálás</div>
+              <div>✔ Kiemelés a jobb helyezésért</div>
+            </div>
+          </div>
 
           <div class="bg-indigo-50 p-4 rounded mb-6 border border-indigo-100">
             <h3 class="text-indigo-800 font-bold mb-2">✨ AI Szövegíró</h3>
@@ -635,66 +644,81 @@
               </div>
             </div>
           </div>
-          <form id="ad-form" class="space-y-4">
-            <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required>
-            <textarea id="leiras" placeholder="Leírás" class="w-full border p-2 rounded" rows="5" required></textarea>
-            <div class="grid md:grid-cols-2 gap-4">
-              <input id="varos" placeholder="Város" class="w-full border p-2 rounded" required>
-              <input id="iranyitoszam" placeholder="Irányítószám" class="w-full border p-2 rounded">
-            </div>
-            <div class="grid md:grid-cols-2 gap-4">
-              <select id="kategoria" class="w-full border p-2 rounded" required>
-                <option value="">Válassz kategóriát...</option>
-                <option>Kőműves</option><option>Burkoló</option><option>Festő</option><option>Villanyszerelő</option>
-                <option>Víz-Gáz-Fűtés</option><option>Ács / Tetőfedő</option><option>Asztalos</option><option>Kertépítés</option>
-                <option>Takarítás</option><option>Gépészet</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Egyéb</option>
-              </select>
-              <input id="telefonszam" placeholder="Telefonszám" class="w-full border p-2 rounded">
-            </div>
-            <div class="grid md:grid-cols-2 gap-4">
-              <input id="weboldal" placeholder="Weboldal" class="w-full border p-2 rounded">
-              <div id="video-wrapper"><input id="video" placeholder="YouTube videó" class="w-full border p-2 rounded"></div>
-            </div>
-            <input id="ar" type="number" placeholder="Ár (Ft)" class="w-full border p-2 rounded">
 
-            <div class="border p-4 rounded bg-gray-50">
-              <label class="font-bold mb-2 block">Csomag:</label>
-              <select id="csomag" class="w-full border p-2 rounded mb-2" onchange="updatePackageInfo()">
-                <option value="alap">Alap (Ingyen, 2 kép)</option>
-                <option value="premium">Prémium (990 Ft, 4 kép)</option>
-                <option value="extra">Extra (1990 Ft, 8 kép)</option>
-              </select>
-              <p id="package-info" class="text-sm text-gray-600"></p>
+          <div class="${disabledClass}">
+            <form id="ad-form" class="space-y-4">
+              <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required ${disabledAttr}>
+              <textarea id="leiras" placeholder="Leírás" class="w-full border p-2 rounded" rows="5" required ${disabledAttr}></textarea>
 
-<div class="mt-3 p-3 rounded bg-yellow-50 border border-yellow-200">
-  <div class="font-bold text-yellow-900 mb-1">Miért éri meg kiemelni?</div>
-  <div class="text-sm text-yellow-900 grid md:grid-cols-2 gap-1">
-    <div>🔥 Előrébb jelenik meg</div>
-    <div>🔥 Több megtekintést kap</div>
-    <div>🔥 Gyorsabban hoz érdeklődőt</div>
-    <div>🔥 Profibbnak látszol</div>
-  </div>
-  <div class="text-xs text-yellow-800 mt-2">Ha munkát akarsz, ne csak jelen legyél – legyél látható.</div>
-</div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <input id="varos" placeholder="Város" class="w-full border p-2 rounded" required ${disabledAttr}>
+                <input id="iranyitoszam" placeholder="Irányítószám" class="w-full border p-2 rounded" ${disabledAttr}>
+              </div>
 
+              <div class="grid md:grid-cols-2 gap-4">
+                <select id="kategoria" class="w-full border p-2 rounded" required ${disabledAttr}>
+                  <option value="">Válassz kategóriát...</option>
+                  <option>Kőműves</option><option>Burkoló</option><option>Festő</option><option>Villanyszerelő</option>
+                  <option>Víz-Gáz-Fűtés</option><option>Ács / Tetőfedő</option><option>Asztalos</option><option>Kertépítés</option>
+                  <option>Takarítás</option><option>Gépészet</option><option>Lakberendezés</option><option>Számítástechnika</option><option>Egyéb</option>
+                </select>
+                <input id="telefonszam" placeholder="Telefonszám" class="w-full border p-2 rounded" ${disabledAttr}>
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <input id="weboldal" placeholder="Weboldal" class="w-full border p-2 rounded" ${disabledAttr}>
+                <div id="video-wrapper"><input id="video" placeholder="YouTube videó" class="w-full border p-2 rounded" ${disabledAttr}></div>
+              </div>
+
+              <input id="ar" type="number" placeholder="Ár (Ft)" class="w-full border p-2 rounded" ${disabledAttr}>
+
+              <div class="border p-4 rounded bg-gray-50">
+                <label class="font-bold mb-2 block">Csomag:</label>
+                <select id="csomag" class="w-full border p-2 rounded mb-2" onchange="updatePackageInfo()" ${disabledAttr}>
+                  <option value="alap">Alap (Ingyen, 2 kép)</option>
+                  <option value="premium">Prémium (990 Ft, 4 kép)</option>
+                  <option value="extra">Extra (1990 Ft, 8 kép)</option>
+                </select>
+                <p id="package-info" class="text-sm text-gray-600"></p>
+
+                <div class="mt-3 p-3 rounded bg-yellow-50 border border-yellow-200">
+                  <div class="font-bold text-yellow-900 mb-1">Miért éri meg kiemelni?</div>
+                  <div class="text-sm text-yellow-900 grid md:grid-cols-2 gap-1">
+                    <div>🔥 Előrébb jelenik meg</div>
+                    <div>🔥 Több megtekintést kap</div>
+                    <div>🔥 Gyorsabban hoz érdeklődőt</div>
+                    <div>🔥 Profibbnak látszol</div>
+                  </div>
+                  <div class="text-xs text-yellow-800 mt-2">Ha munkát akarsz, ne csak jelen legyél – legyél látható.</div>
+                </div>
+              </div>
+
+              <div class="border-dashed border-2 border-gray-300 p-6 text-center rounded">
+                <label class="cursor-pointer block">
+                  <span class="text-green-600 font-bold">Képek</span> (Max <span id="max-img">2</span>)
+                  <input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(this)" ${disabledAttr}>
+                </label>
+                <div id="preview-container" class="flex gap-2 justify-center mt-4 flex-wrap"></div>
+              </div>
+
+              <div id="submit-area">
+                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded font-bold" ${disabledAttr}>Beküldés</button>
+              </div>
+              <div id="paypal-container" class="hidden mt-4"></div>
+            </form>
+          </div>
+
+          ${!isLoggedIn ? `
+            <div class="mt-6 bg-white border border-gray-200 rounded-lg p-4 text-center">
+              <div class="font-bold mb-1">Készen állsz hirdetni?</div>
+              <div class="text-sm text-gray-600 mb-3">Belépés után 2 perc alatt feladod a hirdetést – az AI megírja a szöveget is.</div>
+              <a href="#auth" class="inline-flex items-center justify-center bg-green-600 text-white px-5 py-2 rounded font-bold hover:bg-green-700">Belépés / Regisztráció</a>
             </div>
-
-            <div class="border-dashed border-2 border-gray-300 p-6 text-center rounded">
-              <label class="cursor-pointer block">
-                <span class="text-green-600 font-bold">Képek</span> (Max <span id="max-img">2</span>)
-                <input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(this)">
-              </label>
-              <div id="preview-container" class="flex gap-2 justify-center mt-4 flex-wrap"></div>
-            </div>
-
-            <div id="submit-area">
-              <button type="submit" class="w-full bg-green-600 text-white py-3 rounded font-bold">Beküldés</button>
-            </div>
-            <div id="paypal-container" class="hidden mt-4"></div>
-          </form>
+          ` : ""}
         </div>`;
 
-            window.generateAI = async () => {
+      // ---- AI szövegíró (belépés nélkül is használható) ----
+      window.generateAI = async () => {
         const k = (document.getElementById("ai-keywords").value || "").trim();
         if (!k) return showToast("Írj be kulcsszót!", "error");
 
@@ -703,7 +727,7 @@
         btn.innerText = (mode === "premium") ? "Prémium generálás..." : "Generálás...";
         btn.disabled = true;
 
-        try{
+        try {
           const res = await fetch("https://bxtpnotswnwrbycvfypz.supabase.co/functions/v1/generate-ad", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -713,7 +737,6 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
 
-          // A function többféle kulcsnévvel adhat vissza (régi/új verzió kompatibilitás)
           const title = data?.title || data?.cim || "";
           const desc = data?.description || data?.leiras || "";
           const cta = data?.cta ? ("\n\n" + data.cta) : "";
@@ -722,10 +745,10 @@
           if (desc) document.getElementById("leiras").value = desc + cta;
 
           showToast("Hirdetés generálva!", "success");
-        } catch(err){
+        } catch (err) {
           console.error(err);
           showToast("Nem sikerült generálni: " + (err?.message || "ismeretlen hiba"), "error");
-        } finally{
+        } finally {
           btn.innerText = "Írd meg!";
           btn.disabled = false;
         }
@@ -744,27 +767,37 @@
 
         if (val === 'premium') { m = 4; p = 990; info.innerText = "4 kép, Videó, 14 nap"; vWrap.style.display = "block"; }
         else if (val === 'extra') { m = 8; p = 1990; info.innerText = "8 kép, Videó, Kiemelt, 30 nap"; vWrap.style.display = "block"; }
-        else { info.innerText = "2 kép, 7 nap (Videó nem elérhető)"; document.getElementById("video").value = ""; }
+        else { info.innerText = "2 kép, 7 nap (Videó nem elérhető)"; const v = document.getElementById("video"); if (v) v.value = ""; }
 
         max.innerText = m;
 
-        if (p > 0 && session.user.email !== ADMIN_EMAIL) {
-          sub.style.display = "none";
-          pp.style.display = "block";
-          pp.innerHTML = "";
+        // Ha nincs belépve: ne engedjük a beküldést / fizetést
+        if (!session) {
+          if (sub) sub.style.display = "none";
+          if (pp) pp.style.display = "none";
+          return;
+        }
 
-          paypal.Buttons({
-            createOrder: (d, a) => a.order.create({ purchase_units: [{ amount: { value: p, currency_code: 'HUF' } }] }),
-            onApprove: (d, a) => a.order.capture().then(() => processUpload())
-          }).render('#paypal-container');
+        // Fizetés csak nem-adminnak
+        if (p > 0 && session.user.email !== ADMIN_EMAIL) {
+          if (sub) sub.style.display = "none";
+          if (pp) {
+            pp.style.display = "block";
+            pp.innerHTML = "";
+            paypal.Buttons({
+              createOrder: (d, a) => a.order.create({ purchase_units: [{ amount: { value: p, currency_code: 'HUF' } }] }),
+              onApprove: (d, a) => a.order.capture().then(() => processUpload())
+            }).render('#paypal-container');
+          }
         } else {
-          sub.style.display = "block";
-          pp.style.display = "none";
+          if (sub) sub.style.display = "block";
+          if (pp) pp.style.display = "none";
         }
       };
 
       window.handleFileSelect = async (input) => {
-        const files = Array.from(input.files);
+        if (!session) return showToast("Hirdetéshez előbb jelentkezz be!", "error");
+        const files = Array.from(input.files || []);
         const max = parseInt(document.getElementById("max-img").innerText);
         if (kivalasztottKepek.length + files.length > max) return showToast("Túl sok kép!", "error");
 
@@ -777,7 +810,14 @@
         renderPreview();
       };
 
-      document.getElementById("ad-form").addEventListener("submit", (e) => { e.preventDefault(); processUpload(); });
+      const form = document.getElementById("ad-form");
+      if (form) form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!session) return showToast("Hirdetéshez előbb jelentkezz be!", "error");
+        processUpload();
+      });
+
+      // init
       updatePackageInfo();
     }
 
