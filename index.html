@@ -95,13 +95,11 @@
           </a>
         </div>
 
-        <!-- ✅ SZÉTHÚZOTT / KÖZÉPRE HÚZOTT MENÜ -->
         <div class="hidden md:flex items-center space-x-1 flex-1 justify-center">
           <a href="#home" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Főoldal</a>
           <a href="#rolunk" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Rólunk</a>
           <a href="#kapcsolat" class="nav-link text-gray-600 hover:bg-gray-100 px-3 py-2 rounded-md text-sm font-medium">Kapcsolat</a>
 
-          <!-- ✅ ÚJ: ENERGIA SZÁMÍTÁS -->
           <a href="https://atika76.github.io/energia-advisor-3d/" target="_blank" rel="noopener"
              class="text-indigo-700 hover:bg-indigo-50 px-3 py-2 rounded-md text-sm font-semibold border border-indigo-200 flex items-center gap-1 shadow-sm ml-2">
             <span>⚡</span> Energia számítás
@@ -131,7 +129,6 @@
           <a href="#rolunk" class="nav-link text-gray-700 hover:bg-gray-50 block px-3 py-3 rounded-md text-base font-medium border-b border-gray-100">ℹ️ Rólunk</a>
           <a href="#kapcsolat" class="nav-link text-gray-700 hover:bg-gray-50 block px-3 py-3 rounded-md text-base font-medium border-b border-gray-100">✉️ Kapcsolat</a>
 
-          <!-- ✅ ÚJ: ENERGIA SZÁMÍTÁS (MOBIL) -->
           <a href="https://atika76.github.io/energia-advisor-3d/" target="_blank" rel="noopener"
              class="text-indigo-700 bg-indigo-50 block px-3 py-3 rounded-md text-base font-bold border border-indigo-200 flex items-center gap-2">
             ⚡ Energia számítás
@@ -188,10 +185,7 @@
        1) KONFIGURÁCIÓ
     ========================= */
     const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-
-    // ✅ EZT HASZNÁLD A BÖNGÉSZŐBEN (publishable kulcs)
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
-
     const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const ADMIN_EMAIL = "atika.76@windowslive.com";
@@ -213,7 +207,6 @@
       } catch (e) { return null; }
     }
 
-    // ✅ Visitor ID (egyedi látogató azonosító)
     function getVisitorId() {
       const key = "szakipiac_visitor_id";
       let vid = localStorage.getItem(key);
@@ -239,7 +232,6 @@
 
     /* =========================
        2/B) ANALYTICS (NEM TÖRI SZÉT)
-       - ha nincs policy / nincs login: csendben eldobja
     ========================= */
     async function trackEvent(eventType, meta = {}) {
       try {
@@ -249,7 +241,7 @@
         const { error } = await supaClient.from("analytics_events").insert([{
           event_type: eventType,
           user_email: userEmail,
-          visitor_id: getVisitorId(),   // ✅ EZ KELL A LÁTOGATÓ SZÁMHOZ
+          visitor_id: getVisitorId(),
           meta
         }]);
 
@@ -312,7 +304,6 @@
         const activePage = document.getElementById(hash.substring(1) + "-page");
         if (activePage) activePage.style.display = "block";
 
-        // ✅ route váltás mérése is
         trackEvent("page_view", {
           page: hash,
           path: window.location.pathname,
@@ -366,75 +357,76 @@
           </div>
         </div>
 
-        
         <div class="bg-white p-6 rounded shadow mb-8">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h2 class="text-2xl font-extrabold text-gray-900 mb-1">Felújítási útmutatók 2026</h2>
-              <p class="text-gray-600 mb-4">Friss árak, gyors becslések és praktikus tippek – hogy tudd, mire készülj.</p>
-            </div>
-            <div class="hidden sm:flex items-center gap-2">
-              <span class="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-green-50 text-green-800 border border-green-200">✅ Frissítve</span>
-              <span class="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">✨ 2026</span>
-            </div>
-          </div>
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">Felújítási útmutatók 2026</h2>
+          <p class="text-gray-600 mb-4">Friss árak, gyors becslések és praktikus tippek — hogy tudd, mire készülj.</p>
 
-          <div class="grid md:grid-cols-3 gap-4 mt-2">
-
-            <a href="mennyibe-kerul-a-felujitas.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-gray-50 hover:bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">Mennyibe kerül a felújítás?</div>
-                <div class="text-2xl">🏠</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <a href="mennyibe-kerul-a-felujitas.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">🏠</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">Mennyibe kerül a felújítás?</div>
+                  <div class="text-sm text-gray-600 mt-1">Átlagárak + gyors becslés</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">Átlagárak + gyors becslés</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
 
-            <a href="mennyibe-kerul-a-furdoszoba-felujitas.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-gray-50 hover:bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">Fürdőszoba felújítás ára</div>
-                <div class="text-2xl">🚿</div>
+            <a href="mennyibe-kerul-a-furdoszoba-felujitas.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">🛁</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">Fürdőszoba felújítás ára</div>
+                  <div class="text-sm text-gray-600 mt-1">Tételes példák, tippek</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">Tételes példák, tippek</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
 
-            <a href="mennyibe-kerul-a-szigeteles.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-gray-50 hover:bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">Szigetelés árak</div>
-                <div class="text-2xl">🧱</div>
+            <a href="mennyibe-kerul-a-szigeteles.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">🧱</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">Szigetelés árak</div>
+                  <div class="text-sm text-gray-600 mt-1">m² árak, megtérülés</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">m² árak, megtérülés</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
 
-            <a href="60-nm-lakas-felujitas-koltseg-2026.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">60 nm lakás felújítás költsége</div>
-                <div class="text-2xl">📐</div>
+            <a href="60-nm-lakas-felujitas-koltseg-2026.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">📐</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">60 nm lakás felújítás költsége</div>
+                  <div class="text-sm text-gray-600 mt-1">Anyag + munkadíj (2026)</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">Anyag + munkadíj bontás (2026)</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
 
-            <a href="panel-lakas-felujitas-ara-2026.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">Panel lakás felújítás ára</div>
-                <div class="text-2xl">🏢</div>
+            <a href="panel-lakas-felujitas-ara-2026.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">🏢</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">Panel lakás felújítás ára</div>
+                  <div class="text-sm text-gray-600 mt-1">Árak, tippek, példák (2026)</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">Árak, tippek, példák (2026)</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
 
-            <a href="szobafestes-ar-negyzetmeter-2026.html" class="group border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition bg-white">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-lg font-bold text-gray-900 leading-snug">Szobafestés ár / m²</div>
-                <div class="text-2xl">🎨</div>
+            <a href="szobafestes-ar-negyzetmeter-2026.html" class="group border rounded-xl p-4 bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">🎨</div>
+                <div>
+                  <div class="font-bold text-gray-900 leading-snug">Szobafestés ár / m²</div>
+                  <div class="text-sm text-gray-600 mt-1">Aktuális nm árak (2026)</div>
+                  <div class="mt-3 text-green-700 font-semibold text-sm group-hover:underline">Megnézem →</div>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 mt-2">Aktuális nm árak (2026)</div>
-              <div class="mt-4 inline-flex items-center text-sm font-bold text-green-700 group-hover:text-green-800">Megnézem →</div>
             </a>
-
           </div>
         </div>
 
@@ -446,7 +438,6 @@
       await loadAds();
     }
 
-    /* --- RÓLUNK OLDAL --- */
     async function showRolunkPage() {
       document.getElementById("rolunk-page").innerHTML = `
         <div class="bg-white p-8 rounded-lg shadow-sm">
@@ -461,7 +452,6 @@
         </div>`;
     }
 
-    /* --- KAPCSOLAT OLDAL --- */
     async function showKapcsolatPage() {
       const c = document.getElementById("kapcsolat-page");
       c.innerHTML = `
@@ -589,30 +579,37 @@
 
     /* =========================
        7) FELTÖLTÉS
+       ✅ MOST: az oldal LÁTSZIK mindenkinek
+       ✅ DE: generálás + beküldés + fizetés csak login után
     ========================= */
     async function showFeltoltesPage() {
       const { data: { session } } = await supaClient.auth.getSession();
       const c = document.getElementById("feltoltes-page");
-      if (!session) {
-        c.innerHTML = `<div class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded text-center">A hirdetés feladásához <a href="#auth" class="font-bold underline">jelentkezz be!</a></div>`;
-        return;
-      }
 
       kivalasztottKepek = [];
+
+      const loginBanner = !session ? `
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded mb-6 text-center">
+          A hirdetés feladásához be kell jelentkezned.
+          <a href="#auth" class="font-bold underline ml-1">Belépés / regisztráció</a>
+        </div>
+      ` : ``;
+
       c.innerHTML = `
         <div class="bg-white p-6 rounded shadow-sm">
           <h1 class="text-2xl font-bold mb-4">Hirdetés feladása</h1>
+          ${loginBanner}
 
-<div class="bg-green-50 border border-green-200 text-green-900 p-4 rounded mb-6">
-  <h2 class="font-bold text-lg mb-1">🚀 Szerezz több munkát már ma!</h2>
-  <p class="text-sm text-green-800">Nem tudod, mit írj a hirdetésedbe? Nálunk az AI megírja helyetted – profi, bizalomépítő szöveggel.</p>
-  <div class="grid md:grid-cols-2 gap-2 text-sm mt-3">
-    <div>✔ Profi szöveg percek alatt</div>
-    <div>✔ Több megtekintés, több érdeklődő</div>
-    <div>✔ Gyors publikálás</div>
-    <div>✔ Kiemelés a jobb helyezésért</div>
-  </div>
-</div>
+          <div class="bg-green-50 border border-green-200 text-green-900 p-4 rounded mb-6">
+            <h2 class="font-bold text-lg mb-1">🚀 Szerezz több munkát már ma!</h2>
+            <p class="text-sm text-green-800">Nem tudod, mit írj a hirdetésedbe? Nálunk az AI megírja helyetted – profi, bizalomépítő szöveggel.</p>
+            <div class="grid md:grid-cols-2 gap-2 text-sm mt-3">
+              <div>✔ Profi szöveg percek alatt</div>
+              <div>✔ Több megtekintés, több érdeklődő</div>
+              <div>✔ Gyors publikálás</div>
+              <div>✔ Kiemelés a jobb helyezésért</div>
+            </div>
+          </div>
 
           <div class="bg-indigo-50 p-4 rounded mb-6 border border-indigo-100">
             <h3 class="text-indigo-800 font-bold mb-2">✨ AI Szövegíró</h3>
@@ -635,6 +632,7 @@
               </div>
             </div>
           </div>
+
           <form id="ad-form" class="space-y-4">
             <input id="cim" placeholder="Cím" class="w-full border p-2 rounded" required>
             <textarea id="leiras" placeholder="Leírás" class="w-full border p-2 rounded" rows="5" required></textarea>
@@ -666,17 +664,16 @@
               </select>
               <p id="package-info" class="text-sm text-gray-600"></p>
 
-<div class="mt-3 p-3 rounded bg-yellow-50 border border-yellow-200">
-  <div class="font-bold text-yellow-900 mb-1">Miért éri meg kiemelni?</div>
-  <div class="text-sm text-yellow-900 grid md:grid-cols-2 gap-1">
-    <div>🔥 Előrébb jelenik meg</div>
-    <div>🔥 Több megtekintést kap</div>
-    <div>🔥 Gyorsabban hoz érdeklődőt</div>
-    <div>🔥 Profibbnak látszol</div>
-  </div>
-  <div class="text-xs text-yellow-800 mt-2">Ha munkát akarsz, ne csak jelen legyél – legyél látható.</div>
-</div>
-
+              <div class="mt-3 p-3 rounded bg-yellow-50 border border-yellow-200">
+                <div class="font-bold text-yellow-900 mb-1">Miért éri meg kiemelni?</div>
+                <div class="text-sm text-yellow-900 grid md:grid-cols-2 gap-1">
+                  <div>🔥 Előrébb jelenik meg</div>
+                  <div>🔥 Több megtekintést kap</div>
+                  <div>🔥 Gyorsabban hoz érdeklődőt</div>
+                  <div>🔥 Profibbnak látszol</div>
+                </div>
+                <div class="text-xs text-yellow-800 mt-2">Ha munkát akarsz, ne csak jelen legyél – legyél látható.</div>
+              </div>
             </div>
 
             <div class="border-dashed border-2 border-gray-300 p-6 text-center rounded">
@@ -690,11 +687,16 @@
             <div id="submit-area">
               <button type="submit" class="w-full bg-green-600 text-white py-3 rounded font-bold">Beküldés</button>
             </div>
+
             <div id="paypal-container" class="hidden mt-4"></div>
           </form>
         </div>`;
 
-            window.generateAI = async () => {
+      // ✅ AI generálás: csak login után
+      window.generateAI = async () => {
+        const { data: { session } } = await supaClient.auth.getSession();
+        if (!session) { showToast("A hirdetéshez jelentkezz be!", "error"); window.location.hash="#auth"; return; }
+
         const k = (document.getElementById("ai-keywords").value || "").trim();
         if (!k) return showToast("Írj be kulcsszót!", "error");
 
@@ -713,7 +715,6 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
 
-          // A function többféle kulcsnévvel adhat vissza (régi/új verzió kompatibilitás)
           const title = data?.title || data?.cim || "";
           const desc = data?.description || data?.leiras || "";
           const cta = data?.cta ? ("\n\n" + data.cta) : "";
@@ -731,7 +732,10 @@
         }
       };
 
-      window.updatePackageInfo = () => {
+      // ✅ Csomag infó + PayPal: csak login után lehet fizetni / beküldeni
+      window.updatePackageInfo = async () => {
+        const { data: { session } } = await supaClient.auth.getSession();
+
         const val = document.getElementById("csomag").value;
         const vWrap = document.getElementById("video-wrapper");
         const info = document.getElementById("package-info");
@@ -748,6 +752,15 @@
 
         max.innerText = m;
 
+        // ha nincs login: ne renderelj PayPalt, maradjon sima beküldés (processUpload úgyis átvisz auth-ra)
+        if (!session) {
+          sub.style.display = "block";
+          pp.style.display = "none";
+          pp.innerHTML = "";
+          return;
+        }
+
+        // fizetős csomag: nem-adminnak PayPal
         if (p > 0 && session.user.email !== ADMIN_EMAIL) {
           sub.style.display = "none";
           pp.style.display = "block";
@@ -760,6 +773,7 @@
         } else {
           sub.style.display = "block";
           pp.style.display = "none";
+          pp.innerHTML = "";
         }
       };
 
@@ -778,7 +792,7 @@
       };
 
       document.getElementById("ad-form").addEventListener("submit", (e) => { e.preventDefault(); processUpload(); });
-      updatePackageInfo();
+      await updatePackageInfo();
     }
 
     function renderPreview() {
@@ -793,6 +807,8 @@
 
     async function processUpload() {
       const { data: { session } } = await supaClient.auth.getSession();
+      if (!session) { showToast("Hirdetés feladásához jelentkezz be!", "error"); window.location.hash="#auth"; return; }
+
       const cim = document.getElementById("cim").value;
       if (!cim) return showToast("Adj meg címet!", "error");
 
@@ -836,7 +852,6 @@
 
         if (error) throw error;
 
-        // ✅ feltöltés event
         trackEvent("ad_created", { csomag, images: imgUrls.length });
 
         showToast("Sikeres feltöltés!", "success");
@@ -886,17 +901,15 @@
         return;
       }
 
-      // ✅ 1) Látogatói statisztika (RPC) - FIX: tömbből az első sor + helyes mezőnevek
       let stats = null;
       try {
         const { data: statsData, error: statsErr } = await supaClient.rpc("get_visitor_stats");
         if (statsErr) throw statsErr;
-        stats = (statsData && statsData[0]) ? statsData[0] : null;   // ✅ EZ HIÁNYZOTT
+        stats = (statsData && statsData[0]) ? statsData[0] : null;
       } catch (e) {
         console.warn("Visitor stats error:", e?.message || e);
       }
 
-      // ✅ 2) Hirdetések
       const { data, error } = await supaClient.from("hirdetesek").select("*").order("created_at", { ascending: false });
       if (error) {
         document.getElementById("admin-page").innerHTML = `<p class='text-center text-red-500'>Hiba: ${error.message}</p>`;
@@ -975,7 +988,6 @@
        9) INDÍTÁS
     ========================= */
     async function init() {
-      // Lejárt hirdetések törlése
       try {
         const now = new Date().toISOString();
         await supaClient.from('hirdetesek').delete().lt('lejárati_datum', now);
@@ -1022,12 +1034,10 @@
 
       document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 
-      // első route + reklám
       handleRouteChange();
       renderReklam();
       resetReklamTimer();
 
-      // ✅ első pageview
       trackEvent("page_view", {
         page: window.location.hash || "#home",
         path: window.location.pathname,
