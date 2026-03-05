@@ -1,182 +1,233 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Üzenetek – SzakiPiac</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    html,body { height: 100%; }
+    html,body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;}
+    .card{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;box-shadow:0 8px 24px rgba(16,24,40,.06);}
+    .btn{border-radius:12px;padding:.7rem 1rem;font-weight:600}
+    .btn-primary{background:#111827;color:#fff}
+    .btn-primary:hover{background:#0b1220}
+    .btn-ghost{background:#fff;border:1px solid rgba(0,0,0,.1)}
+    .btn-ghost:hover{background:#f3f4f6}
+    .muted{color:#6b7280}
+    .pill{display:inline-flex;align-items:center;gap:.5rem;border:1px solid rgba(0,0,0,.08);border-radius:999px;padding:.35rem .7rem;background:#fff;}
+    .danger{color:#b91c1c}
+    .ok{color:#047857}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
   </style>
 </head>
 
-<body class="bg-slate-100 min-h-screen">
-  <!-- TOP BAR -->
-  <header class="bg-white border-b">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+<body class="min-h-screen">
+  <!-- top -->
+  <header class="w-full bg-white border-b border-black/5">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="text-xl font-bold">🔧 SzakiPiac</div>
-        <div class="text-sm text-slate-500">Üzenetek</div>
+        <span class="text-xl font-extrabold">SzakiPiac</span>
+        <span class="pill text-sm"><span>💬</span><span class="font-semibold">Üzenetek</span></span>
       </div>
+
       <div class="flex items-center gap-2">
-        <a href="./index.html"
-           class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">
-          ⬅ Vissza a főoldalra
-        </a>
-        <button id="btnLogout"
-                class="hidden px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 text-sm">
-          Kijelentkezés
-        </button>
+        <a href="./index.html" class="btn btn-ghost">⬅ Vissza a főoldalra</a>
+        <button id="btnSignOut" class="btn btn-ghost hidden">Kijelentkezés</button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- LEFT: Messages -->
-      <section class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-6">
-        <div class="flex items-center justify-between gap-3">
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="grid md:grid-cols-3 gap-6">
+
+      <!-- Left: messages -->
+      <section class="card md:col-span-2 p-6">
+        <div class="flex items-start justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold">💬 Üzenetek</h1>
-            <p class="text-slate-600 mt-1">
-              Ha már be vagy jelentkezve, itt azonnal tudsz üzenni – nem kell újra belépni.
-            </p>
+            <h1 class="text-2xl font-extrabold">Üzenetek</h1>
+            <p class="muted mt-1">Ha be vagy jelentkezve, itt látod a bejövő üzeneteidet és tudsz válaszolni/írni.</p>
           </div>
           <div class="text-right">
-            <div id="statusLine" class="text-sm text-slate-500">Ellenőrzés…</div>
-            <div id="targetLine" class="text-xs text-slate-400"></div>
-          </div>
-        </div>
-
-        <!-- Connection / errors -->
-        <div id="connBox" class="hidden mt-4 p-3 rounded-lg border text-sm"></div>
-
-        <!-- LOGIN (only if not logged in) -->
-        <div id="loginBox" class="hidden mt-6 p-4 rounded-xl border bg-slate-50">
-          <div class="font-semibold mb-2">Bejelentkezés</div>
-          <div class="text-sm text-slate-600 mb-3">
-            Email linkes belépés. Ha beléptél egyszer, utána automatikusan bent maradsz (session).
-          </div>
-
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input id="email"
-                   type="email"
-                   placeholder="Email címed"
-                   class="w-full sm:flex-1 px-3 py-2 rounded-lg border bg-white outline-none focus:ring-2 focus:ring-slate-200" />
-            <button id="btnLogin"
-                    class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
-              Bejelentkezés (email link)
-            </button>
-          </div>
-
-          <div class="text-xs text-slate-500 mt-2">
-            Tipp: ha AdBlock/Tracking Prevention bekavar, kapcsold ki erre az oldalra és nyomj Ctrl+F5.
-          </div>
-        </div>
-
-        <!-- CHAT (only if logged in) -->
-        <div id="chatBox" class="hidden mt-6">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-sm text-slate-600">
-              Bejelentkezve: <span id="whoami" class="font-semibold text-slate-900"></span>
+            <div id="connBadge" class="pill text-sm">
+              <span id="connDot">⏳</span>
+              <span id="connText" class="font-semibold">Kapcsolódás…</span>
             </div>
-            <button id="btnRefresh"
-                    class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">
-              Frissítés
-            </button>
+            <div id="whoami" class="muted text-xs mt-2"></div>
+          </div>
+        </div>
+
+        <div id="alertBox" class="mt-4 hidden rounded-xl border border-red-200 bg-red-50 p-4">
+          <div class="font-semibold danger">Hiba</div>
+          <div id="alertText" class="danger mt-1 text-sm"></div>
+          <div class="muted mt-2 text-xs">
+            Tipp: ha reklámblokkoló/AdBlock fut, kapcsold ki erre az oldalra. (A Supabase hívásokat néha blokkolja.)
+          </div>
+        </div>
+
+        <!-- Not signed in -->
+        <div id="authBox" class="mt-6">
+          <div class="rounded-2xl border border-black/5 bg-gray-50 p-5">
+            <div class="font-bold text-lg">Bejelentkezés</div>
+            <p class="muted text-sm mt-1">E-mail linkes belépés (magic link). Ha már be vagy jelentkezve a SzakiPiacon, itt automatikusan be fog lépni.</p>
+
+            <div class="mt-4 flex flex-col sm:flex-row gap-3 items-stretch">
+              <input id="emailInput" type="email" placeholder="Email címed"
+                     class="w-full sm:flex-1 rounded-xl border border-black/10 px-4 py-3 outline-none focus:ring-2 focus:ring-black/10" />
+              <button id="btnMagic" class="btn btn-primary">Bejelentkezés (email link)</button>
+            </div>
+
+            <div id="magicInfo" class="muted text-sm mt-3 hidden"></div>
+          </div>
+        </div>
+
+        <!-- Signed in content -->
+        <div id="appBox" class="mt-6 hidden">
+          <div class="flex items-center justify-between gap-3">
+            <div class="font-bold text-lg">Bejövő üzenetek</div>
+            <button id="btnRefresh" class="btn btn-ghost">Frissítés</button>
           </div>
 
-          <div id="messages"
-               class="h-[420px] overflow-auto rounded-xl border bg-slate-50 p-3 space-y-2">
-            <!-- messages here -->
+          <div id="emptyState" class="mt-4 rounded-2xl border border-black/5 bg-gray-50 p-6 hidden">
+            <div class="font-semibold">Még nincs üzenet.</div>
+            <div class="muted text-sm mt-1">Amikor valaki ír neked, itt fog megjelenni.</div>
           </div>
 
-          <div class="mt-3 flex gap-2">
-            <input id="msg"
-                   type="text"
-                   placeholder="Írd ide az üzenetet…"
-                   class="flex-1 px-3 py-2 rounded-lg border bg-white outline-none focus:ring-2 focus:ring-slate-200" />
-            <button id="btnSend"
-                    class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
-              Küldés
-            </button>
-          </div>
+          <div id="list" class="mt-4 space-y-3"></div>
 
-          <div class="text-xs text-slate-500 mt-2">
-            Az oldal a <code>?uid=</code> paraméterből tudja, kinek írsz. (pl. <code>uzenetek.html?uid=...</code>)
+          <hr class="my-6 border-black/5">
+
+          <div class="grid gap-3">
+            <div class="font-bold text-lg">Üzenet írása</div>
+            <p class="muted text-sm">
+              Ha egy konkrét szakembernek/partnernek akarsz írni, add meg a címzett felhasználó azonosítóját (UUID).
+              (Ezt pl. profilból át lehet majd adni automatikusan.)
+            </p>
+
+            <div class="grid sm:grid-cols-2 gap-3">
+              <input id="toUserId" type="text" placeholder="Címzett user_id (UUID) – opcionális"
+                     class="rounded-xl border border-black/10 px-4 py-3 outline-none focus:ring-2 focus:ring-black/10 mono" />
+              <input id="fromEmailPreview" type="text" placeholder="Feladó email (automatikus)" disabled
+                     class="rounded-xl border border-black/10 px-4 py-3 bg-gray-50 outline-none" />
+            </div>
+
+            <textarea id="msgText" rows="4" placeholder="Írd ide az üzenetet…"
+                      class="rounded-xl border border-black/10 px-4 py-3 outline-none focus:ring-2 focus:ring-black/10"></textarea>
+
+            <div class="flex items-center gap-3">
+              <button id="btnSend" class="btn btn-primary">Üzenet küldése</button>
+              <div id="sendStatus" class="muted text-sm"></div>
+            </div>
+
+            <div class="muted text-xs">
+              Megjegyzés: ez a fájl a <span class="mono">szakember_messages</span> táblába ment:
+              <span class="mono">to_user_id</span>, <span class="mono">from_visitor_id</span>, <span class="mono">from_email</span>, <span class="mono">message</span>.
+              Ha a táblában nincs <span class="mono">message</span> oszlop, hozz létre egy text oszlopot ezen a néven.
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- RIGHT: Tip card -->
-      <aside class="bg-white rounded-2xl shadow-sm border p-6">
-        <h2 class="text-lg font-bold mb-2">Szakember</h2>
-        <p class="text-sm text-slate-600 mb-4">
-          Itt az üzenetküldés a szakember UID-ja alapján működik.
+      <!-- Right: tips -->
+      <aside class="card p-6">
+        <div class="font-extrabold text-xl">Tipp</div>
+        <p class="muted mt-2">
+          Ha egyszer be vagy jelentkezve a SzakiPiacon (ugyanaz a Supabase projekt), akkor ez az oldal is látja a sessiont,
+          és nem kér külön login-t.
         </p>
 
-        <a href="./index.html"
-           class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
-          Profilok / Főoldal megnyitása
-        </a>
-
-        <div class="mt-4 p-3 rounded-lg bg-slate-50 border text-sm text-slate-700">
-          Ha “Failed to fetch” van:
-          <ul class="list-disc ml-5 mt-2 text-sm">
-            <li>rossz Project URL van a kódban</li>
-            <li>DNS / AdBlock / hálózat blokkolja a <code>*.supabase.co</code>-t</li>
+        <div class="mt-4 rounded-2xl border border-black/5 bg-gray-50 p-4">
+          <div class="font-semibold">Ha “Failed to fetch” van</div>
+          <ul class="mt-2 list-disc pl-5 muted text-sm space-y-1">
+            <li>Kapcsold ki az AdBlockot erre az oldalra (néha Supabase hívást blokkol).</li>
+            <li>Próbáld Ctrl+F5.</li>
+            <li>Ha VPN/egyedi DNS van, próbáld kikapcsolni (ritkán NXDOMAIN-t okoz).</li>
           </ul>
         </div>
       </aside>
+
     </div>
   </main>
 
-  <script>
-    // =========================
-    // 1) SUPABASE KONFIG (FIXEN)
-    // =========================
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    // ==== FIXEN BEÍRVA (ahogy kérted) ====
     const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
 
-    // =========================
-    // 2) TÁBLA / OSZLOPOK (ha eltér, itt 1 helyen tudd állítani)
-    // =========================
-    const TABLE_MESSAGES = "szakember_messages";
+    // Táblanév
+    const TABLE = "szakember_messages";
 
-    // Ha nálad más oszlopnevek vannak, csak ezeket írd át:
-    const COL_FROM = "from_uid";
-    const COL_TO   = "to_uid";
-    const COL_TEXT = "message";
-    const COL_TIME = "created_at";
-
-    // =========================
-    // 3) HELPERS
-    // =========================
+    // UI helpers
     const $ = (id) => document.getElementById(id);
-    const statusLine = $("statusLine");
-    const targetLine = $("targetLine");
-    const connBox = $("connBox");
+    const connDot = $("connDot");
+    const connText = $("connText");
+    const whoami = $("whoami");
+    const alertBox = $("alertBox");
+    const alertText = $("alertText");
 
-    function getTargetUid(){
-      const u = new URL(location.href);
-      return (u.searchParams.get("uid") || "").trim();
+    function setConn(state, text){
+      connText.textContent = text || "";
+      if (state === "ok"){ connDot.textContent = "✅"; connText.classList.add("ok"); connText.classList.remove("danger"); }
+      if (state === "bad"){ connDot.textContent = "❌"; connText.classList.add("danger"); connText.classList.remove("ok"); }
+      if (state === "wait"){ connDot.textContent = "⏳"; connText.classList.remove("ok","danger"); }
     }
 
-    function setConnBox(type, msg){
-      connBox.classList.remove("hidden");
-      connBox.className = "mt-4 p-3 rounded-lg border text-sm";
-      if (type === "ok") connBox.classList.add("bg-emerald-50", "border-emerald-200", "text-emerald-900");
-      if (type === "warn") connBox.classList.add("bg-amber-50", "border-amber-200", "text-amber-900");
-      if (type === "err") connBox.classList.add("bg-rose-50", "border-rose-200", "text-rose-900");
-      connBox.textContent = msg;
+    function showError(msg){
+      alertText.textContent = msg;
+      alertBox.classList.remove("hidden");
+    }
+    function clearError(){
+      alertBox.classList.add("hidden");
+      alertText.textContent = "";
     }
 
-    function clearConnBox(){
-      connBox.classList.add("hidden");
-      connBox.textContent = "";
+    // Supabase client (session megmarad oldalak között!)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: "szakipiac_auth_v1"
+      }
+    });
+
+    // DNS / elérés teszt (apikey headerrel!)
+    async function healthCheck(){
+      try{
+        const r = await fetch(SUPABASE_URL + "/auth/v1/health", {
+          headers: { "apikey": SUPABASE_KEY }
+        });
+        // 200/204 ok, 401 is “elérhető csak kulcs kell” – mindegy, a lényeg: ne legyen fetch hiba.
+        if (!r.ok && r.status !== 401){
+          // még ez is lehet ok, de jelezzük finoman
+          return { ok: true, note: "health status: " + r.status };
+        }
+        return { ok: true };
+      }catch(e){
+        return { ok: false, err: e?.message || String(e) };
+      }
+    }
+
+    function showSignedOut(){
+      $("authBox").classList.remove("hidden");
+      $("appBox").classList.add("hidden");
+      $("btnSignOut").classList.add("hidden");
+      whoami.textContent = "";
+    }
+
+    function showSignedIn(user){
+      $("authBox").classList.add("hidden");
+      $("appBox").classList.remove("hidden");
+      $("btnSignOut").classList.remove("hidden");
+      const email = user?.email || "";
+      $("fromEmailPreview").value = email ? email : "(nincs email a sessionben)";
+      whoami.textContent = user?.id ? ("Bejelentkezve: " + (email || "user") + " • " + user.id) : "Bejelentkezve";
     }
 
     function esc(s){
@@ -188,240 +239,182 @@
         .replaceAll("'","&#039;");
     }
 
-    function fmtTime(iso){
-      try{
-        const d = new Date(iso);
-        return d.toLocaleString("hu-HU");
-      }catch(e){
-        return iso || "";
-      }
-    }
+    async function loadInbox(user){
+      clearError();
+      const list = $("list");
+      const empty = $("emptyState");
+      list.innerHTML = "";
+      empty.classList.add("hidden");
 
-    // =========================
-    // 4) SUPABASE CLIENT (SESSION: ugyanaz minden oldalon)
-    // =========================
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: "szakipiac_auth_v1"
-      }
-    });
-
-    // =========================
-    // 5) UI STATE
-    // =========================
-    function showLoggedOut(){
-      $("loginBox").classList.remove("hidden");
-      $("chatBox").classList.add("hidden");
-      $("btnLogout").classList.add("hidden");
-      $("whoami").textContent = "";
-      statusLine.textContent = "Nincs bejelentkezve";
-    }
-
-    function showLoggedIn(user){
-      $("loginBox").classList.add("hidden");
-      $("chatBox").classList.remove("hidden");
-      $("btnLogout").classList.remove("hidden");
-      $("whoami").textContent = user?.email || user?.id || "ismeretlen";
-      statusLine.textContent = "Bejelentkezve";
-    }
-
-    // =========================
-    // 6) HEALTH CHECK (nem kötelező, de segít kimondani ha blokkolva van)
-    // =========================
-    async function checkReachable(){
-      // Egy egyszerű fetch a domainre. Ha DNS/AdBlock blokkolja, itt elhasal.
-      try{
-        const r = await fetch(SUPABASE_URL + "/auth/v1/settings", { method: "GET" });
-        // 401 is ok (elérhető), csak legyen válasz
-        return { ok: true, status: r.status };
-      }catch(e){
-        return { ok: false, error: e };
-      }
-    }
-
-    // =========================
-    // 7) MESSAGES
-    // =========================
-    async function loadMessages(){
-      const target = getTargetUid();
-      if (!target){
-        setConnBox("warn", "Hiányzik a cél UID a linkből. Nyisd meg így: uzenetek.html?uid=... ");
-        return;
-      }
-
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user){
-        return;
-      }
-
-      // Kétirányú beszélgetés: (én->ő) vagy (ő->én)
-      const orFilter =
-        `and(${COL_FROM}.eq.${user.id},${COL_TO}.eq.${target}),and(${COL_FROM}.eq.${target},${COL_TO}.eq.${user.id})`;
-
-      const { data, error } = await sb
-        .from(TABLE_MESSAGES)
+      // Bejövő üzenetek: to_user_id = current user id
+      const { data, error } = await supabase
+        .from(TABLE)
         .select("*")
-        .or(orFilter)
-        .order(COL_TIME, { ascending: true })
-        .limit(200);
+        .eq("to_user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error){
-        setConnBox("err", "Nem tudtam lekérni az üzeneteket (RLS/policy vagy oszlopnév eltérés).");
-        console.error(error);
+        showError("Nem sikerült betölteni az üzeneteket: " + error.message);
         return;
       }
-      clearConnBox();
-
-      const box = $("messages");
-      box.innerHTML = "";
 
       if (!data || data.length === 0){
-        box.innerHTML = `<div class="text-sm text-slate-500">Még nincs üzenet.</div>`;
+        empty.classList.remove("hidden");
         return;
       }
 
       for (const row of data){
-        const from = row[COL_FROM];
-        const txt = row[COL_TEXT] ?? row.text ?? row.body ?? row.message ?? "";
-        const t   = row[COL_TIME] ?? row.created_at ?? row.time ?? "";
-        const mine = (from === user.id);
+        const fromEmail = row.from_email || "ismeretlen";
+        const msg = row.message || "";
+        const when = row.created_at ? new Date(row.created_at).toLocaleString("hu-HU") : "";
 
-        const wrap = document.createElement("div");
-        wrap.className = "flex " + (mine ? "justify-end" : "justify-start");
-
-        wrap.innerHTML = `
-          <div class="${mine ? "bg-slate-900 text-white" : "bg-white text-slate-900"} max-w-[80%] rounded-xl border px-3 py-2 shadow-sm">
-            <div class="text-sm break-words">${esc(txt)}</div>
-            <div class="text-[11px] mt-1 ${mine ? "text-slate-200" : "text-slate-500"}">${esc(fmtTime(t))}</div>
+        const item = document.createElement("div");
+        item.className = "rounded-2xl border border-black/5 bg-white p-4";
+        item.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-semibold">${esc(fromEmail)}</div>
+              <div class="muted text-xs mt-1">${esc(when)}</div>
+            </div>
+            <div class="pill text-xs mono">${esc(row.from_visitor_id || "")}</div>
           </div>
+          <div class="mt-3 whitespace-pre-wrap">${esc(msg)}</div>
         `;
-        box.appendChild(wrap);
+        list.appendChild(item);
       }
-
-      // görgetés aljára
-      box.scrollTop = box.scrollHeight;
     }
 
-    async function sendMessage(){
-      const target = getTargetUid();
-      if (!target){
-        alert("Hiányzik a cél UID a linkből (uzenetek.html?uid=...).");
-        return;
-      }
-
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user){
-        alert("Nem vagy bejelentkezve.");
-        return;
-      }
-
-      const text = ($("msg").value || "").trim();
-      if (!text) return;
-
-      $("btnSend").disabled = true;
-
-      const payload = {};
-      payload[COL_FROM] = user.id;
-      payload[COL_TO]   = target;
-      payload[COL_TEXT] = text;
-
-      const { error } = await sb.from(TABLE_MESSAGES).insert(payload);
-
-      $("btnSend").disabled = false;
-
-      if (error){
-        console.error(error);
-        alert("Nem sikerült elküldeni (RLS/policy vagy oszlopnév eltérés).");
-        return;
-      }
-
-      $("msg").value = "";
-      await loadMessages();
-    }
-
-    // =========================
-    // 8) AUTH ACTIONS
-    // =========================
-    async function loginWithEmailLink(){
-      const email = ($("email").value || "").trim();
-      if (!email){
-        alert("Írd be az email címed.");
-        return;
-      }
-
-      const target = getTargetUid();
-      const redirectTo = location.origin + location.pathname + (target ? ("?uid=" + encodeURIComponent(target)) : "");
-
-      $("btnLogin").disabled = true;
-
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirectTo }
-      });
-
-      $("btnLogin").disabled = false;
-
-      if (error){
-        console.error(error);
-        alert("Belépési hiba: " + (error.message || "ismeretlen"));
-        return;
-      }
-
-      alert("Elküldtem a belépési linket emailben. Nyisd meg, és visszahoz ide.");
-    }
-
-    async function logout(){
-      await sb.auth.signOut();
-    }
-
-    // =========================
-    // 9) INIT
-    // =========================
-    (async function init(){
-      const target = getTargetUid();
-      targetLine.textContent = target ? ("Cél UID: " + target) : "Cél UID: nincs megadva";
-
-      // elérhetőség ellenőrzés (DNS/AdBlock)
-      const health = await checkReachable();
-      if (!health.ok){
-        setConnBox("err", "Supabase kapcsolat: NEM ELÉRHETŐ (DNS/AdBlock/hálózat). Kapcsold ki az AdBlockot erre az oldalra és nyomj Ctrl+F5.");
-        statusLine.textContent = "Supabase: nem elérhető";
+    async function main(){
+      setConn("wait", "Kapcsolódás…");
+      const hc = await healthCheck();
+      if (!hc.ok){
+        setConn("bad", "Supabase: NEM ELÉRHETŐ");
+        showError("Supabase nem elérhető (DNS/blokkolás vagy rossz Project URL). Részlet: " + hc.err);
+        // ettől még auth/session lehet, de nincs értelme folytatni
       } else {
-        clearConnBox();
+        setConn("ok", "Supabase: OK");
       }
 
-      // session
-      const { data: { session } } = await sb.auth.getSession();
-
-      if (session?.user){
-        showLoggedIn(session.user);
-        await loadMessages();
+      // Session kezelése: ha már be vagy lépve indexen, itt automatikusan látni fogja
+      const { data: sessData, error: sessErr } = await supabase.auth.getSession();
+      if (sessErr){
+        showError("Session hiba: " + sessErr.message);
+        showSignedOut();
+      } else if (sessData?.session?.user){
+        const user = sessData.session.user;
+        showSignedIn(user);
+        await loadInbox(user);
       } else {
-        showLoggedOut();
+        showSignedOut();
       }
 
-      // auth changes
-      sb.auth.onAuthStateChange(async (event, sessionNow) => {
-        if (sessionNow?.user){
-          showLoggedIn(sessionNow.user);
-          await loadMessages();
-        } else {
-          showLoggedOut();
+      // Listener: ha magic linkkel visszajön, automatikusan átáll
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user){
+          clearError();
+          showSignedIn(session.user);
+          await loadInbox(session.user);
+        }
+        if (event === "SIGNED_OUT"){
+          showSignedOut();
         }
       });
+    }
 
-      // ui bind
-      $("btnLogin").addEventListener("click", loginWithEmailLink);
-      $("btnLogout").addEventListener("click", logout);
-      $("btnSend").addEventListener("click", sendMessage);
-      $("btnRefresh").addEventListener("click", loadMessages);
-      $("msg").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") sendMessage();
-      });
-    })();
+    // ===== Buttons =====
+    $("btnMagic").addEventListener("click", async () => {
+      clearError();
+      const email = $("emailInput").value.trim();
+      if (!email){
+        showError("Írd be az email címed.");
+        return;
+      }
+      $("btnMagic").disabled = true;
+      $("btnMagic").textContent = "Küldés…";
+
+      try{
+        // Visszairányítás: ez az oldal
+        const redirectTo = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "/uzenetek.html");
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: redirectTo }
+        });
+        if (error) throw error;
+
+        const info = $("magicInfo");
+        info.classList.remove("hidden");
+        info.textContent = "Elküldve! Nézd meg az emailed, kattints a linkre, és visszahoz ide.";
+      }catch(e){
+        showError("Nem sikerült a belépés: " + (e?.message || String(e)));
+      }finally{
+        $("btnMagic").disabled = false;
+        $("btnMagic").textContent = "Bejelentkezés (email link)";
+      }
+    });
+
+    $("btnSignOut").addEventListener("click", async () => {
+      clearError();
+      await supabase.auth.signOut();
+    });
+
+    $("btnRefresh").addEventListener("click", async () => {
+      clearError();
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (user) await loadInbox(user);
+    });
+
+    $("btnSend").addEventListener("click", async () => {
+      clearError();
+      $("sendStatus").textContent = "";
+      $("btnSend").disabled = true;
+
+      try{
+        const { data } = await supabase.auth.getSession();
+        const user = data?.session?.user;
+        if (!user){
+          showError("Előbb be kell jelentkezni.");
+          return;
+        }
+
+        const toId = $("toUserId").value.trim();
+        const text = $("msgText").value.trim();
+
+        if (!text){
+          showError("Írj üzenetet.");
+          return;
+        }
+
+        // Ha nincs megadva címzett, akkor önmagának nem küldünk:
+        if (!toId){
+          showError("Add meg a címzett user_id-t (UUID). (Ezt később a profil oldal fogja automatikusan átadni.)");
+          return;
+        }
+
+        const payload = {
+          to_user_id: toId,
+          from_visitor_id: user.id,        // bejelentkezett user id
+          from_email: user.email || "",    // email ha van
+          message: text
+        };
+
+        const { error } = await supabase.from(TABLE).insert(payload);
+        if (error) throw error;
+
+        $("msgText").value = "";
+        $("sendStatus").textContent = "✅ Elküldve!";
+        $("sendStatus").classList.remove("danger");
+        $("sendStatus").classList.add("ok");
+      }catch(e){
+        $("sendStatus").textContent = "❌ Hiba: " + (e?.message || String(e));
+        $("sendStatus").classList.add("danger");
+      }finally{
+        $("btnSend").disabled = false;
+      }
+    });
+
+    // Indulás
+    main();
   </script>
 </body>
 </html>
