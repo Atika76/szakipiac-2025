@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Szakember profil – SzakiPiac-2025.hu</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7fafc}</style>
+</head>
+<body class="text-gray-900">
+
+<header class="bg-white shadow sticky top-0 z-40">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="index.html#home" class="flex items-center gap-2 font-bold text-lg">
+      <img src="szakipiac-logo-promo.png" class="h-9" alt="SzakiPiac" />
+      <span>SzakiPiac</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <a id="btnMessages" href="#" class="hidden sm:inline-flex px-3 py-2 rounded-md text-sm font-semibold border border-gray-200 hover:bg-gray-50">💬 Üzenet</a>
+      <a href="index.html#feltoltes" class="px-3 py-2 rounded-md text-sm font-semibold bg-green-600 text-white hover:bg-green-700">Hirdetés feladása</a>
+    </div>
+  </div>
+</header>
+
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div id="alert" class="hidden mb-6 p-4 rounded border"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 space-y-6">
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <div class="flex items-start gap-4">
+          <div class="h-16 w-16 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
+            <img id="avatar" class="h-full w-full object-cover hidden" alt="Avatar" />
+            <span id="avatarFallback" class="text-2xl">👤</span>
+          </div>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 id="name" class="text-2xl font-bold">Szakember profil</h1>
+              <span id="cityPill" class="hidden text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-700"></span>
+            </div>
+            <p id="bio" class="mt-2 text-gray-600 whitespace-pre-line"></p>
+            <div id="links" class="mt-4 flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <h2 class="text-xl font-bold">⭐ Értékelések</h2>
+          <div class="text-sm text-gray-700">
+            <span class="font-semibold" id="avg">–</span>
+            <span class="text-gray-400">/ 5</span>
+            <span class="ml-2 text-gray-500" id="count">(0)</span>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form id="rateForm" class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+            <div class="text-sm font-semibold">Írj értékelést</div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-gray-600">Csillag:</label>
+              <select id="stars" class="border rounded px-2 py-1">
+                <option value="5">5 – kiváló</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <textarea id="comment" rows="3" class="w-full border rounded p-2" placeholder="Rövid vélemény (nem kötelező)"></textarea>
+            <button class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700">Értékelés elküldése</button>
+            <p class="text-xs text-gray-500">Tipp: az értékeléshez nem kell regisztráció.</p>
+          </form>
+
+          <div class="bg-white border border-gray-200 rounded-xl p-4">
+            <div class="text-sm font-semibold mb-3">Legutóbbi vélemények</div>
+            <div id="ratings" class="space-y-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <h2 class="text-xl font-bold">📌 Hirdetések ettől a szakembertől</h2>
+          <a id="backToList" href="index.html#home" class="text-sm font-semibold text-green-700 hover:underline">← Vissza a listához</a>
+        </div>
+        <div id="ads" class="mt-4 space-y-4"></div>
+      </div>
+    </section>
+
+    <aside class="space-y-6">
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-bold">Kapcsolat</h3>
+        <div id="contact" class="mt-3 space-y-2 text-sm"></div>
+        <a id="msgBtn" href="#" class="mt-4 inline-flex w-full justify-center bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700">💬 Üzenet küldése</a>
+      </div>
+
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-bold">Térkép</h3>
+        <p class="text-sm text-gray-600 mt-2">Helyszín a megadott város alapján.</p>
+        <div class="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+          <iframe id="map" title="Térkép" class="w-full" style="height:260px" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+
+      <div id="editBox" class="hidden bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-bold">Saját profil szerkesztése</h3>
+        <form id="editForm" class="mt-3 space-y-3">
+          <div>
+            <label class="text-sm font-semibold">Megjelenő név</label>
+            <input id="editName" class="w-full border rounded p-2" />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Város</label>
+            <input id="editCity" class="w-full border rounded p-2" placeholder="pl. Esztergom" />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Telefon</label>
+            <input id="editPhone" class="w-full border rounded p-2" />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Weboldal</label>
+            <input id="editWebsite" class="w-full border rounded p-2" placeholder="https://..." />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Rövid bemutatkozás</label>
+            <textarea id="editBio" rows="4" class="w-full border rounded p-2"></textarea>
+          </div>
+          <button class="w-full bg-gray-900 text-white font-semibold py-2 rounded-lg hover:bg-black">Mentés</button>
+          <p class="text-xs text-gray-500">A mentéshez Supabase-ben kell a <code>szakember_profiles</code> tábla + policy (külön fájlban adtam SQL-t).</p>
+        </form>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+  // ====== Supabase config (ugyanaz, mint index.html) ======
+  const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
+  const ADMIN_EMAIL = "atika.76@windowslive.com";
+
+  const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  // ====== Helpers ======
+  const $ = (id) => document.getElementById(id);
+  const qs = new URLSearchParams(location.search);
+  const uid = (qs.get("uid") || "").trim();
+
+  function showAlert(msg, type = "info"){
+    const el = $("alert");
+    el.className = "mb-6 p-4 rounded border";
+    if (type === "error") el.classList.add("bg-red-50","border-red-200","text-red-800");
+    else if (type === "ok") el.classList.add("bg-green-50","border-green-200","text-green-800");
+    else el.classList.add("bg-blue-50","border-blue-200","text-blue-800");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
+
+  function getVisitorId(){
+    const key = "szakipiac_visitor_id";
+    let vid = localStorage.getItem(key);
+    if (!vid){
+      vid = (crypto?.randomUUID?.() || (Date.now() + "_" + Math.random().toString(16).slice(2)));
+      localStorage.setItem(key, vid);
+    }
+    return vid;
+  }
+
+  function safeUrl(u){
+    const s = (u||"").trim();
+    if (!s) return "";
+    try {
+      const url = new URL(s);
+      return url.href;
+    } catch { return ""; }
+  }
+
+  function starsText(n){
+    const v = Math.max(1, Math.min(5, Number(n||0)));
+    return "★".repeat(v) + "☆".repeat(5 - v);
+  }
+
+  // ====== Load page ======
+  if (!uid){
+    showAlert("Hiányzik a szakember azonosító (uid). Nyisd meg a profilt a hirdetés kártyáján lévő ‘Profil’ gombbal.", "error");
+  }
+
+  const msgUrl = `uzenetek.html?uid=${encodeURIComponent(uid)}`;
+  $("msgBtn").href = msgUrl;
+  $("btnMessages").href = msgUrl;
+
+  async function loadProfile(){
+    // Alap: név a hirdetésekből (ha nincs külön profil tábla)
+    let fallbackCity = "";
+    let fallbackEmail = "";
+    let fallbackPhone = "";
+    let fallbackWebsite = "";
+
+    // Hirdetések listája a user_id alapján
+    const { data: ads, error: adsErr } = await supaClient
+      .from("hirdetesek")
+      .select("id,cim,leiras,kategoria,varos,ar,email,telefonszam,weboldal,kep_url_tomb,video_url,created_at")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+
+    if (adsErr){
+      console.error(adsErr);
+      showAlert("Nem tudtam betölteni a hirdetéseket. Valószínűleg Supabase policy / RLS beállítás hiányzik.", "error");
+    }
+
+    const first = (ads && ads[0]) ? ads[0] : null;
+    if (first){
+      fallbackCity = first.varos || "";
+      fallbackEmail = first.email || "";
+      fallbackPhone = first.telefonszam || "";
+      fallbackWebsite = first.weboldal || "";
+    }
+
+    // Próbáljuk betölteni a profi profiltáblából (ha megvan)
+    let profile = null;
+    try{
+      const { data, error } = await supaClient
+        .from("szakember_profiles")
+        .select("user_id,display_name,city,phone,website,bio,avatar_url")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (!error) profile = data;
+    } catch (e){
+      // ha nincs tábla, nem dőlünk el
+    }
+
+    const displayName = profile?.display_name || "Szakember";
+    const city = profile?.city || fallbackCity;
+    const phone = profile?.phone || fallbackPhone;
+    const email = fallbackEmail; // email a hirdetésből
+    const website = profile?.website || fallbackWebsite;
+    const bio = profile?.bio || "";
+
+    $("name").textContent = displayName;
+    $("bio").textContent = bio;
+
+    if (city){
+      $("cityPill").textContent = city;
+      $("cityPill").classList.remove("hidden");
+      // OpenStreetMap embed
+      const q = encodeURIComponent(city + ", Magyarország");
+      $("map").src = `https://www.openstreetmap.org/export/embed.html?search=${q}`;
+    } else {
+      $("map").src = "https://www.openstreetmap.org/export/embed.html";
+    }
+
+    // Avatar
+    const av = safeUrl(profile?.avatar_url);
+    if (av){
+      $("avatar").src = av;
+      $("avatar").classList.remove("hidden");
+      $("avatarFallback").classList.add("hidden");
+    }
+
+    // Links
+    const links = [];
+    if (website){
+      const w = safeUrl(website) || website;
+      links.push(`<a class="px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 text-sm" target="_blank" rel="noopener" href="${w}">🌐 Weboldal</a>`);
+    }
+    if (phone){
+      links.push(`<a class="px-3 py-1.5 rounded-full bg-gray-900 text-white hover:bg-black text-sm" href="tel:${phone}">📞 ${phone}</a>`);
+    }
+    if (email){
+      links.push(`<a class="px-3 py-1.5 rounded-full bg-green-600 text-white hover:bg-green-700 text-sm" href="mailto:${email}">📧 Email</a>`);
+    }
+    $("links").innerHTML = links.join(" ");
+
+    // Kontakt doboz
+    const c = [];
+    if (city) c.push(`<div><span class="text-gray-500">Város:</span> <span class="font-semibold">${city}</span></div>`);
+    if (phone) c.push(`<div><span class="text-gray-500">Telefon:</span> <a class="font-semibold text-indigo-700 hover:underline" href="tel:${phone}">${phone}</a></div>`);
+    if (email) c.push(`<div><span class="text-gray-500">Email:</span> <a class="font-semibold text-indigo-700 hover:underline" href="mailto:${email}">${email}</a></div>`);
+    if (website){
+      const w = safeUrl(website) || website;
+      c.push(`<div><span class="text-gray-500">Web:</span> <a class="font-semibold text-indigo-700 hover:underline" target="_blank" rel="noopener" href="${w}">${w}</a></div>`);
+    }
+    $("contact").innerHTML = c.length ? c.join("") : `<div class="text-gray-500">Nincs megadva kontakt.</div>`;
+
+    // Hirdetések
+    const adsEl = $("ads");
+    if (!ads || !ads.length){
+      adsEl.innerHTML = `<div class="text-gray-500">Nincs aktív hirdetés.</div>`;
+    } else {
+      adsEl.innerHTML = ads.map(a => {
+        const imgs = (a.kep_url_tomb && Array.isArray(a.kep_url_tomb) && a.kep_url_tomb.length)
+          ? `<div class="flex gap-2 mt-3 overflow-x-auto">${a.kep_url_tomb.slice(0,6).map(u => `<img src="${u}" class="h-20 w-20 object-cover rounded-lg border" />`).join("")}</div>`
+          : "";
+        const price = a.ar ? `${parseInt(a.ar).toLocaleString()} Ft` : "";
+        return `
+          <article class="border border-gray-200 rounded-xl p-4 bg-white">
+            <div class="flex justify-between gap-4">
+              <div>
+                <div class="text-xs font-bold text-green-700 uppercase">${a.kategoria || ""}${a.varos ? ` • ${a.varos}` : ""}</div>
+                <div class="text-lg font-bold mt-1">${a.cim || ""}</div>
+              </div>
+              <div class="font-bold">${price}</div>
+            </div>
+            <div class="mt-2 text-gray-700 whitespace-pre-line">${(a.leiras || "").slice(0, 600)}${(a.leiras || "").length > 600 ? "…" : ""}</div>
+            ${imgs}
+          </article>
+        `;
+      }).join("");
+    }
+
+    // Edit box (ha saját profil)
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (session && session.user && session.user.id === uid){
+      $("editBox").classList.remove("hidden");
+      $("editName").value = profile?.display_name || "";
+      $("editCity").value = profile?.city || city || "";
+      $("editPhone").value = profile?.phone || phone || "";
+      $("editWebsite").value = profile?.website || website || "";
+      $("editBio").value = profile?.bio || bio || "";
+    }
+  }
+
+  async function loadRatings(){
+    try{
+      const { data, error } = await supaClient
+        .from("szakember_ratings")
+        .select("id,stars,comment,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const list = data || [];
+      const count = list.length;
+      const avg = count ? (list.reduce((s,r)=>s + Number(r.stars||0), 0) / count) : 0;
+      $("avg").textContent = count ? avg.toFixed(1) : "–";
+      $("count").textContent = `(${count})`;
+
+      $("ratings").innerHTML = count ? list.map(r => {
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString("hu-HU") : "";
+        const c = (r.comment || "").trim();
+        return `
+          <div class="border border-gray-200 rounded-lg p-3">
+            <div class="flex items-center justify-between">
+              <div class="font-mono text-sm">${starsText(r.stars)}</div>
+              <div class="text-xs text-gray-500">${date}</div>
+            </div>
+            ${c ? `<div class="mt-2 text-sm text-gray-700 whitespace-pre-line">${c}</div>` : `<div class="mt-2 text-sm text-gray-400">(nincs szöveges megjegyzés)</div>`}
+          </div>
+        `;
+      }).join("") : `<div class="text-gray-500 text-sm">Még nincs értékelés.</div>`;
+
+    } catch (e){
+      console.error(e);
+      // ha nincs tábla / policy, akkor kulturált üzenet
+      $("ratings").innerHTML = `<div class="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded">Az értékelésekhez még hiányzik a Supabase tábla/policy. A zipben van hozzá SQL: <code>supabase/schema_extra.sql</code></div>`;
+      $("avg").textContent = "–";
+      $("count").textContent = "(0)";
+    }
+  }
+
+  $("rateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const stars = Number($("stars").value || 5);
+    const comment = ($("comment").value || "").trim();
+    try{
+      const payload = {
+        user_id: uid,
+        visitor_id: getVisitorId(),
+        stars,
+        comment,
+      };
+
+      const { error } = await supaClient.from("szakember_ratings").insert(payload);
+      if (error) throw error;
+
+      $("comment").value = "";
+      showAlert("Köszi! Az értékelésed elmentve.", "ok");
+      await loadRatings();
+
+    } catch (err){
+      console.error(err);
+      showAlert("Nem tudtam elmenteni az értékelést. Valószínűleg hiányzik a Supabase tábla/policy. Nézd meg: supabase/schema_extra.sql", "error");
+    }
+  });
+
+  $("editForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      const { data: { session } } = await supaClient.auth.getSession();
+      if (!session) throw new Error("A mentéshez be kell jelentkezni.");
+      if (session.user.id !== uid) throw new Error("Csak a saját profilodat szerkesztheted.");
+
+      const up = {
+        user_id: uid,
+        display_name: ($("editName").value || "").trim(),
+        city: ($("editCity").value || "").trim(),
+        phone: ($("editPhone").value || "").trim(),
+        website: ($("editWebsite").value || "").trim(),
+        bio: ($("editBio").value || "").trim(),
+      };
+
+      const { error } = await supaClient.from("szakember_profiles").upsert(up);
+      if (error) throw error;
+
+      showAlert("Profil mentve.", "ok");
+      await loadProfile();
+
+    } catch (err){
+      console.error(err);
+      showAlert(err?.message || "Hiba mentés közben.", "error");
+    }
+  });
+
+  await loadProfile();
+  await loadRatings();
+</script>
+</body>
+</html>

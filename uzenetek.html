@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Üzenetek – SzakiPiac-2025.hu</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7fafc}</style>
+</head>
+<body class="text-gray-900">
+
+<header class="bg-white shadow sticky top-0 z-40">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a id="back" href="index.html#home" class="flex items-center gap-2 font-bold text-lg">
+      <img src="szakipiac-logo-promo.png" class="h-9" alt="SzakiPiac" />
+      <span>SzakiPiac</span>
+    </a>
+    <div id="auth" class="text-sm"></div>
+  </div>
+</header>
+
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div id="alert" class="hidden mb-6 p-4 rounded border"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 space-y-6">
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h1 class="text-2xl font-bold">💬 Üzenetek</h1>
+        <p class="text-gray-600 mt-2" id="subtitle"></p>
+      </div>
+
+      <div id="inboxBox" class="hidden bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <h2 class="text-xl font-bold">Bejövő üzenetek</h2>
+          <button id="refresh" class="px-3 py-2 rounded-md text-sm font-semibold border border-gray-200 hover:bg-gray-50">Frissítés</button>
+        </div>
+        <div id="inbox" class="mt-4 space-y-3"></div>
+        <p class="mt-4 text-xs text-gray-500">Megjegyzés: az üzeneteket csak a saját fiókod látja (RLS policy kell hozzá – a zipben van SQL).</p>
+      </div>
+
+      <div id="sendBox" class="hidden bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h2 class="text-xl font-bold">Üzenet küldése</h2>
+        <p class="text-sm text-gray-600 mt-2">Írj a szakembernek itt. Nem kell regisztráció.</p>
+        <form id="sendForm" class="mt-4 space-y-3">
+          <div>
+            <label class="text-sm font-semibold">Email (opcionális)</label>
+            <input id="fromEmail" type="email" class="w-full border rounded p-2" placeholder="pl. te@email.hu" />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Üzenet</label>
+            <textarea id="msg" rows="5" class="w-full border rounded p-2" placeholder="Mit szeretnél kérdezni?" required></textarea>
+          </div>
+          <button class="w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700">Küldés</button>
+          <p class="text-xs text-gray-500">Az üzenet a <code>szakember_messages</code> táblába megy (SQL a zipben: <code>supabase/schema_extra.sql</code>).</p>
+        </form>
+      </div>
+    </section>
+
+    <aside class="space-y-6">
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-bold">Szakember</h3>
+        <div class="mt-2 text-sm text-gray-700" id="pro"></div>
+        <a id="profileLink" href="#" class="mt-4 inline-flex w-full justify-center px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 font-semibold">👤 Profil megnyitása</a>
+      </div>
+
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-bold">Tipp</h3>
+        <p class="text-sm text-gray-600 mt-2">Ha te vagy a szakember, jelentkezz be, és itt látod a bejövő üzeneteket.</p>
+        <a href="index.html#auth" class="mt-4 inline-flex w-full justify-center bg-gray-900 text-white font-semibold py-2 rounded-lg hover:bg-black">Bejelentkezés</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+  const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
+
+  const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const $ = (id) => document.getElementById(id);
+  const qs = new URLSearchParams(location.search);
+  const uid = (qs.get("uid") || "").trim();
+
+  function showAlert(msg, type = "info"){
+    const el = $("alert");
+    el.className = "mb-6 p-4 rounded border";
+    if (type === "error") el.classList.add("bg-red-50","border-red-200","text-red-800");
+    else if (type === "ok") el.classList.add("bg-green-50","border-green-200","text-green-800");
+    else el.classList.add("bg-blue-50","border-blue-200","text-blue-800");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
+
+  function getVisitorId(){
+    const key = "szakipiac_visitor_id";
+    let vid = localStorage.getItem(key);
+    if (!vid){
+      vid = (crypto?.randomUUID?.() || (Date.now() + "_" + Math.random().toString(16).slice(2)));
+      localStorage.setItem(key, vid);
+    }
+    return vid;
+  }
+
+  if (!uid){
+    showAlert("Hiányzik a szakember azonosító (uid). A hirdetés kártyáján a ‘Üzenet’ gombbal nyisd meg.", "error");
+  }
+
+  const profileUrl = `szakember.html?uid=${encodeURIComponent(uid)}`;
+  $("profileLink").href = profileUrl;
+  $("back").href = profileUrl;
+
+  // Szakember alap infó (hirdetésből)
+  async function loadPro(){
+    try{
+      const { data, error } = await supaClient
+        .from("hirdetesek")
+        .select("varos,kategoria,email,telefonszam,weboldal,cim,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      const a = data?.[0];
+      const lines = [];
+      if (a?.varos) lines.push(`<div><span class="text-gray-500">Város:</span> <span class="font-semibold">${a.varos}</span></div>`);
+      if (a?.telefonszam) lines.push(`<div><span class="text-gray-500">Telefon:</span> <a class="font-semibold text-indigo-700 hover:underline" href="tel:${a.telefonszam}">${a.telefonszam}</a></div>`);
+      if (a?.email) lines.push(`<div><span class="text-gray-500">Email:</span> <a class="font-semibold text-indigo-700 hover:underline" href="mailto:${a.email}">${a.email}</a></div>`);
+      if (a?.weboldal) lines.push(`<div><span class="text-gray-500">Web:</span> <a class="font-semibold text-indigo-700 hover:underline" target="_blank" rel="noopener" href="${a.weboldal}">${a.weboldal}</a></div>`);
+      $("pro").innerHTML = lines.length ? lines.join("") : `<div class="text-gray-500">Nincs adat.</div>`;
+    } catch (e){
+      console.error(e);
+      $("pro").innerHTML = `<div class="text-gray-500">Nem tudtam betölteni.</div>`;
+    }
+  }
+
+  async function renderAuth(){
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session){
+      $("auth").innerHTML = `<a href="index.html#auth" class="font-semibold text-indigo-700 hover:underline">Bejelentkezés</a>`;
+    } else {
+      $("auth").innerHTML = `<span class="text-gray-600">${session.user.email}</span> <button id="logout" class="ml-3 px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-50">Kilépés</button>`;
+      $("logout").addEventListener("click", async ()=>{
+        await supaClient.auth.signOut();
+        location.reload();
+      });
+    }
+    return session;
+  }
+
+  function fmtDate(iso){
+    try{ return new Date(iso).toLocaleString("hu-HU"); } catch { return ""; }
+  }
+
+  async function loadInbox(){
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session) return;
+
+    try{
+      const { data, error } = await supaClient
+        .from("szakember_messages")
+        .select("id,from_email,from_visitor_id,message,created_at,is_read")
+        .eq("to_user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      const list = data || [];
+      $("inbox").innerHTML = list.length ? list.map(m => {
+        const who = (m.from_email || "Névtelen") + (m.from_visitor_id ? ` • ${m.from_visitor_id.slice(0,8)}…` : "");
+        const badge = m.is_read ? "" : `<span class=\"text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-800\">ÚJ</span>`;
+        return `
+          <div class="border border-gray-200 rounded-xl p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold">${who}</div>
+              <div class="flex items-center gap-2">
+                ${badge}
+                <div class="text-xs text-gray-500">${fmtDate(m.created_at)}</div>
+              </div>
+            </div>
+            <div class="mt-2 text-sm text-gray-800 whitespace-pre-line">${m.message || ""}</div>
+          </div>
+        `;
+      }).join("") : `<div class="text-gray-500">Nincs üzenet.</div>`;
+
+    } catch (e){
+      console.error(e);
+      $("inbox").innerHTML = `<div class="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded">Az inboxhoz még hiányzik a Supabase tábla/policy. A zipben van SQL: <code>supabase/schema_extra.sql</code></div>`;
+    }
+  }
+
+  $("sendForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const fromEmail = ($("fromEmail").value || "").trim();
+    const message = ($("msg").value || "").trim();
+    if (!message){
+      showAlert("Írj üzenetet.", "error");
+      return;
+    }
+
+    try{
+      const payload = {
+        to_user_id: uid,
+        from_visitor_id: getVisitorId(),
+        from_email: fromEmail || null,
+        message,
+      };
+
+      const { error } = await supaClient.from("szakember_messages").insert(payload);
+      if (error) throw error;
+
+      $("msg").value = "";
+      showAlert("Elküldve! A szakember meg fogja kapni az üzenetet.", "ok");
+
+    } catch (err){
+      console.error(err);
+      showAlert("Nem tudtam elküldeni. Valószínűleg hiányzik a Supabase tábla/policy. Nézd meg: supabase/schema_extra.sql", "error");
+    }
+  });
+
+  // Oldal logika
+  await loadPro();
+  const session = await renderAuth();
+
+  // Ha a belépett user maga a szakember (uid == auth.uid), inbox
+  if (session && session.user && session.user.id === uid){
+    $("subtitle").textContent = "Be vagy jelentkezve, látod a bejövő üzeneteket.";
+    $("inboxBox").classList.remove("hidden");
+    $("sendBox").classList.add("hidden");
+    await loadInbox();
+    $("refresh").addEventListener("click", loadInbox);
+  } else {
+    $("subtitle").textContent = "Üzenet küldése a szakembernek.";
+    $("sendBox").classList.remove("hidden");
+    $("inboxBox").classList.add("hidden");
+  }
+
+  // Session változás figyelés
+  supaClient.auth.onAuthStateChange(() => location.reload());
+</script>
+</body>
+</html>

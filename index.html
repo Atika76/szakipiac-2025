@@ -562,6 +562,8 @@
                   <a href="mailto:${h.email || ""}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
                   ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
                   ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
+                  ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
+                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-white text-gray-800 px-3 py-1.5 rounded text-sm flex items-center gap-1 border border-gray-200 hover:bg-gray-50">💬 Üzenet</a>` : ""}
                 </div>
                 ${delBtn}
               </div>
