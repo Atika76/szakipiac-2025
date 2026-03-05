@@ -563,7 +563,7 @@
                   ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
                   ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
                   ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
-                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-white text-gray-800 px-3 py-1.5 rounded text-sm flex items-center gap-1 border border-gray-200 hover:bg-gray-50">💬 Üzenet</a>` : ""}
+                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
                 </div>
                 ${delBtn}
               </div>
@@ -859,24 +859,44 @@
         const lejarat = new Date();
         lejarat.setDate(lejarat.getDate() + days);
 
-        const { error } = await supaClient.from('hirdetesek').insert({
-          user_id: session.user.id,
-          email: session.user.email,
-          cim: cim,
-          leiras: document.getElementById("leiras").value,
-          varos: document.getElementById("varos").value,
-          iranyitoszam: document.getElementById("iranyitoszam").value,
-          kategoria: document.getElementById("kategoria").value,
-          telefonszam: document.getElementById("telefonszam").value,
-          weboldal: document.getElementById("weboldal").value,
-          video_url: document.getElementById("video").value,
-          ar: document.getElementById("ar").value || null,
-          csomag: csomag,
-          kep_url_tomb: imgUrls,
-          lejárati_datum: lejarat.toISOString()
-        });
+        const { data: inserted, error } = await supaClient
+          .from('hirdetesek')
+          .insert({
+            user_id: session.user.id,
+            email: session.user.email,
+            cim: cim,
+            leiras: document.getElementById("leiras").value,
+            varos: document.getElementById("varos").value,
+            iranyitoszam: document.getElementById("iranyitoszam").value,
+            kategoria: document.getElementById("kategoria").value,
+            telefonszam: document.getElementById("telefonszam").value,
+            weboldal: document.getElementById("weboldal").value,
+            video_url: document.getElementById("video").value,
+            ar: document.getElementById("ar").value || null,
+            csomag: csomag,
+            kep_url_tomb: imgUrls,
+            lejárati_datum: lejarat.toISOString()
+          })
+          .select('id, cim, varos, csomag, email')
+          .single();
 
         if (error) throw error;
+
+        // ✅ Admin e-mail értesítés (Edge Function) – ha nem megy, a hirdetés akkor is feladva marad
+        try{
+          await supaClient.functions.invoke("notify-new-ad", {
+            body: {
+              adId: inserted?.id ?? null,
+              title: inserted?.cim ?? cim,
+              city: inserted?.varos ?? document.getElementById("varos").value,
+              csomag: inserted?.csomag ?? csomag,
+              email: inserted?.email ?? session.user.email
+            }
+          });
+        }catch(e){
+          console.warn("notify-new-ad hiba:", e);
+        }
+
 
         // ✅ feltöltés event
         trackEvent("ad_created", { csomag, images: imgUrls.length });

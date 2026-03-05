@@ -376,6 +376,19 @@
           return;
         }
 
+        // ✅ Admin e-mail értesítés (Edge Function) – ha valamiért nem megy, az üzenet akkor is elküldve marad
+        try{
+          await supabase.functions.invoke("notify-message", {
+            body: {
+              targetUid: targetUid,
+              message: text,
+              fromEmail: me?.email ?? null
+            }
+          });
+        }catch(e){
+          console.warn("notify-message hiba:", e);
+        }
+
         txtMessage.value = "";
         smallStatus.textContent = "Elküldve.";
         await loadConversation();
