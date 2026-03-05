@@ -492,6 +492,7 @@
         e.preventDefault();
         showToast("Köszönjük, üzenetét fogadtuk!", "info");
         e.target.reset();
+        setTimeout(() => fillRatingsForCards(list), 0);
       });
     }
 
@@ -515,7 +516,51 @@
       }
     }
 
-    function renderAds(list) {
+    
+    // =========================
+    // ⭐ CSILLAG ÉRTÉKELÉS KIJELZÉS A KÁRTYÁKON
+    // =========================
+    async function fillRatingsForCards(list){
+      try{
+        const uids = Array.from(new Set((list || []).map(x => x.user_id).filter(Boolean)));
+        if (!uids.length) return;
+
+        // Lekérjük a csillagokat (max 5000 rekord) és átlagot számolunk kliensen
+        const { data, error } = await supaClient
+          .from("szakember_ratings")
+          .select("user_id,stars")
+          .in("user_id", uids)
+          .limit(5000);
+
+        if (error) throw error;
+
+        const sums = {};
+        const counts = {};
+        (data || []).forEach(r => {
+          const uid = r.user_id;
+          const s = Number(r.stars || 0);
+          if (!uid || !s) return;
+          sums[uid] = (sums[uid] || 0) + s;
+          counts[uid] = (counts[uid] || 0) + 1;
+        });
+
+        // Frissítjük a DOM-ot
+        uids.forEach(uid => {
+          const elList = document.querySelectorAll(`[data-rating-for="${uid}"]`);
+          if (!elList || !elList.length) return;
+
+          const c = counts[uid] || 0;
+          const avg = c ? (sums[uid] / c) : 0;
+          const txt = c ? `⭐ ${avg.toFixed(1)} (${c})` : `⭐ –`;
+          elList.forEach(el => el.textContent = txt);
+        });
+      }catch(e){
+        // ha nincs tábla/policy, nem állítjuk le az oldalt
+        console.warn("fillRatingsForCards hiba", e);
+      }
+    }
+
+function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
       if (!listEl) return;
       if (!list || !list.length) { listEl.innerHTML = "<p class='text-center text-gray-500'>Nincs találat.</p>"; return; }
@@ -562,7 +607,7 @@
                   <a href="mailto:${h.email || ""}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
                   ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
                   ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
-                  ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
+                  ${h.user_id ? `<div class="text-sm font-bold text-amber-600 mr-2" data-rating-for="${h.user_id}">⭐ –</div><a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
                   ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
                 </div>
                 ${delBtn}
@@ -570,6 +615,7 @@
             </div>
           `;
         }).join("");
+        setTimeout(() => fillRatingsForCards(list), 0);
       });
     }
 
@@ -938,6 +984,7 @@
           window.location.hash = "#home";
           window.location.reload();
         }
+        setTimeout(() => fillRatingsForCards(list), 0);
       });
     }
 
@@ -1057,10 +1104,15 @@
         ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline">Üzeneteim</a>`
         : "";
 
+      const profileLink = session
+        ? `<a href="profilom.html" class="text-sm font-bold text-indigo-700 hover:underline">Profilom</a>`
+        : "";
+
       const authHTML = session
         ? `<div class="flex items-center gap-3 justify-center">
              <span class="text-sm font-bold truncate max-w-[180px]">${session.user.email}</span>
              ${inboxLink}
+             ${profileLink}
              ${adminLink}
              <button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline ml-2">Kilépés</button>
            </div>`
@@ -1099,6 +1151,7 @@
         page: window.location.hash || "#home",
         path: window.location.pathname,
         user_agent: navigator.userAgent
+        setTimeout(() => fillRatingsForCards(list), 0);
       });
     }
 
