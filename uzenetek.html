@@ -64,7 +64,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left: Messages -->
+      <!-- Left: Inbox + Messages -->
       <section class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
           <div>
@@ -73,9 +73,14 @@
               Itt tudsz üzenni a szakembernek.
             </p>
           </div>
-          <button id="btnRefresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">
-            Frissítés
-          </button>
+          <div class="flex items-center gap-2">
+            <a id="btnInbox" href="./uzenetek.html" class="hidden px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">
+              Beérkező
+            </a>
+            <button id="btnRefresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">
+              Frissítés
+            </button>
+          </div>
         </div>
 
         <div class="p-6">
@@ -109,11 +114,20 @@
             </div>
           </div>
 
-          <!-- Main messaging UI -->
+          <!-- Inbox + Main messaging UI -->
           <div id="panelMain" class="hidden space-y-5">
+            <!-- Inbox mode (when no uid in URL) -->
+            <div id="inboxWrap" class="hidden rounded-2xl border border-slate-200 bg-white overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div class="text-sm font-medium text-slate-700">Beérkező üzenetek</div>
+                <div class="text-xs text-slate-500" id="inboxHint"></div>
+              </div>
+              <div id="threadsList" class="divide-y divide-slate-100"></div>
+            </div>
+
             <div id="messagesBox" class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
               <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div class="text-sm font-medium text-slate-700">Beszélgetés</div>
+                <div class="text-sm font-medium text-slate-700" id="chatTitle">Beszélgetés</div>
                 <div class="text-xs text-slate-500" id="msgHint"></div>
               </div>
               <div id="messagesList" class="p-4 space-y-3 min-h-[180px]">
@@ -190,9 +204,15 @@
     const panelMain = $("panelMain");
 
     const btnLogout = $("btnLogout");
+    const btnInbox = $("btnInbox");
     const btnRefresh = $("btnRefresh");
     const btnSend = $("btnSend");
     const txtMessage = $("txtMessage");
+
+    const inboxWrap = $("inboxWrap");
+    const threadsList = $("threadsList");
+    const inboxHint = $("inboxHint");
+    const chatTitle = $("chatTitle");
 
     const messagesList = $("messagesList");
     const msgHint = $("msgHint");
@@ -291,16 +311,151 @@
         const mine = (row.from_visitor_id === me?.id);
         const bubble = document.createElement("div");
         bubble.className = "flex " + (mine ? "justify-end" : "justify-start");
+        const canDelete = !!me; // a policy dönti el a tényleges jogot
         bubble.innerHTML = `
           <div class="max-w-[85%] rounded-2xl px-4 py-2.5 border ${mine ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-900 border-slate-200"}">
-            <div class="text-sm leading-relaxed">${escapeHtml(row.message || "")}</div>
-            <div class="mt-1 text-[11px] ${mine ? "text-white/70" : "text-slate-500"}">${escapeHtml(fmtTime(row.created_at))}</div>
+            <div class="flex items-start gap-3">
+              <div class="flex-1">
+                <div class="text-sm leading-relaxed">${escapeHtml(row.message || "")}</div>
+                <div class="mt-1 text-[11px] ${mine ? "text-white/70" : "text-slate-500"}">${escapeHtml(fmtTime(row.created_at))}</div>
+              </div>
+              ${canDelete ? `<button data-del="${escapeHtml(String(row.id))}" class="shrink-0 text-[12px] ${mine ? "text-white/70 hover:text-white" : "text-slate-400 hover:text-slate-700"}" title="Törlés">🗑️</button>` : ""}
+            </div>
           </div>
         `;
         messagesList.appendChild(bubble);
       }
+
+      messagesList.querySelectorAll("button[data-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-del");
+          if (!id) return;
+          if (!confirm("Biztos törlöd ezt az üzenetet?")) return;
+          try{
+            const { error } = await supabase.from("szakember_messages").delete().eq("id", id);
+            if (error){
+              showError("Nem sikerült törölni (RLS/policy?).");
+              return;
+            }
+            await loadConversation();
+          }catch{
+            showError("Hálózati hiba törlésnél.");
+          }
+        });
+      });
       // Scroll aljára
       messagesList.scrollTop = messagesList.scrollHeight;
+    }
+
+    function threadKey(otherId){
+      return String(otherId || "");
+    }
+
+    function renderThreads(threads){
+      threadsList.innerHTML = "";
+      if (!threads || threads.length === 0){
+        threadsList.innerHTML = `<div class="p-4 text-slate-500 text-sm">Még nincs beérkező üzeneted.</div>`;
+        return;
+      }
+
+      for (const t of threads){
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center justify-between gap-3";
+        row.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(t.label)}</div>
+            <div class="text-xs text-slate-500 truncate">${escapeHtml(t.last || "")}</div>
+          </div>
+          <div class="shrink-0 flex items-center gap-2">
+            ${t.unread > 0 ? `<span class="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-rose-600 text-white text-xs font-bold">${t.unread}</span>` : ""}
+            <span class="text-xs text-slate-400">${escapeHtml(fmtTime(t.ts))}</span>
+          </div>
+        `;
+        row.addEventListener("click", async () => {
+          targetUid = t.otherId;
+          badgeTarget.classList.remove("hidden");
+          targetUidEl.textContent = targetUid;
+          inboxWrap.classList.add("hidden");
+          btnInbox.classList.remove("hidden");
+          await markThreadRead(t.otherId);
+          await loadConversation();
+        });
+        threadsList.appendChild(row);
+      }
+    }
+
+    async function markThreadRead(otherId){
+      try{
+        await supabase
+          .from("szakember_messages")
+          .update({ is_read: true })
+          .eq("to_user_id", me.id)
+          .eq("from_visitor_id", otherId)
+          .eq("is_read", false);
+      }catch(e){
+        console.warn("markThreadRead hiba", e);
+      }
+    }
+
+    async function loadInbox(){
+      clearError();
+      if (!session || !me){
+        showOnly(panelNeedLogin);
+        return;
+      }
+
+      showOnly(panelMain);
+      inboxWrap.classList.remove("hidden");
+      btnInbox.classList.add("hidden");
+      badgeTarget.classList.add("hidden");
+      subtitle.textContent = "Itt látod a beérkező üzeneteket. Kattints egy beszélgetésre.";
+      chatTitle.textContent = "Beszélgetés";
+      messagesList.innerHTML = `<div class="text-slate-500 text-sm">Válassz fentebb egy beszélgetést.</div>`;
+      inboxHint.textContent = "Kattints egy beszélgetésre a megnyitáshoz.";
+
+      try{
+        const { data, error } = await supabase
+          .from("szakember_messages")
+          .select("id,to_user_id,from_visitor_id,from_email,message,created_at,is_read")
+          .or(`to_user_id.eq.${me.id},from_visitor_id.eq.${me.id}`)
+          .order("created_at", { ascending: false })
+          .limit(300);
+
+        if (error){
+          showError("Nem tudtam lekérni az inboxot. (RLS/policy?)");
+          renderThreads([]);
+          return;
+        }
+
+        const map = new Map();
+        for (const r of (data || [])){
+          const otherId = (r.from_visitor_id === me.id) ? r.to_user_id : r.from_visitor_id;
+          if (!otherId) continue;
+          const key = threadKey(otherId);
+          const existing = map.get(key);
+          const unreadInc = (r.to_user_id === me.id && r.from_visitor_id !== me.id && r.is_read === false) ? 1 : 0;
+          const label = (r.from_visitor_id === otherId) ? (r.from_email || otherId) : (existing?.label || otherId);
+
+          if (!existing){
+            map.set(key, {
+              otherId,
+              label,
+              last: r.message || "",
+              ts: r.created_at,
+              unread: unreadInc
+            });
+          } else {
+            existing.unread += unreadInc;
+            if (!existing.label || existing.label === existing.otherId) existing.label = label;
+          }
+        }
+
+        renderThreads(Array.from(map.values()));
+      }catch{
+        showError("Hálózati hiba az inbox betöltésénél.");
+        renderThreads([]);
+      }
     }
 
     async function loadConversation(){
@@ -319,15 +474,16 @@
       badgeTarget.classList.remove("hidden");
       targetUidEl.textContent = targetUid;
 
-      subtitle.textContent = "Itt tudsz üzenni a szakembernek.";
-      msgHint.textContent = "Frissítéshez kattints a gombra.";
+      subtitle.textContent = "Beszélgetés";
+      msgHint.textContent = "Tipp: Ctrl+Enter = küldés.";
+      chatTitle.textContent = "Beszélgetés";
 
       // Beszélgetés: (én -> szakember) vagy (szakember -> én)
       // Ehhez az kell, hogy a szakember válasznál a from_visitor_id = saját user.id, to_user_id = a látogató user.id legyen.
       try{
         const { data, error } = await supabase
           .from("szakember_messages")
-          .select("id, to_user_id, from_visitor_id, message, created_at")
+          .select("id, to_user_id, from_visitor_id, message, created_at, is_read")
           .or(
             `and(from_visitor_id.eq.${me.id},to_user_id.eq.${targetUid}),and(from_visitor_id.eq.${targetUid},to_user_id.eq.${me.id})`
           )
@@ -341,6 +497,10 @@
         }
 
         renderMessages(data || []);
+
+        if (me?.id && targetUid){
+          await markThreadRead(targetUid);
+        }
       }catch(e){
         showError("Hálózati hiba az üzenetek betöltésénél.");
         messagesList.innerHTML = `<div class="text-rose-700 text-sm">Hálózati hiba.</div>`;
@@ -425,12 +585,16 @@
         btnLogout.classList.add("hidden");
       }
 
+      if (me) btnInbox.classList.remove("hidden");
+
       if (!me){
         showOnly(panelNeedLogin);
       } else if (!targetUid){
-        showOnly(panelNoTarget);
+        await loadInbox();
       } else {
         showOnly(panelMain);
+        inboxWrap.classList.add("hidden");
+        btnInbox.classList.remove("hidden");
         await loadConversation();
       }
 
@@ -447,19 +611,27 @@
           btnLogout.classList.add("hidden");
         }
 
+        if (me) btnInbox.classList.remove("hidden");
+        else btnInbox.classList.add("hidden");
+
         if (!me){
           showOnly(panelNeedLogin);
-        } else if (!targetUid){
-          showOnly(panelNoTarget);
+        } else if (!getTargetFromUrl()){
+          targetUid = null;
+          await loadInbox();
         } else {
+          targetUid = getTargetFromUrl();
           showOnly(panelMain);
+          inboxWrap.classList.add("hidden");
+          btnInbox.classList.remove("hidden");
           await loadConversation();
         }
       });
 
       // Gombok
       btnRefresh.addEventListener("click", async () => {
-        await loadConversation();
+        if (!getTargetFromUrl()) await loadInbox();
+        else await loadConversation();
       });
 
       btnSend.addEventListener("click", async () => {

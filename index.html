@@ -1053,9 +1053,14 @@
         ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>'
         : '';
 
+      const inboxLink = session
+        ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline">Üzeneteim</a>`
+        : "";
+
       const authHTML = session
         ? `<div class="flex items-center gap-3 justify-center">
              <span class="text-sm font-bold truncate max-w-[180px]">${session.user.email}</span>
+             ${inboxLink}
              ${adminLink}
              <button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline ml-2">Kilépés</button>
            </div>`
