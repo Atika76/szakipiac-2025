@@ -1,350 +1,378 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Üzenetek – SzakiPiac</title>
-  <link rel="icon" type="image/png" href="logo.png" />
+
+  <!-- Tailwind (ugyanaz a stílusvilág, mint az indexen) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7fafc}
+    html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    /* Villogás ellen: az app csak akkor jelenik meg, ha kész az init */
+    .app-hidden { visibility: hidden; }
   </style>
 </head>
-<body class="text-gray-900">
 
-<!-- HEADER -->
-<header class="bg-white/90 backdrop-blur border-b sticky top-0 z-40">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-2 font-bold text-lg">
-      <img src="szakipiac-logo-promo.png" class="h-9 w-auto" alt="SzakiPiac" />
-      <span>SzakiPiac</span>
-      <span class="text-gray-400 font-medium">/ Üzenetek</span>
-    </a>
+<body class="bg-slate-50 text-slate-900">
+  <!-- Fejléc -->
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-xl font-bold tracking-tight">SzakiPiac</div>
+        <span class="text-slate-300">/</span>
+        <div class="text-slate-600 font-medium">Üzenetek</div>
+      </div>
 
-    <div class="flex items-center gap-2">
-      <a href="index.html" class="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-semibold">
-        ← Vissza a főoldalra
-      </a>
-      <button id="btnLogout" class="hidden px-3 py-2 rounded-lg bg-gray-900 hover:bg-black text-white text-sm font-semibold">
-        Kijelentkezés
-      </button>
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-medium">
+          ← Vissza a főoldalra
+        </a>
+        <button id="btnLogout" class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-medium">
+          Kijelentkezés
+        </button>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <!-- TOP STATUS (csak szép, nem technikai) -->
-  <div id="topNote" class="hidden mb-6 rounded-xl border p-4"></div>
+  <!-- App -->
+  <main id="app" class="app-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- állapot sáv -->
+      <div class="mb-6 flex flex-wrap items-center gap-3">
+        <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-sm">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+          Betöltés…
+        </div>
+        <div id="meLine" class="text-sm text-slate-600"></div>
+      </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- BAL: FŐ KÁRTYA -->
-    <section class="lg:col-span-2 space-y-6">
+      <!-- Fő kártya -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Bal: beszélgetés -->
+        <section class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-6 border-b border-slate-200">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-bold">Üzenetek</h1>
+                <p class="text-slate-600 mt-1">
+                  Itt tudsz üzenni a szakembernek. (A címzett a linkből jön.)
+                </p>
+              </div>
+              <button id="btnRefresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-medium">
+                Frissítés
+              </button>
+            </div>
 
-      <!-- Üdv / cím -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h1 class="text-2xl font-extrabold tracking-tight">💬 Üzenetek</h1>
-            <p id="subtitle" class="text-gray-600 mt-2">
-              Betöltés…
+            <div id="targetLine" class="mt-4 text-sm text-slate-600"></div>
+            <div id="errorBox" class="mt-4 hidden rounded-xl border border-red-200 bg-red-50 text-red-800 px-4 py-3 text-sm"></div>
+          </div>
+
+          <!-- üzenetlista -->
+          <div class="p-6">
+            <div id="messagesEmpty" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-slate-600">
+              Még nincs üzenet.
+            </div>
+
+            <div id="messages" class="hidden space-y-3"></div>
+
+            <!-- írás -->
+            <div class="mt-6 pt-6 border-t border-slate-200">
+              <label class="block text-sm font-semibold text-slate-800 mb-2">Üzenet</label>
+              <textarea id="txtMessage" rows="4" class="w-full rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 px-4 py-3" placeholder="Írd ide az üzenetet…"></textarea>
+
+              <div class="mt-3 flex items-center justify-between gap-3">
+                <div class="text-xs text-slate-500" id="hintLine"></div>
+                <button id="btnSend" class="px-5 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-semibold">
+                  Küldés
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Jobb: rövid info (nem technikai) -->
+        <aside class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-6 border-b border-slate-200">
+            <h2 class="text-lg font-bold">Kapcsolat</h2>
+            <p class="text-slate-600 mt-1 text-sm">
+              Üzenetküldés gyorsan, bejelentkezés után.
             </p>
           </div>
-          <div id="badgeLogin" class="hidden px-3 py-1.5 rounded-full text-sm font-semibold border"></div>
-        </div>
-      </div>
-
-      <!-- INBOX (csak szakembernek, ha ő van belépve és a saját UID-jával nyitja) -->
-      <div id="inboxCard" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h2 class="text-xl font-bold">Bejövő üzenetek</h2>
-          <div class="flex items-center gap-2">
-            <button id="btnRefresh" class="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-semibold">
-              Frissítés
-            </button>
-          </div>
-        </div>
-
-        <div id="inboxList" class="mt-4 space-y-3"></div>
-      </div>
-
-      <!-- SEND (hirdetőnek / látogatónak, ha uid param van és nem ő a szakember) -->
-      <div id="sendCard" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 class="text-xl font-bold">Üzenet küldése</h2>
-        <p class="text-gray-600 text-sm mt-2">
-          Írd meg röviden, miben tud segíteni a szakember. (A címzettet automatikusan tudjuk.)
-        </p>
-
-        <form id="sendForm" class="mt-5 space-y-3">
-          <textarea id="message" rows="6"
-            class="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
-            placeholder="Írd ide az üzenetet…"
-            required></textarea>
-
-          <div class="flex items-center justify-between gap-3 flex-wrap">
-            <p id="smallHint" class="text-xs text-gray-500"></p>
-            <button class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold">
-              Küldés
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- HA HIÁNYZIK A UID és nem szakember inbox -->
-      <div id="emptyCard" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 class="text-xl font-bold">Nincs megadva címzett</h2>
-        <p class="text-gray-600 mt-2">
-          Ezt az oldalt a hirdetésből nyisd meg az “Üzenet” gombbal.
-        </p>
-        <div class="mt-4">
-          <a href="index.html" class="inline-flex px-4 py-2 rounded-xl bg-gray-900 hover:bg-black text-white font-semibold">
-            Vissza a főoldalra
-          </a>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- JOBB: INFO KÁRTYA (szép, de nem magyaráz technikát) -->
-    <aside class="space-y-6">
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 class="text-lg font-bold">Gyors tippek</h3>
-        <ul class="mt-3 text-sm text-gray-700 space-y-2 list-disc pl-5">
-          <li>Írj konkrétan: mit szeretnél, mikor, hol.</li>
-          <li>Ha árat kérsz, írd le a méreteket és a helyszínt.</li>
-          <li>A szakember a bejövő üzeneteknél fogja látni.</li>
-        </ul>
-      </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 class="text-lg font-bold">Kapcsolat</h3>
-        <p class="mt-2 text-sm text-gray-600">
-          Ha gond van az üzenetekkel, frissíts rá az oldalra (Ctrl+F5), vagy próbáld meg másik böngészőben.
-        </p>
-      </div>
-    </aside>
-  </div>
-</main>
-
-<script type="module">
-  // ====== SUPABASE (EZT KELL JÓL BEÁLLÍTANI) ======
-  // Project URL: Supabase -> Settings -> API -> Project URL
-  const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-
-  // Publishable/anon/public kulcs: Supabase -> Settings -> API Keys -> "Publishable key"
-  // FIGYELEM: NE a secret kulcsot!
-  const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
-
-  const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  // ====== HELPERS ======
-  const $ = (id) => document.getElementById(id);
-  const qs = new URLSearchParams(location.search);
-  const uid = (qs.get("uid") || "").trim(); // címzett szakember user_id (UUID)
-
-  function note(msg, type="info"){
-    const el = $("topNote");
-    el.className = "mb-6 rounded-xl border p-4";
-    if (type === "error") el.classList.add("bg-red-50","border-red-200","text-red-800");
-    else if (type === "ok") el.classList.add("bg-green-50","border-green-200","text-green-800");
-    else el.classList.add("bg-blue-50","border-blue-200","text-blue-800");
-    el.textContent = msg;
-    el.classList.remove("hidden");
-  }
-
-  function escapeHtml(s){
-    return (s||"").replace(/[&<>"']/g, (m)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
-
-  function fmt(iso){
-    try { return new Date(iso).toLocaleString("hu-HU"); } catch { return ""; }
-  }
-
-  function getVisitorId(){
-    const key = "szakipiac_visitor_id";
-    let v = localStorage.getItem(key);
-    if(!v){
-      v = (crypto?.randomUUID?.() || (Date.now()+"_"+Math.random().toString(16).slice(2)));
-      localStorage.setItem(key, v);
-    }
-    return v;
-  }
-
-  async function healthCheck(){
-    // Nem mutatunk technikai részleteket, csak ha tényleg nem elérhető.
-    try{
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
-        headers: { "apikey": SUPABASE_KEY }
-      });
-      return res.ok || res.status === 401 || res.status === 400; // az is jó jel: elérhető a domain
-    }catch(e){
-      return false;
-    }
-  }
-
-  // ====== UI: AUTH ======
-  async function getSession(){
-    const { data: { session } } = await supa.auth.getSession();
-    return session || null;
-  }
-
-  async function renderTop(session){
-    const badge = $("badgeLogin");
-    const btnLogout = $("btnLogout");
-
-    if(session){
-      badge.textContent = "Bejelentkezve";
-      badge.className = "px-3 py-1.5 rounded-full text-sm font-semibold border bg-green-50 border-green-200 text-green-800";
-      badge.classList.remove("hidden");
-
-      btnLogout.classList.remove("hidden");
-      btnLogout.onclick = async ()=>{
-        await supa.auth.signOut();
-        location.href = "index.html";
-      };
-    } else {
-      badge.textContent = "Nincs belépve";
-      badge.className = "px-3 py-1.5 rounded-full text-sm font-semibold border bg-gray-50 border-gray-200 text-gray-700";
-      badge.classList.remove("hidden");
-      btnLogout.classList.add("hidden");
-    }
-  }
-
-  // ====== INBOX (szakember) ======
-  async function loadInbox(session){
-    const box = $("inboxList");
-    box.innerHTML = `<div class="text-gray-500">Betöltés…</div>`;
-
-    try{
-      const { data, error } = await supa
-        .from("szakember_messages")
-        .select("id,from_email,from_visitor_id,message,created_at,is_read")
-        .eq("to_user_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      const list = data || [];
-      if(!list.length){
-        box.innerHTML = `
-          <div class="rounded-xl border border-gray-200 p-4 text-gray-600">
-            Még nincs üzenet.
-          </div>
-        `;
-        return;
-      }
-
-      box.innerHTML = list.map(m=>{
-        const who = (m.from_email ? escapeHtml(m.from_email) : "Névtelen");
-        const stamp = fmt(m.created_at);
-        const unread = m.is_read ? "" : `<span class="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-800">ÚJ</span>`;
-        return `
-          <div class="rounded-2xl border border-gray-200 p-4">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-              <div class="text-sm font-semibold">${who}${unread}</div>
-              <div class="text-xs text-gray-500">${escapeHtml(stamp)}</div>
+          <div class="p-6">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+              <div class="font-semibold mb-1">Tipp</div>
+              Ha be vagy jelentkezve a SzakiPiacon, itt is automatikusan be leszel.
             </div>
-            <div class="mt-2 text-sm text-gray-800 whitespace-pre-line">${escapeHtml(m.message||"")}</div>
-          </div>
-        `;
-      }).join("");
 
-    } catch(e){
-      // Nem ijesztgetjük a felhasználót policy szöveggel
-      box.innerHTML = `
-        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm">
-          Most nem tudtam betölteni az üzeneteket. Kérlek frissíts rá (Ctrl+F5), és próbáld újra.
+            <div class="mt-4">
+              <a href="index.html" class="w-full inline-flex justify-center px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-medium">
+                Profilok / Főoldal megnyitása
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // =========================================================
+    // BEÁLLÍTÁSOK – EZEK A LÉNYEGESEK
+    // =========================================================
+    const SUPABASE_URL = "https://tzmcofiuqeanftviquwp.supabase.co";
+
+    // IDE AZ ANON/PUBLISHABLE KULCSOD (sb_publishable_... vagy eyJ... anon JWT)
+    // (A "secret" kulcsot SOHA ne tedd ide!)
+    const SUPABASE_KEY = "IDE_IRD_BE_A_PUBLISHABLE_ANON_KULCSOD";
+
+    // Táblanév (nálad ez van)
+    const TABLE = "szakember_messages";
+
+    // Oszlopnevek (a képed alapján)
+    const COL_TO_USER_ID = "to_user_id";
+    const COL_FROM_USER_ID = "from_user_id";
+    const COL_FROM_EMAIL = "from_email";
+    const COL_MESSAGE = "message";
+    const COL_CREATED_AT = "created_at";
+
+    // =========================================================
+    // SEGÉDEK
+    // =========================================================
+    const $ = (id) => document.getElementById(id);
+
+    function qs(name){
+      const u = new URL(location.href);
+      return u.searchParams.get(name);
+    }
+
+    function setStatus(text, ok=null){
+      const badge = $("statusBadge");
+      const dot = badge.querySelector("span");
+      badge.lastChild.textContent = " " + text;
+
+      dot.className = "inline-block w-2.5 h-2.5 rounded-full " + (ok === null ? "bg-slate-400" : (ok ? "bg-emerald-500" : "bg-red-500"));
+      badge.className = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm " + (ok === null
+        ? "bg-slate-100 border-slate-200 text-slate-700"
+        : ok
+          ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+          : "bg-red-50 border-red-200 text-red-800"
+      );
+    }
+
+    function showError(msg){
+      const box = $("errorBox");
+      box.textContent = msg;
+      box.classList.remove("hidden");
+    }
+
+    function clearError(){
+      $("errorBox").classList.add("hidden");
+      $("errorBox").textContent = "";
+    }
+
+    function safe(text){
+      return (text || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function messageBubble({ mine, text, time }){
+      const align = mine ? "justify-end" : "justify-start";
+      const bubble = mine ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900 border border-slate-200";
+      const meta = mine ? "text-slate-200" : "text-slate-500";
+      return `
+        <div class="flex ${align}">
+          <div class="max-w-[85%] rounded-2xl px-4 py-3 ${bubble}">
+            <div class="whitespace-pre-wrap break-words">${safe(text)}</div>
+            <div class="mt-1 text-xs ${meta}">${safe(time)}</div>
+          </div>
         </div>
       `;
     }
-  }
 
-  // ====== SEND (hirdető / látogató) ======
-  async function sendMessage(session){
-    const text = ($("message").value || "").trim();
-    if(!text) return;
-
-    try{
-      const payload = {
-        to_user_id: uid,
-        from_visitor_id: getVisitorId(),
-        from_email: session?.user?.email || null,
-        message: text
-      };
-
-      const { error } = await supa.from("szakember_messages").insert(payload);
-      if (error) throw error;
-
-      $("message").value = "";
-      note("Üzenet elküldve. A szakember hamarosan látni fogja.", "ok");
-    } catch(e){
-      note("Most nem sikerült elküldeni. Próbáld újra pár perc múlva.", "error");
-    }
-  }
-
-  // ====== MAIN ======
-  const ok = await healthCheck();
-  if(!ok){
-    note("Az üzenetküldés szolgáltatás most nem elérhető. Kérlek próbáld újra később.", "error");
-  }
-
-  const session = await getSession();
-  await renderTop(session);
-
-  // Oldal logika:
-  // 1) Ha be van lépve és uid == saját user.id -> INBOX
-  // 2) Ha uid van (és nem ő a szakember) -> SEND
-  // 3) Ha nincs uid és nincs inbox -> üres kártya
-  if(session && uid && session.user.id === uid){
-    $("subtitle").textContent = "Itt látod a bejövő üzeneteidet.";
-    $("inboxCard").classList.remove("hidden");
-    $("sendCard").classList.add("hidden");
-    $("emptyCard").classList.add("hidden");
-
-    await loadInbox(session);
-    $("btnRefresh").onclick = ()=>loadInbox(session);
-
-  } else if(uid){
-    $("subtitle").textContent = "Itt tudsz üzenetet küldeni a szakembernek.";
-    $("sendCard").classList.remove("hidden");
-    $("inboxCard").classList.add("hidden");
-    $("emptyCard").classList.add("hidden");
-
-    // Kis, nem zavaró info (nem technikai)
-    $("smallHint").textContent = session
-      ? "Be vagy jelentkezve – az üzenet a fiókodhoz kapcsolódik."
-      : "Nem vagy bejelentkezve – az üzenet névtelenül megy ki.";
-
-    $("sendForm").addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      await sendMessage(session);
+    // =========================================================
+    // FŐ LOGIKA (NINCS RELOAD -> NEM FOG VILLOGNI)
+    // =========================================================
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
     });
 
-  } else {
-    // nincs uid param
-    if(session){
-      // belépett szakember, de nem adott uid-t: akkor is mutassuk az inboxot (a sajátját)
-      $("subtitle").textContent = "Itt látod a bejövő üzeneteidet.";
-      $("inboxCard").classList.remove("hidden");
-      $("sendCard").classList.add("hidden");
-      $("emptyCard").classList.add("hidden");
+    const targetUid = qs("uid"); // ezt az indexből fogod adni: uzenetek.html?uid=<szakember_uid>
 
-      await loadInbox(session);
-      $("btnRefresh").onclick = ()=>loadInbox(session);
-    } else {
-      $("subtitle").textContent = "Az üzenetek megnyitásához a hirdetésből nyisd meg az oldalt.";
-      $("emptyCard").classList.remove("hidden");
-      $("inboxCard").classList.add("hidden");
-      $("sendCard").classList.add("hidden");
+    async function init(){
+      clearError();
+      setStatus("Betöltés…", null);
+
+      // címinfo
+      if (!targetUid){
+        $("targetLine").innerHTML = `<span class="text-red-700 font-semibold">Nincs megadva címzett.</span> A linknek így kell kinéznie: <span class="font-mono">uzenetek.html?uid=...</span>`;
+        setStatus("Hiányzó címzett", false);
+      } else {
+        $("targetLine").innerHTML = `Címzett azonosító: <span class="font-mono text-slate-800">${safe(targetUid)}</span>`;
+      }
+
+      // session lekérés
+      const { data: sessData, error: sessErr } = await supa.auth.getSession();
+      if (sessErr){
+        showError("Nem sikerült a bejelentkezési állapotot lekérni.");
+        setStatus("Bejelentkezés hiba", false);
+        $("app").classList.remove("app-hidden");
+        return;
+      }
+
+      const session = sessData?.session;
+      if (!session){
+        // NEM kérünk itt külön bejelentkezést (ahogy kérted).
+        // Csak kulturáltan visszairányítjuk a főoldalra.
+        $("meLine").textContent = "";
+        $("hintLine").textContent = "A bejelentkezés a főoldalon történik.";
+        setStatus("Nincs bejelentkezve", false);
+
+        // UI: tiltsuk a küldést
+        $("btnSend").disabled = true;
+        $("btnSend").classList.add("opacity-50", "cursor-not-allowed");
+        $("txtMessage").disabled = true;
+        $("txtMessage").placeholder = "Jelentkezz be a főoldalon, majd nyisd meg újra az üzeneteket.";
+
+        $("messagesEmpty").classList.remove("hidden");
+        $("messages").classList.add("hidden");
+
+        $("app").classList.remove("app-hidden");
+        return;
+      }
+
+      // belépve
+      const me = session.user;
+      $("meLine").innerHTML = `Bejelentkezve: <span class="font-semibold">${safe(me.email || "felhasználó")}</span>`;
+      $("hintLine").textContent = "Írj üzenetet, majd Küldés.";
+
+      setStatus("Bejelentkezve", true);
+
+      // gombok
+      $("btnLogout").onclick = async () => {
+        await supa.auth.signOut();
+        location.href = "index.html";
+      };
+
+      $("btnRefresh").onclick = async () => {
+        await loadMessages();
+      };
+
+      $("btnSend").onclick = async () => {
+        await sendMessage();
+      };
+
+      // első betöltés
+      await loadMessages();
+
+      $("app").classList.remove("app-hidden");
     }
-  }
 
-  // Ha a session később változik (pl. visszalépsz), frissítsen
-  supa.auth.onAuthStateChange(() => location.reload());
-</script>
+    async function loadMessages(){
+      clearError();
+      if (!targetUid) return;
+
+      const { data: sessData } = await supa.auth.getSession();
+      const session = sessData?.session;
+      if (!session) return;
+
+      const meId = session.user.id;
+
+      // Az üzeneteket úgy szedjük le, hogy:
+      // - nekem jött (to_user_id = me)
+      // - vagy én küldtem a címzettnek (to_user_id = targetUid)
+      // és a from_user_id alapján eldöntjük "enyém-e"
+      // (Ha RLS/policy tilt, itt fog hibát dobni)
+      const { data, error } = await supa
+        .from(TABLE)
+        .select(`${COL_TO_USER_ID},${COL_FROM_USER_ID},${COL_FROM_EMAIL},${COL_MESSAGE},${COL_CREATED_AT}`)
+        .or(`${COL_TO_USER_ID}.eq.${meId},${COL_TO_USER_ID}.eq.${targetUid}`)
+        .order(COL_CREATED_AT, { ascending: true })
+        .limit(200);
+
+      if (error){
+        showError("Nem tudtam lekérni az üzeneteket. (RLS/policy beállítás szükséges a táblához.)");
+        $("messagesEmpty").classList.remove("hidden");
+        $("messages").classList.add("hidden");
+        return;
+      }
+
+      const list = Array.isArray(data) ? data : [];
+      if (!list.length){
+        $("messagesEmpty").classList.remove("hidden");
+        $("messages").classList.add("hidden");
+        return;
+      }
+
+      $("messagesEmpty").classList.add("hidden");
+      const wrap = $("messages");
+      wrap.classList.remove("hidden");
+      wrap.innerHTML = "";
+
+      for (const row of list){
+        const mine = (row[COL_FROM_USER_ID] === meId);
+        const txt = row[COL_MESSAGE] || "";
+        const t = row[COL_CREATED_AT] ? new Date(row[COL_CREATED_AT]).toLocaleString("hu-HU") : "";
+        wrap.insertAdjacentHTML("beforeend", messageBubble({ mine, text: txt, time: t }));
+      }
+
+      // görgetés a végére
+      wrap.scrollIntoView({ block: "end" });
+    }
+
+    async function sendMessage(){
+      clearError();
+
+      if (!targetUid){
+        showError("Hiányzik a címzett (uid paraméter).");
+        return;
+      }
+
+      const txt = ($("txtMessage").value || "").trim();
+      if (!txt){
+        showError("Írj be egy üzenetet.");
+        return;
+      }
+
+      const { data: sessData, error: sessErr } = await supa.auth.getSession();
+      if (sessErr || !sessData?.session){
+        showError("Nem vagy bejelentkezve. Menj vissza a főoldalra és lépj be.");
+        return;
+      }
+
+      const session = sessData.session;
+      const me = session.user;
+
+      // beszúrás
+      const payload = {
+        [COL_TO_USER_ID]: targetUid,
+        [COL_FROM_USER_ID]: me.id,
+        [COL_FROM_EMAIL]: me.email || null,
+        [COL_MESSAGE]: txt
+      };
+
+      const { error } = await supa.from(TABLE).insert(payload);
+      if (error){
+        showError("Nem sikerült elküldeni az üzenetet. (RLS/policy vagy oszlopnév eltérés lehet.)");
+        return;
+      }
+
+      $("txtMessage").value = "";
+      await loadMessages();
+    }
+
+    // Start
+    init();
+  </script>
 </body>
 </html>
