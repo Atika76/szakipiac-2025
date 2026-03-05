@@ -1,269 +1,191 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Üzenetek – SzakiPiac</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Üzenetek – SzakiPiac</title>
 
-  <!-- Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f3f4f6;margin:0;}
-    header{background:#fff;padding:14px 18px;box-shadow:0 2px 6px rgba(0,0,0,.08);display:flex;align-items:center;gap:12px;}
-    .logo{font-size:20px;font-weight:700}
-    .container{max-width:1100px;margin:auto;padding:20px;display:grid;grid-template-columns:2fr 1fr;gap:20px;}
-    .card{background:#fff;padding:18px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-    h2,h3{margin:0 0 10px 0;}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    button{padding:10px 14px;border:none;border-radius:8px;background:#111827;color:#fff;cursor:pointer;}
-    button:hover{background:#374151;}
-    .btn-secondary{background:#e5e7eb;color:#111827;}
-    .btn-secondary:hover{background:#d1d5db;}
-    .small{font-size:13px;color:#6b7280;}
-    .message{border-bottom:1px solid #eee;padding:12px 0;}
-    .message:last-child{border-bottom:none;}
-    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;}
-    .muted{color:#6b7280}
-    input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;min-width:260px;}
-    code{background:#f3f4f6;padding:2px 6px;border-radius:6px;}
-    .ok{color:#065f46}
-    .err{color:#991b1b}
-  </style>
+<style>
+body{font-family:Arial;background:#f3f4f6;margin:0}
+header{background:#fff;padding:14px 20px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.container{max-width:1100px;margin:auto;padding:20px;display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.card{background:#fff;padding:18px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+button{padding:10px 14px;border:none;border-radius:8px;background:#111827;color:#fff;cursor:pointer}
+button:hover{background:#374151}
+input{padding:10px;border:1px solid #ccc;border-radius:8px}
+.message{border-bottom:1px solid #eee;padding:10px 0}
+.small{font-size:13px;color:#666}
+</style>
+
 </head>
-
 <body>
+
 <header>
-  <div class="logo">🔧 SzakiPiac</div>
+<b>🔧 SzakiPiac</b>
 </header>
 
 <div class="container">
-  <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <h2>💬 Üzenetek</h2>
-      <div class="row">
-        <span id="sessionBadge" class="badge" style="display:none;"></span>
-        <button id="btnLogout" class="btn-secondary" style="display:none;">Kilépés</button>
-      </div>
-    </div>
 
-    <div id="statusBox" class="small muted" style="margin-top:8px;"></div>
-    <div id="loginBox" style="margin-top:10px;"></div>
-    <div id="messagesBox" style="margin-top:14px;"></div>
-  </div>
+<div class="card">
 
-  <div class="card">
-    <h3>Szakember</h3>
-    <div class="row" style="margin-top:10px;">
-      <a id="profileBtn" href="#"><button>👤 Profil megnyitása</button></a>
-    </div>
+<h2>💬 Üzenetek</h2>
 
-    <div class="card" style="margin-top:14px;background:#f9fafb;">
-      <h3>Tipp</h3>
-      <p class="small" style="margin:8px 0 0 0;">
-        Ha te vagy a szakember, jelentkezz be, és itt látod a bejövő üzeneteket.
-      </p>
-    </div>
-  </div>
+<div id="status" class="small"></div>
+
+<div id="loginBox">
+
+<input id="email" type="email" placeholder="Email cím">
+<button id="loginBtn">Bejelentkezés (email link)</button>
+
+<p class="small">
+A belépéshez emailben kapsz egy linket.
+</p>
+
+</div>
+
+<div id="messages" style="margin-top:20px"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Szakember</h3>
+
+<a href="szakember.html">
+<button>Profil megnyitása</button>
+</a>
+
+<p class="small">
+Ha te vagy a szakember jelentkezz be és itt látod az üzeneteket.
+</p>
+
+</div>
+
 </div>
 
 <script>
-  // =========================
-  // SUPABASE BEÁLLÍTÁS (JAVÍTVA!)
-  // =========================
-  const SUPABASE_URL = "https://bxtpnotsnwrbycvfypz.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = "https://bxtpnotsnwrbycvfypz.supabase.co";
 
-  // =========================
-  // UID a linkből (opcionális)
-  // =========================
-  const params = new URLSearchParams(window.location.search);
-  const uid = params.get("uid") || "";
-  document.getElementById("profileBtn").href = "szakember.html" + (uid ? ("?uid=" + encodeURIComponent(uid)) : "");
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
 
-  // =========================
-  // UI ELEMEK
-  // =========================
-  const statusBox = document.getElementById("statusBox");
-  const loginBox = document.getElementById("loginBox");
-  const messagesBox = document.getElementById("messagesBox");
-  const sessionBadge = document.getElementById("sessionBadge");
-  const btnLogout = document.getElementById("btnLogout");
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Dupla inicializálás védelem (villogás ellen)
-  if (window.__UZENETEK_BOOTED__) {
-    console.warn("Üzenetek: már inicializálva, kilépés.");
-  } else {
-    window.__UZENETEK_BOOTED__ = true;
-    main().catch(err => {
-      console.error(err);
-      statusBox.innerHTML = `<span class="err">Hiba történt: ${escapeHtml(err?.message || String(err))}</span>`;
-    });
-  }
+const status = document.getElementById("status");
+const loginBtn = document.getElementById("loginBtn");
+const emailInput = document.getElementById("email");
+const messagesBox = document.getElementById("messages");
 
-  async function main(){
-    // 1) Health check — ha ez elhasal, azonnal látjuk
-    const ok = await checkHealth();
-    if (!ok){
-      renderLoginOnly("A Supabase nem elérhető (DNS/blokkolás vagy rossz Project URL). Próbáld meg Ctrl+F5, és kapcsold ki az AdBlockot erre az oldalra.");
-      return;
-    }
+async function checkConnection(){
 
-    // 2) Session olvasás + figyelés
-    const { data: { session } } = await supabaseClient.auth.getSession();
+try{
 
-    supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
-      await render(newSession);
-    });
+const r = await fetch(SUPABASE_URL + "/auth/v1/health");
 
-    await render(session);
-  }
+if(r.ok){
+status.innerHTML="Supabase kapcsolat: OK";
+}
+else{
+status.innerHTML="Supabase hiba: "+r.status;
+}
 
-  async function checkHealth(){
-    try{
-      const r = await fetch(SUPABASE_URL + "/auth/v1/health", { method:"GET" });
-      if (!r.ok){
-        statusBox.innerHTML = `<span class="err">Supabase auth health: ${r.status}</span>`;
-        return false;
-      }
-      statusBox.innerHTML = `<span class="ok">Supabase kapcsolat: OK</span>`;
-      return true;
-    }catch(e){
-      console.error("health failed", e);
-      statusBox.innerHTML = `<span class="err">Supabase kapcsolat: NEM ELÉRHETŐ (health fetch failed)</span>`;
-      return false;
-    }
-  }
+}catch(e){
 
-  function renderLoginOnly(msg){
-    messagesBox.innerHTML = "";
-    sessionBadge.style.display = "none";
-    btnLogout.style.display = "none";
+status.innerHTML="Supabase kapcsolat: NEM ELÉRHETŐ";
 
-    loginBox.innerHTML = `
-      <div class="muted">${escapeHtml(msg)}</div>
-      <div class="row" style="margin-top:12px;">
-        <input id="loginEmail" type="email" placeholder="Email cím " />
-        <button id="btnLogin">Bejelentkezés (email link)</button>
-      </div>
-      <div class="small" style="margin-top:10px;">
-        A belépéshez e-mailben kapsz egy linket. Kattints rá, és visszahoz ide.
-      </div>
-    `;
+}
 
-    document.getElementById("btnLogin").onclick = () => alert("Előbb a Supabase elérhetőségét kell rendbe tenni.");
-  }
+}
 
-  async function render(session){
-    messagesBox.innerHTML = "";
+checkConnection();
 
-    if (!session){
-      sessionBadge.style.display = "none";
-      btnLogout.style.display = "none";
 
-      loginBox.innerHTML = `
-        <div class="muted">Jelentkezz be, hogy lásd az üzeneteket.</div>
-        <div class="row" style="margin-top:10px;">
-          <input id="loginEmail" type="email" placeholder="Email cím (pl. atika.76@windowslive.com)" />
-          <button id="btnLogin">Bejelentkezés (email link)</button>
-        </div>
-        <div class="small" style="margin-top:10px;">
-          A belépéshez e-mailben kapsz egy linket. Kattints rá, és visszahoz ide.
-        </div>
-      `;
+loginBtn.onclick = async ()=>{
 
-      document.getElementById("btnLogin").onclick = async () => {
-        const email = (document.getElementById("loginEmail").value || "").trim();
-        if (!email){ alert("Írd be az email címed!"); return; }
+const email = emailInput.value.trim();
 
-        // UID opcionális: ha nincs, akkor simán uzenetek.html
-        const redirectTo = window.location.origin + "/uzenetek.html" + (uid ? ("?uid=" + encodeURIComponent(uid)) : "");
+if(!email){
+alert("Írd be az email címet");
+return;
+}
 
-        try{
-          const { error } = await supabaseClient.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: redirectTo }
-          });
+const { error } = await supabaseClient.auth.signInWithOtp({
+email: email,
+options: {
+emailRedirectTo: window.location.href
+}
+});
 
-          if (error){
-            console.error(error);
-            alert("Belépési hiba: " + error.message);
-            return;
-          }
+if(error){
+alert(error.message);
+}
+else{
+alert("Belépési link elküldve emailben");
+}
 
-          alert("Elküldtem a belépési linket emailben. Nyisd meg és kattints rá!");
-        }catch(e){
-          console.error(e);
-          alert("Belépési hiba: Failed to fetch (blokkolás/DNS/AdBlock).");
-        }
-      };
+};
 
-      return;
-    }
 
-    loginBox.innerHTML = "";
-    sessionBadge.style.display = "inline-block";
-    sessionBadge.textContent = "Bejelentkezve: " + (session.user.email || session.user.id);
 
-    btnLogout.style.display = "inline-block";
-    btnLogout.onclick = async () => {
-      await supabaseClient.auth.signOut();
-    };
+async function loadMessages(){
 
-    await loadInbox(session);
-  }
+const { data: { session } } = await supabaseClient.auth.getSession();
 
-  async function loadInbox(session){
-    messagesBox.innerHTML = `<div class="small muted">Üzenetek betöltése...</div>`;
+if(!session) return;
 
-    const { data, error } = await supabaseClient
-      .from("szakember_messages")
-      .select("id, created_at, from_email, message, is_read")
-      .eq("to_user_id", session.user.id)
-      .order("created_at", { ascending: false });
+const user = session.user;
 
-    if (error){
-      console.error(error);
-      messagesBox.innerHTML = `<div class="err">Nem tudom betölteni az üzeneteket: ${escapeHtml(error.message)}</div>`;
-      return;
-    }
+const { data, error } = await supabaseClient
+.from("szakember_messages")
+.select("*")
+.eq("to_user_id", user.id)
+.order("created_at", { ascending:false });
 
-    if (!data || data.length === 0){
-      messagesBox.innerHTML = `<div class="muted">Nincs üzenet.</div>`;
-      return;
-    }
+if(error){
+messagesBox.innerHTML="Hiba: "+error.message;
+return;
+}
 
-    const wrap = document.createElement("div");
-    data.forEach(m => {
-      const div = document.createElement("div");
-      div.className = "message";
-      const dt = new Date(m.created_at);
+if(!data.length){
+messagesBox.innerHTML="Nincs üzenet";
+return;
+}
 
-      div.innerHTML = `
-        <div class="row" style="justify-content:space-between;">
-          <div class="small">${dt.toLocaleString()}</div>
-          <div class="small">${m.is_read ? "" : "<span class='badge'>Új</span>"}</div>
-        </div>
-        <div style="margin-top:6px;">${escapeHtml(m.message || "")}</div>
-        <div class="small" style="margin-top:6px;">Email: ${escapeHtml(m.from_email || "-")}</div>
-      `;
-      wrap.appendChild(div);
-    });
+messagesBox.innerHTML="";
 
-    messagesBox.innerHTML = "";
-    messagesBox.appendChild(wrap);
-  }
+data.forEach(m=>{
 
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
+const div=document.createElement("div");
+
+div.className="message";
+
+div.innerHTML=`
+<b>${m.from_name || m.from_email}</b>
+<br>
+${m.message}
+<br>
+<span class="small">${new Date(m.created_at).toLocaleString()}</span>
+`;
+
+messagesBox.appendChild(div);
+
+});
+
+}
+
+supabaseClient.auth.onAuthStateChange((event, session)=>{
+
+if(session){
+loadMessages();
+}
+
+});
+
+loadMessages();
+
 </script>
+
 </body>
 </html>
