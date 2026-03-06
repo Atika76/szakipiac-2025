@@ -206,7 +206,7 @@
           <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Partnereink és ajánlataink</h3>
           <div id="reklam-slider" class="relative overflow-hidden rounded-lg shadow-md" style="height: 260px;">
             <a id="reklam-link" href="#" target="_blank" class="block h-full w-full flex items-center justify-center bg-white">
-              <img id="reklam-img" src="" class="max-h-full max-w-full object-contain p-4" draggable="false">
+              <img id="reklam-img" src="" class="max-h-full max-w-full object-contain p-4" draggable="false" onerror="this.onerror=null;this.src='szakipiac-reklam.png'">
             </a>
             <button id="btn-prev" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">❮</button>
             <button id="btn-next" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">❯</button>
@@ -279,6 +279,30 @@
       toast.className = `fixed top-5 right-5 text-white py-3 px-6 rounded-lg shadow-xl transform transition-transform duration-300 z-[110] ${bg}`;
       toast.classList.remove("translate-x-[120%]");
       setTimeout(() => toast.classList.add("translate-x-[120%]"), 4000);
+    }
+
+
+    function getLocalAdViews(adId) {
+      try { return parseInt(localStorage.getItem(`sp_ad_views_${adId}`) || "0", 10) || 0; } catch { return 0; }
+    }
+    function bumpLocalAdView(adId) {
+      try {
+        const seenKey = `sp_ad_seen_session_${adId}`;
+        if (sessionStorage.getItem(seenKey)) return;
+        sessionStorage.setItem(seenKey, "1");
+        const next = getLocalAdViews(adId) + 1;
+        localStorage.setItem(`sp_ad_views_${adId}`, String(next));
+      } catch {}
+    }
+    function getFacebookShareUrl(ad) {
+      const base = window.location.origin + window.location.pathname;
+      const shareUrl = `${base}?ad=${encodeURIComponent(ad.id || "")}`;
+      const quote = `${ad.cim || 'SzakiPiac hirdetés'} – ${ad.varos || 'Országos'} | SzakiPiac-2025.hu`;
+      return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(quote)}`;
+    }
+    function getMapUrl(ad) {
+      const q = [ad.varos || "", ad.iranyitoszam || "", ad.cim || ""].filter(Boolean).join(', ');
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || 'Magyarország')}`;
     }
 
     /* =========================
@@ -410,6 +434,17 @@
           </div>
         </div>
 
+        <div id="kiemelt-wrap" class="bg-amber-50 border border-amber-200 p-6 rounded shadow mb-8 hidden">
+          <div class="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-amber-900">⭐ Kiemelt hirdetések</h2>
+              <p class="text-sm text-amber-800 mt-1">Ezek a szakemberek fizetett kiemeléssel vannak felül – több láthatóság, gyorsabb érdeklődés.</p>
+            </div>
+            <a href="#feltoltes" class="inline-flex items-center justify-center bg-amber-500 text-white px-4 py-2 rounded font-bold hover:bg-amber-600">Én is kérem a kiemelést</a>
+          </div>
+          <div id="kiemelt-hirdetesek" class="space-y-6"></div>
+        </div>
+
         
         <div class="bg-white p-6 rounded shadow mb-8">
           <div class="flex items-start justify-between gap-4">
@@ -482,7 +517,7 @@
           </div>
         </div>
 
-        <div id="hirdetes-lista" class="space-y-6"><div class="loader mx-auto"></div></div>
+        <div><div class="flex items-center justify-between mb-3"><h2 class="text-2xl font-extrabold text-slate-900">Összes hirdetés</h2><span class="text-sm text-slate-500">Szűrőkkel és ajánlatkéréssel</span></div><div id="hirdetes-lista" class="space-y-6"><div class="loader mx-auto"></div></div></div>
       `;
       document.getElementById("search").addEventListener("input", filterAds);
       document.getElementById("filter-city").addEventListener("input", filterAds);
@@ -651,10 +686,13 @@
 
         async function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
+      const featuredWrap = document.getElementById("kiemelt-wrap");
+      const featuredEl = document.getElementById("kiemelt-hirdetesek");
       if (!listEl) return;
       currentRenderedAds = Array.isArray(list) ? [...list] : [];
       if (!list || !list.length) {
-        listEl.innerHTML = "<div class='text-center text-gray-500 py-8'><p>Nincs találat.</p><p class='text-sm mt-2'>Próbálj meg más kulcsszót vagy töröld az AI szűrést.</p></div>";
+        if (featuredWrap) featuredWrap.classList.add("hidden");
+        listEl.innerHTML = "<div class='text-center text-gray-500 py-8'><p>Nincs találat.</p><p class='text-sm mt-2'>Próbálj meg más kulcsszót vagy válassz másik kategóriát.</p></div>";
         return;
       }
 
@@ -666,80 +704,98 @@
         console.warn("session lekérés hiba", sessionError);
       }
 
-      try {
-        listEl.innerHTML = list.map(h => {
-          const isOwner = session && session.user.id === h.user_id;
-          const isAdmin = session && session.user.email === ADMIN_EMAIL;
-          const video = getYouTubeEmbedUrl(h.video_url)
-            ? `<div class="aspect-w-16 aspect-h-9 mt-4"><iframe src="${getYouTubeEmbedUrl(h.video_url)}" class="w-full h-full rounded" allowfullscreen></iframe></div>`
-            : "";
-          const images = h.kep_url_tomb
-            ? `<div class="flex gap-2 mt-2 overflow-x-auto">${h.kep_url_tomb.map(u => `<img src="${u}" class="h-24 w-24 object-cover rounded cursor-pointer" onclick="window.openLightbox('${u}')">`).join("")}</div>`
-            : "";
-          const delBtn = (isOwner || isAdmin)
-            ? `<button onclick="window.deleteAd('${h.id}')" class="text-red-600 text-sm px-3 py-1 border border-red-200 rounded hover:bg-red-50">Törlés</button>`
-            : "";
-          const extraClass = h.csomag === 'extra' ? 'border-2 border-yellow-400 shadow-lg' : '';
-          const extraBadge = h.csomag === 'extra' ? '<div class="absolute top-0 right-0 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-bl text-white">KIEMELT</div>' : '';
-
-          const pajzsHtml = `
-            <span class="bizalmi-pajzs pajzs-zold" data-title="✅ Ellenőrzött, megbízható vállalkozás">
-              🛡️
-            </span>`;
-
-          const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
-          const profileInfo = h.user_id ? profileSummaryMap.get(h.user_id) : null;
-          const avatarUrl = (profileInfo?.avatar_url || "").trim();
-          const safeAvatar = avatarUrl.startsWith("data:image/") ? avatarUrl : (function(){ try { return avatarUrl ? new URL(avatarUrl).href : ""; } catch { return ""; } })();
-          const avatarHtml = safeAvatar
-            ? `<img src="${safeAvatar}" alt="Profilkép" class="h-12 w-12 rounded-xl object-cover border border-slate-200 bg-white">`
-            : `<div class="h-12 w-12 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-lg">👤</div>`;
-          const displayName = profileInfo?.display_name || (h.email ? String(h.email).split("@")[0] : "Szakember");
-          const cityText = profileInfo?.city || h.varos || "Országos";
-          const ratingHtml = rating && rating.count
-            ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
-            : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
-          return `
-            <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
-              ${extraBadge}
-              <div class="flex justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-start gap-3">
-                    ${avatarHtml}
-                    <div class="min-w-0 flex-1">
-                      <p class="text-xs font-bold text-green-600 uppercase">${h.kategoria || ""} ${cityText ? `• ${cityText}` : ""}</p>
-                      <div class="mt-1 flex items-center gap-2 flex-wrap">
-                        <span class="text-sm font-semibold text-slate-700">${displayName}</span>
-                        <span class="text-xs text-slate-400">•</span>
-                        <span class="text-xs text-slate-500">Szakember profil</span>
-                      </div>
-                      <h3 class="text-xl font-bold mt-1 flex items-center flex-wrap gap-2">
-                        <span>${h.cim || ""}</span>
-                        ${pajzsHtml}
-                      </h3>
-                      ${ratingHtml}
+      function renderCard(h) {
+        bumpLocalAdView(h.id);
+        const isOwner = session && session.user.id === h.user_id;
+        const isAdmin = session && session.user.email === ADMIN_EMAIL;
+        const video = getYouTubeEmbedUrl(h.video_url)
+          ? `<div class="aspect-w-16 aspect-h-9 mt-4"><iframe src="${getYouTubeEmbedUrl(h.video_url)}" class="w-full h-full rounded" allowfullscreen></iframe></div>`
+          : "";
+        const images = h.kep_url_tomb
+          ? `<div class="flex gap-2 mt-2 overflow-x-auto">${h.kep_url_tomb.map(u => `<img src="${u}" class="h-24 w-24 object-cover rounded cursor-pointer" onclick="window.openLightbox('${u}')">`).join("")}</div>`
+          : "";
+        const delBtn = (isOwner || isAdmin)
+          ? `<button onclick="window.deleteAd('${h.id}')" class="text-red-600 text-sm px-3 py-1 border border-red-200 rounded hover:bg-red-50">Törlés</button>`
+          : "";
+        const extraClass = h.csomag === 'extra' ? 'border-2 border-yellow-400 shadow-lg' : (h.csomag === 'premium' ? 'border border-amber-300 shadow-md' : '');
+        const extraBadge = h.csomag === 'extra'
+          ? '<div class="absolute top-0 right-0 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-bl text-white">KIEMELT</div>'
+          : (h.csomag === 'premium' ? '<div class="absolute top-0 right-0 bg-amber-500 text-xs font-bold px-2 py-1 rounded-bl text-white">PRÉMIUM</div>' : '');
+        const pajzsHtml = `<span class="bizalmi-pajzs pajzs-zold" data-title="✅ Ellenőrzött, megbízható vállalkozás">🛡️</span>`;
+        const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
+        const profileInfo = h.user_id ? profileSummaryMap.get(h.user_id) : null;
+        const avatarUrl = (profileInfo?.avatar_url || "").trim();
+        const safeAvatar = avatarUrl.startsWith("data:image/") ? avatarUrl : (function(){ try { return avatarUrl ? new URL(avatarUrl).href : ""; } catch { return ""; } })();
+        const avatarHtml = safeAvatar
+          ? `<img src="${safeAvatar}" alt="Profilkép" class="h-12 w-12 rounded-xl object-cover border border-slate-200 bg-white">`
+          : `<div class="h-12 w-12 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-lg">👤</div>`;
+        const displayName = profileInfo?.display_name || (h.email ? String(h.email).split("@")[0] : "Szakember");
+        const cityText = profileInfo?.city || h.varos || "Országos";
+        const ratingHtml = rating && rating.count
+          ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
+          : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
+        const viewCount = getLocalAdViews(h.id);
+        const viewHtml = `<div class="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-xs text-slate-600">👁 Megtekintve nálad: <strong>${viewCount}</strong></div>`;
+        const mapBtn = `<a href="${getMapUrl(h)}" target="_blank" rel="noopener" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-200">📍 Térkép</a>`;
+        const fbBtn = `<a href="${getFacebookShareUrl(h)}" target="_blank" rel="noopener" class="bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-800">f Facebook</a>`;
+        return `
+          <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
+            ${extraBadge}
+            <div class="flex justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start gap-3">
+                  ${avatarHtml}
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-bold text-green-600 uppercase">${h.kategoria || ""} ${cityText ? `• ${cityText}` : ""}</p>
+                    <div class="mt-1 flex items-center gap-2 flex-wrap">
+                      <span class="text-sm font-semibold text-slate-700">${displayName}</span>
+                      <span class="text-xs text-slate-400">•</span>
+                      <span class="text-xs text-slate-500">Szakember profil</span>
                     </div>
+                    <h3 class="text-xl font-bold mt-1 flex items-center flex-wrap gap-2">
+                      <span>${h.cim || ""}</span>
+                      ${pajzsHtml}
+                    </h3>
+                    ${ratingHtml}
+                    ${viewHtml}
                   </div>
                 </div>
-                <div class="text-lg font-bold whitespace-nowrap">${h.ar ? parseInt(h.ar).toLocaleString() + " Ft" : ""}</div>
               </div>
-              <p class="text-gray-600 my-4 whitespace-pre-line">${h.leiras || ""}</p>
-              ${images}
-              ${video}
-              <div class="mt-4 flex flex-wrap justify-between items-center border-t pt-4">
-                <div class="flex gap-2 flex-wrap">
-                  <a href="mailto:${h.email || ""}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
-                  ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
-                  ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
-                  ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
-                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
-                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
-                </div>
-                ${delBtn}
-              </div>
+              <div class="text-lg font-bold whitespace-nowrap">${h.ar ? parseInt(h.ar).toLocaleString() + " Ft" : ""}</div>
             </div>
-          `;
-        }).join("");
+            <p class="text-gray-600 my-4 whitespace-pre-line">${h.leiras || ""}</p>
+            ${images}
+            ${video}
+            <div class="mt-4 flex flex-wrap justify-between items-center border-t pt-4 gap-2">
+              <div class="flex gap-2 flex-wrap">
+                <a href="mailto:${h.email || ""}" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">📧 Email</a>
+                ${h.telefonszam ? `<a href="tel:${h.telefonszam}" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm flex items-center gap-1">📞 Hívás</a>` : ""}
+                ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
+                ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
+                ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
+                ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
+                ${fbBtn}
+                ${mapBtn}
+              </div>
+              ${delBtn}
+            </div>
+          </div>
+        `;
+      }
+
+      try {
+        const featured = list.filter(h => ["extra","premium"].includes((h.csomag || "").toLowerCase()));
+        const normal = list.filter(h => !["extra","premium"].includes((h.csomag || "").toLowerCase()));
+        if (featuredWrap && featuredEl) {
+          if (featured.length) {
+            featuredWrap.classList.remove("hidden");
+            featuredEl.innerHTML = featured.map(renderCard).join("");
+          } else {
+            featuredWrap.classList.add("hidden");
+            featuredEl.innerHTML = "";
+          }
+        }
+        listEl.innerHTML = normal.map(renderCard).join("");
       } catch (renderError) {
         console.error("renderAds hiba", renderError);
         listEl.innerHTML = `<div class="text-center text-red-600">A hirdetések megjelenítése közben hiba történt.</div>`;
@@ -796,6 +852,21 @@
               <div>✔ Több megtekintés, több érdeklődő</div>
               <div>✔ Gyors publikálás</div>
               <div>✔ Kiemelés a jobb helyezésért</div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div class="border border-emerald-200 bg-emerald-50 rounded-xl p-4">
+              <div class="font-bold text-emerald-900 mb-1">1. Kiemelt hirdetés</div>
+              <div class="text-sm text-emerald-800">A prémium / extra csomagok külön blokkban felül jelennek meg – több kattintás, több üzenet.</div>
+            </div>
+            <div class="border border-blue-200 bg-blue-50 rounded-xl p-4">
+              <div class="font-bold text-blue-900 mb-1">2. Facebook megosztás</div>
+              <div class="text-sm text-blue-800">Minden hirdetésnél külön megosztó gomb van. Egy jó posztból gyorsan jöhet érdeklődő.</div>
+            </div>
+            <div class="border border-amber-200 bg-amber-50 rounded-xl p-4">
+              <div class="font-bold text-amber-900 mb-1">3. Ajánlatkérés + Térkép</div>
+              <div class="text-sm text-amber-800">Gyors kapcsolatfelvétel, útvonal és profi megjelenés – kevesebb elveszett érdeklődő.</div>
             </div>
           </div>
 
