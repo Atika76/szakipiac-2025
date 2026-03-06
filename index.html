@@ -240,6 +240,7 @@
     let hirdetesekCache = [];
     let ratingSummaryMap = new Map();
     let profileSummaryMap = new Map();
+    let aiRecommendedIds = [];
     let unreadMessageCount = 0;
 
     /* =========================
@@ -516,6 +517,7 @@
       const btnAiRecommend = document.getElementById("btnAiRecommend");
       const btnAiReset = document.getElementById("btnAiReset");
       btnAiRecommend?.addEventListener("click", () => {
+        setAiButtonState("AI keresés...", true);
         const wants = {
           task: document.getElementById("ai-task")?.value || "",
           city: document.getElementById("ai-city")?.value || "",
@@ -527,12 +529,20 @@
           .filter(h => h.__score > 0)
           .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
         renderAiResults(scored, wants);
+        setAiButtonState(scored.length ? `Ajánlás kész (${Math.min(scored.length, 99)})` : "Nincs találat", false);
+        setTimeout(() => setAiButtonState("AI ajánló indítása", false), 1800);
       });
       btnAiReset?.addEventListener("click", () => {
         aiRecommendedIds = [];
         const box = document.getElementById('ai-results');
         if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
         renderAds(hirdetesekCache);
+        const btn = document.getElementById("btnAiReset");
+        if (btn) {
+          const oldText = btn.textContent;
+          btn.textContent = "Törölve";
+          setTimeout(() => { btn.textContent = oldText; }, 1200);
+        }
       });
       await loadAds();
     }
@@ -660,19 +670,32 @@
     ========================= */
     async function loadAds() {
       const listEl = document.getElementById("hirdetes-lista");
+      if (listEl) listEl.innerHTML = `<div class="loader mx-auto"></div>`;
       try {
         const { data, error } = await supaClient
           .from("hirdetesek")
           .select("*")
           .gte("lejárati_datum", new Date().toISOString())
-          .order("csomag", { ascending: false }).order("created_at", { ascending: false });
+          .order("csomag", { ascending: false })
+          .order("created_at", { ascending: false });
         if (error) throw error;
-        hirdetesekCache = data || [];
-        await loadRatingsSummary(hirdetesekCache);
-        renderAds(hirdetesekCache);
+        hirdetesekCache = Array.isArray(data) ? data : [];
+
+        try {
+          await Promise.race([
+            loadRatingsSummary(hirdetesekCache),
+            new Promise((resolve) => setTimeout(resolve, 2500))
+          ]);
+        } catch (innerError) {
+          console.warn("ratings/profile rész kihagyva", innerError);
+        }
+
+        await renderAds(hirdetesekCache);
       } catch (e) {
         console.error(e);
-        if (listEl) listEl.innerHTML = `<p class="text-center text-red-600">Hiba a betöltéskor: ${e?.message || e}</p>`;
+        if (listEl) {
+          listEl.innerHTML = `<div class="text-center text-red-600">Hiba a hirdetések betöltésekor.</div><div class="mt-3 text-center"><button onclick="window.location.reload()" class="px-4 py-2 rounded-lg bg-slate-900 text-white">Újratöltés</button></div>`;
+        }
       }
     }
 
@@ -702,6 +725,16 @@
       const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
       if (rating?.count) score += Math.min(3, rating.avg / 2);
       return score;
+    }
+
+
+    function setAiButtonState(stateText, disabled = false) {
+      const btn = document.getElementById("btnAiRecommend");
+      if (!btn) return;
+      btn.textContent = stateText;
+      btn.disabled = disabled;
+      btn.classList.toggle("opacity-70", disabled);
+      btn.classList.toggle("cursor-not-allowed", disabled);
     }
 
     function renderAiResults(scored, wants) {
@@ -743,12 +776,23 @@
       renderAds(hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id)).concat(hirdetesekCache.filter(h => !aiRecommendedIds.includes(h.id))));
     }
 
-    function renderAds(list) {
+    async function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
       if (!listEl) return;
-      if (!list || !list.length) { listEl.innerHTML = "<p class='text-center text-gray-500'>Nincs találat.</p>"; return; }
+      if (!list || !list.length) {
+        listEl.innerHTML = "<p class='text-center text-gray-500'>Nincs találat.</p>";
+        return;
+      }
 
-      supaClient.auth.getSession().then(({ data: { session } }) => {
+      let session = null;
+      try {
+        const sessionResp = await supaClient.auth.getSession();
+        session = sessionResp?.data?.session || null;
+      } catch (sessionError) {
+        console.warn("session lekérés hiba", sessionError);
+      }
+
+      try {
         listEl.innerHTML = list.map(h => {
           const isOwner = session && session.user.id === h.user_id;
           const isAdmin = session && session.user.email === ADMIN_EMAIL;
@@ -825,7 +869,10 @@
             </div>
           `;
         }).join("");
-      });
+      } catch (renderError) {
+        console.error("renderAds hiba", renderError);
+        listEl.innerHTML = `<div class="text-center text-red-600">A hirdetések megjelenítése közben hiba történt.</div>`;
+      }
     }
 
     function filterAds() {
