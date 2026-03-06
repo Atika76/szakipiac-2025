@@ -240,9 +240,6 @@
     let hirdetesekCache = [];
     let ratingSummaryMap = new Map();
     let profileSummaryMap = new Map();
-    let aiRecommendedIds = [];
-    let aiFilterActive = false;
-    let aiFilteredAds = null;
     let currentRenderedAds = [];
     let unreadMessageCount = 0;
 
@@ -413,33 +410,6 @@
           </div>
         </div>
 
-        <div class="bg-gradient-to-r from-emerald-50 via-white to-indigo-50 p-6 rounded-2xl shadow mb-8 border border-emerald-100">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h2 class="text-xl md:text-2xl font-bold text-slate-900">🤖 AI szakember ajánló</h2>
-              <p class="text-slate-600 mt-1">Írd be, mire van szükséged, és a rendszer kiemeli a legjobb hirdetéseket.</p>
-            </div>
-            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-sm font-semibold">AI segítség a választáshoz</span>
-          </div>
-          <div class="grid md:grid-cols-4 gap-3 mt-4">
-            <input type="text" id="ai-task" placeholder="Pl. kőműves, burkolás, tetőjavítás" class="w-full border border-slate-200 p-3 rounded-xl">
-            <input type="text" id="ai-city" placeholder="Település / környék" class="w-full border border-slate-200 p-3 rounded-xl">
-            <select id="ai-urgency" class="w-full border border-slate-200 p-3 rounded-xl">
-              <option value="">Mikor kell?</option>
-              <option value="most">Azonnal</option>
-              <option value="1-2 héten belül">1-2 héten belül</option>
-              <option value="ráér">Ráér</option>
-            </select>
-            <input type="text" id="ai-budget" placeholder="Kb. keret / megjegyzés" class="w-full border border-slate-200 p-3 rounded-xl">
-          </div>
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <button id="btnAiRecommend" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold hover:bg-slate-800">AI ajánló indítása</button>
-            <button id="btnAiReset" class="border border-slate-300 text-slate-700 px-5 py-3 rounded-xl font-semibold hover:bg-slate-50">Ajánló törlése</button>
-            <span id="ai-status" class="text-sm text-slate-500"></span>
-          </div>
-          <div id="ai-results" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-white p-5"></div>
-        </div>
-
         
         <div class="bg-white p-6 rounded shadow mb-8">
           <div class="flex items-start justify-between gap-4">
@@ -518,80 +488,6 @@
       document.getElementById("filter-city").addEventListener("input", filterAds);
       document.getElementById("category-select").addEventListener("change", filterAds);
 
-      const btnAiRecommend = document.getElementById("btnAiRecommend");
-      const btnAiReset = document.getElementById("btnAiReset");
-      btnAiRecommend?.addEventListener("click", async () => {
-        const wants = {
-          task: document.getElementById("ai-task")?.value || "",
-          city: document.getElementById("ai-city")?.value || "",
-          urgency: document.getElementById("ai-urgency")?.value || "",
-          budget: document.getElementById("ai-budget")?.value || ""
-        };
-        const hasInput = Object.values(wants).some(v => String(v || '').trim());
-        if (!hasInput) {
-          setAiStatus("Adj meg legalább 1 feltételt.", "info");
-          setAiButtonState("AI ajánló indítása", false);
-          aiFilterActive = false;
-          aiRecommendedIds = [];
-          currentRenderedAds = [...hirdetesekCache];
-          renderAds(currentRenderedAds);
-          return;
-        }
-
-        try {
-          setAiButtonState("AI keresés...", true);
-          setAiStatus("Találatok keresése...", "info");
-          const scored = [...hirdetesekCache]
-            .map(h => ({ ...h, __score: getAiScore(h, wants) }))
-            .filter(h => h.__score >= 4)
-            .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
-
-          aiFilterActive = true;
-          if (!scored.length) {
-            aiRecommendedIds = [];
-            aiFilteredAds = [];
-            renderAiResults([], wants);
-            filterAds();
-            setAiStatus("Nincs találat a megadott feltételekre.", "error");
-            return;
-          }
-
-          const aiOnly = hirdetesekCache.filter(h => scored.some(s => s.id === h.id));
-          aiRecommendedIds = aiOnly.map(h => h.id);
-          aiFilteredAds = aiOnly;
-          currentRenderedAds = aiOnly;
-          renderAiResults(scored, wants);
-          filterAds();
-          setAiStatus(`${aiOnly.length} találat megjelenítve.`, "success");
-        } catch (err) {
-          console.error("AI ajánló hiba", err);
-          setAiStatus("Hiba történt az AI ajánló közben.", "error");
-        } finally {
-          setAiButtonState("AI ajánló indítása", false);
-        }
-      });
-      btnAiReset?.addEventListener("click", () => {
-        aiRecommendedIds = [];
-        aiFilterActive = false;
-        aiFilteredAds = null;
-        currentRenderedAds = [...hirdetesekCache];
-        ['ai-task','ai-city','ai-urgency','ai-budget'].forEach(id => {
-          const el = document.getElementById(id);
-          if (!el) return;
-          if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
-        });
-        const box = document.getElementById('ai-results');
-        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
-        setAiStatus("AI szűrés törölve.", "info");
-        filterAds();
-        const btn = document.getElementById("btnAiReset");
-        if (btn) {
-          const oldText = btn.textContent;
-          btn.textContent = "Törölve";
-          btn.disabled = true;
-          setTimeout(() => { btn.textContent = oldText; btn.disabled = false; }, 1200);
-        }
-      });
       await loadAds();
     }
 
@@ -739,7 +635,7 @@
         }
 
         currentRenderedAds = [...hirdetesekCache];
-        await renderAds(aiFilterActive ? (aiFilteredAds || []) : hirdetesekCache);
+        await renderAds(hirdetesekCache);
       } catch (e) {
         console.error(e);
         if (listEl) {
@@ -753,113 +649,7 @@
       return encodeURIComponent(msg);
     }
 
-    function normalizeHu(str) {
-      return String(str || '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-    }
-
-    function getAiScore(h, wants) {
-      let score = 0;
-      const hay = normalizeHu(`${h.cim || ''} ${h.leiras || ''} ${h.kategoria || ''} ${(h.varos || '')}`);
-      const title = normalizeHu(h.cim || '');
-      const category = normalizeHu(h.kategoria || '');
-      const task = normalizeHu(wants.task || '');
-      const city = normalizeHu(wants.city || '');
-      const budget = normalizeHu(wants.budget || '');
-      const taskTokens = task.split(/\s+/).filter(Boolean).filter(t => t.length >= 3);
-
-      if (taskTokens.length) {
-        let matchedTokens = 0;
-        for (const token of taskTokens) {
-          const stem = token.slice(0, Math.max(4, token.length - 2));
-          if (title.includes(token) || title.includes(stem)) matchedTokens += 2;
-          else if (category.includes(token) || category.includes(stem)) matchedTokens += 2;
-          else if (hay.includes(token) || hay.includes(stem)) matchedTokens += 1;
-        }
-        const minNeed = Math.max(1, Math.ceil(taskTokens.length * 0.6));
-        if (matchedTokens < minNeed) return 0;
-        score += matchedTokens * 3;
-        if (title.includes(task) || category.includes(task)) score += 3;
-      }
-
-      if (city) {
-        const adCity = normalizeHu(h.varos || '');
-        const profileCity = normalizeHu(profileSummaryMap.get(h.user_id)?.city || '');
-        const cityMatched = adCity.includes(city) || profileCity.includes(city);
-        if (!cityMatched) return 0;
-        score += 4;
-      }
-
-      if ((wants.urgency || '') === 'most') score += 1;
-      if (budget && hay.includes(budget)) score += 1;
-      if (h.csomag === 'extra') score += 1;
-      const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
-      if (rating?.count) score += Math.min(2, rating.avg / 3);
-      return score;
-    }
-
-
-    function setAiButtonState(stateText, disabled = false) {
-      const btn = document.getElementById("btnAiRecommend");
-      if (!btn) return;
-      btn.textContent = stateText;
-      btn.disabled = disabled;
-      btn.classList.toggle("opacity-70", disabled);
-      btn.classList.toggle("cursor-not-allowed", disabled);
-    }
-
-    function setAiStatus(message = "", type = "info") {
-      const el = document.getElementById("ai-status");
-      if (!el) return;
-      el.textContent = message;
-      el.className = "text-sm";
-      if (type === "success") el.classList.add("text-emerald-700");
-      else if (type === "error") el.classList.add("text-red-600");
-      else el.classList.add("text-slate-500");
-    }
-
-    function renderAiResults(scored, wants) {
-      const box = document.getElementById('ai-results');
-      if (!box) return;
-      if (!scored.length) {
-        aiRecommendedIds = [];
-        aiFilterActive = true;
-        box.classList.remove('hidden');
-        box.innerHTML = `<div class="text-slate-700 font-semibold">Nem találtam elég erős egyezést.</div><p class="text-slate-600 mt-1">Próbálj meg más kategóriát vagy települést megadni.</p>`;
-        return;
-      }
-      aiRecommendedIds = scored.map(x => x.id);
-      aiFilterActive = true;
-      box.classList.remove('hidden');
-      box.innerHTML = `
-        <div class="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div class="text-lg font-bold text-slate-900">AI ajánlott szakemberek</div>
-            <p class="text-slate-600 text-sm mt-1">A találatok a megadott igények alapján lettek kiemelve${wants.task ? `: <b>${escapeHtml(wants.task)}</b>` : ''}${wants.city ? `, <b>${escapeHtml(wants.city)}</b>` : ''}.</p>
-          </div>
-          <a href="#hirdetes-lista" class="text-emerald-700 font-semibold hover:underline">Ugrás a találatokhoz ↓</a>
-        </div>
-        <div class="grid md:grid-cols-3 gap-3 mt-4">
-          ${scored.slice(0,3).map((h, idx) => {
-            const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
-            const profile = h.user_id ? profileSummaryMap.get(h.user_id) : null;
-            return `<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <div class="text-xs font-bold text-emerald-700 uppercase">Top ${idx+1} ajánlat</div>
-              <div class="font-bold text-slate-900 mt-1">${escapeHtml(h.cim || 'Hirdetés')}</div>
-              <div class="text-sm text-slate-600 mt-1">${escapeHtml(profile?.display_name || h.email?.split('@')[0] || 'Szakember')} • ${escapeHtml(profile?.city || h.varos || 'Országos')}</div>
-              <div class="text-sm mt-2">${rating?.count ? `⭐ ${rating.avg.toFixed(1)} (${rating.count})` : '⭐ Új profil / még nincs értékelés'}</div>
-              <div class="mt-3 flex gap-2 flex-wrap">
-                ${h.user_id ? `<a class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold" href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}">Ajánlatkérés</a>` : ''}
-                ${h.user_id ? `<a class="px-3 py-2 rounded-lg border border-emerald-300 text-emerald-800 text-sm font-semibold bg-white" href="szakember.html?uid=${h.user_id}">Profil</a>` : ''}
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`;
-    }
-
-    async function renderAds(list) {
+        async function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
       if (!listEl) return;
       currentRenderedAds = Array.isArray(list) ? [...list] : [];
@@ -909,11 +699,8 @@
           const ratingHtml = rating && rating.count
             ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
             : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
-          const isAiPick = aiRecommendedIds.includes(h.id);
-          const aiBadge = isAiPick ? '<div class="absolute top-0 left-0 bg-emerald-500 text-xs font-bold px-2 py-1 rounded-br text-white">AI AJÁNLOTT</div>' : '';
           return `
-            <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass} ${isAiPick ? 'ring-2 ring-emerald-300' : ''}">
-              ${aiBadge}
+            <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
               ${extraBadge}
               <div class="flex justify-between gap-4">
                 <div class="min-w-0 flex-1">
@@ -963,11 +750,7 @@
       const txt = (document.getElementById("search").value || "").toLowerCase();
       const city = (document.getElementById("filter-city").value || "").toLowerCase();
       const cat = document.getElementById("category-select").value || "";
-
       let baseList = hirdetesekCache;
-      if (aiFilterActive) {
-        baseList = Array.isArray(aiFilteredAds) ? aiFilteredAds : hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
-      }
 
       const filtered = baseList.filter(h => {
         const hay = ((h.cim || "") + " " + (h.leiras || "")).toLowerCase();

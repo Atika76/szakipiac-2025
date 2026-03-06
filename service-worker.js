@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v2'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v3'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
@@ -13,6 +13,7 @@ const APP_SHELL_URLS = [
 
 // Telepítés: Elmentjük az app-shellt a gyorsítótárba
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('Service Worker: Cache megnyitva, app-shell mentése.');
@@ -23,17 +24,12 @@ self.addEventListener('install', event => {
 
 // Aktiválás: Töröljük a régi (pl. 'szakipiac-v1') cache-t
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.filter(cacheName => {
-          return cacheName !== CACHE_NAME; // Csak a nem egyező nevű cache-t töröljük
-        }).map(cacheName => {
-          return caches.delete(cacheName);
-        })
-      );
-    })
-  );
+  event.waitUntil((async () => {
+    await self.clients.claim();
+
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.filter(cacheName => cacheName !== CACHE_NAME).map(cacheName => caches.delete(cacheName)));
+  })());
 });
 
 // Fetch (Kérés) kezelése: Ez a legfontosabb rész
