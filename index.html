@@ -389,15 +389,21 @@ Megnézem a SzakiPiacon: ${getAdPermalink(ad)}`;
         showToast('A hirdetést nem találom a képhez.', 'error');
         return false;
       }
-      const dataUrl = generateAdShareImage(ad);
-      const a = document.createElement('a');
-      const safeName = (ad.cim || 'szakipiac-hirdetes').toLowerCase().replace(/[^a-z0-9áéíóöőúüű-]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      a.href = dataUrl;
-      a.download = `${safeName || 'szakipiac-hirdetes'}-facebook.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast('A megosztó kép letöltődött. Töltsd fel a Facebook poszthoz.');
+      try {
+        const dataUrl = generateAdShareImage(ad);
+        const safeName = (ad.cim || 'szakipiac-hirdetes').toLowerCase().replace(/[^a-z0-9áéíóöőúüű-]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${safeName || 'szakipiac-hirdetes'}-facebook.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        try { window.open(dataUrl, '_blank', 'noopener'); } catch {}
+        showToast('A megosztó kép elkészült. Letöltöttem és új fülön is megnyitottam.');
+      } catch (e) {
+        console.error(e);
+        showToast('Nem sikerült a megosztó képet létrehozni.', 'error');
+      }
       return false;
     }
     function handleFacebookShare(adOrId, ev) {
@@ -429,10 +435,11 @@ Megnézem a SzakiPiacon: ${getAdPermalink(ad)}`;
       return false;
     }
     function getMapUrl(ad) {
-      const category = ad.kategoria || ad.category || '';
-      const title = ad.cim || '';
-      const q = [category, title, ad.varos || '', ad.iranyitoszam || '', ad.cim || ''].filter(Boolean).join(', ');
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || 'Magyarország')}`;
+      const params = new URLSearchParams();
+      if (ad?.id != null) params.set('ad', String(ad.id));
+      const q = [ad?.kategoria || ad?.category || '', ad?.varos || '', ad?.cim || ''].filter(Boolean).join(' ');
+      if (q) params.set('q', q);
+      return `mapa.html?${params.toString()}`;
     }
 
     /* =========================
