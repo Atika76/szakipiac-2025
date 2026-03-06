@@ -35,9 +35,12 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap justify-end">
         <a href="./index.html" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900">
           ← Vissza a főoldalra
+        </a>
+        <a id="btnProfile" href="./profilom.html" class="hidden px-4 py-2 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold">
+          Profilom
         </a>
         <button id="btnLogout" class="hidden px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
           Kijelentkezés
@@ -206,6 +209,7 @@
     const panelMain = $("panelMain");
 
     const btnLogout = $("btnLogout");
+    const btnProfile = $("btnProfile");
     const btnInbox = $("btnInbox");
     const btnRefresh = $("btnRefresh");
     const btnSend = $("btnSend");
@@ -319,14 +323,19 @@
         bubble.className = "flex " + (mine ? "justify-end" : "justify-start");
         const canDelete = !!me; // a policy dönti el a tényleges jogot
         const senderLabel = mine ? "Te" : "Érdeklődő";
+        const avatar = mine ? "🙂" : "📩";
         bubble.innerHTML = `
-          <div class="max-w-[85%] rounded-2xl px-4 py-2.5 border ${mine ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-900 border-slate-200"}">
-            <div class="flex items-start gap-3">
-              <div class="flex-1">
-                <div class="text-[11px] font-semibold mb-1 ${mine ? "text-white/80" : "text-slate-500"}">${senderLabel}</div><div class="text-sm leading-relaxed">${escapeHtml(row.message || "")}</div>
-                <div class="mt-1 text-[11px] ${mine ? "text-white/70" : "text-slate-500"}">${escapeHtml(fmtTime(row.created_at))}</div>
+          <div class="max-w-[90%] flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}">
+            <div class="h-9 w-9 shrink-0 rounded-full ${mine ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-700"} flex items-center justify-center text-sm font-bold">${avatar}</div>
+            <div class="rounded-2xl px-4 py-2.5 border shadow-sm ${mine ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-900 border-slate-200"}">
+              <div class="flex items-start gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="text-[11px] font-semibold mb-1 ${mine ? "text-white/80" : "text-slate-500"}">${senderLabel}</div>
+                  <div class="text-sm leading-relaxed whitespace-pre-line">${escapeHtml(row.message || "")}</div>
+                  <div class="mt-1 text-[11px] ${mine ? "text-white/70" : "text-slate-500"}">${escapeHtml(fmtTime(row.created_at))}</div>
+                </div>
+                ${canDelete ? `<button data-del="${escapeHtml(String(row.id))}" class="shrink-0 text-[12px] ${mine ? "text-white/70 hover:text-white" : "text-slate-400 hover:text-slate-700"}" title="Törlés">🗑️</button>` : ""}
               </div>
-              ${canDelete ? `<button data-del="${escapeHtml(String(row.id))}" class="shrink-0 text-[12px] ${mine ? "text-white/70 hover:text-white" : "text-slate-400 hover:text-slate-700"}" title="Törlés">🗑️</button>` : ""}
             </div>
           </div>
         `;
@@ -369,10 +378,14 @@
         const row = document.createElement("button");
         row.type = "button";
         row.className = "w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center justify-between gap-3";
+        const initial = escapeHtml((t.label || "É").trim().charAt(0).toUpperCase());
         row.innerHTML = `
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(t.label)}</div>
-            <div class="text-xs text-slate-500 truncate">${escapeHtml(t.last || "")}</div>
+          <div class="min-w-0 flex items-center gap-3">
+            <div class="h-11 w-11 shrink-0 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">${initial}</div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(t.label)}</div>
+              <div class="text-xs text-slate-500 truncate">${escapeHtml(t.last || "")}</div>
+            </div>
           </div>
           <div class="shrink-0 flex items-center gap-2">
             ${t.unread > 0 ? `<span class="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-rose-600 text-white text-xs font-bold">${t.unread}</span>` : ""}
@@ -629,9 +642,11 @@
       if (me){
         setBadge("ok", "Bejelentkezve");
         btnLogout.classList.remove("hidden");
+        btnProfile.classList.remove("hidden");
       } else {
         setBadge("off", "Nincs bejelentkezve");
         btnLogout.classList.add("hidden");
+        btnProfile.classList.add("hidden");
       }
 
       if (me) btnInbox.classList.remove("hidden");
@@ -658,9 +673,11 @@
         if (me){
           setBadge("ok", "Bejelentkezve");
           btnLogout.classList.remove("hidden");
+          btnProfile.classList.remove("hidden");
         } else {
           setBadge("off", "Nincs bejelentkezve");
           btnLogout.classList.add("hidden");
+          btnProfile.classList.add("hidden");
         }
 
         if (me) btnInbox.classList.remove("hidden");

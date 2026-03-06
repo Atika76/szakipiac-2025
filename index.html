@@ -199,6 +199,7 @@
     let kivalasztottKepek = [];
     let hirdetesekCache = [];
     let ratingSummaryMap = new Map();
+    let profileSummaryMap = new Map();
     let unreadMessageCount = 0;
 
     /* =========================
@@ -504,6 +505,17 @@
         ratingSummaryMap = new Map();
         if (!userIds.length) return;
 
+        try {
+          const { data: profRows } = await supaClient
+            .from("szakember_profiles")
+            .select("user_id,display_name,city,avatar_url")
+            .in("user_id", userIds);
+          profileSummaryMap = new Map((profRows || []).map(r => [r.user_id, r]));
+        } catch (e) {
+          console.warn("profile summary hiba", e);
+          profileSummaryMap = new Map();
+        }
+
         const { data, error } = await supaClient
           .from("szakember_ratings")
           .select("user_id,stars")
@@ -603,6 +615,14 @@
             </span>`;
 
           const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
+          const profileInfo = h.user_id ? profileSummaryMap.get(h.user_id) : null;
+          const avatarUrl = (profileInfo?.avatar_url || "").trim();
+          const safeAvatar = avatarUrl.startsWith("data:image/") ? avatarUrl : (function(){ try { return avatarUrl ? new URL(avatarUrl).href : ""; } catch { return ""; } })();
+          const avatarHtml = safeAvatar
+            ? `<img src="${safeAvatar}" alt="Profilkép" class="h-12 w-12 rounded-xl object-cover border border-slate-200 bg-white">`
+            : `<div class="h-12 w-12 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-lg">👤</div>`;
+          const displayName = profileInfo?.display_name || (h.email ? String(h.email).split("@")[0] : "Szakember");
+          const cityText = profileInfo?.city || h.varos || "Országos";
           const ratingHtml = rating && rating.count
             ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
             : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
@@ -610,13 +630,23 @@
             <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
               ${extraBadge}
               <div class="flex justify-between gap-4">
-                <div>
-                  <p class="text-sm font-bold text-green-600 uppercase">${h.kategoria || ""} ${h.varos ? `• ${h.varos}` : ""}</p>
-                  <h3 class="text-xl font-bold mt-1 flex items-center flex-wrap gap-2">
-                    <span>${h.cim || ""}</span>
-                    ${pajzsHtml}
-                  </h3>
-                  ${ratingHtml}
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start gap-3">
+                    ${avatarHtml}
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-bold text-green-600 uppercase">${h.kategoria || ""} ${cityText ? `• ${cityText}` : ""}</p>
+                      <div class="mt-1 flex items-center gap-2 flex-wrap">
+                        <span class="text-sm font-semibold text-slate-700">${displayName}</span>
+                        <span class="text-xs text-slate-400">•</span>
+                        <span class="text-xs text-slate-500">Szakember profil</span>
+                      </div>
+                      <h3 class="text-xl font-bold mt-1 flex items-center flex-wrap gap-2">
+                        <span>${h.cim || ""}</span>
+                        ${pajzsHtml}
+                      </h3>
+                      ${ratingHtml}
+                    </div>
+                  </div>
                 </div>
                 <div class="text-lg font-bold whitespace-nowrap">${h.ar ? parseInt(h.ar).toLocaleString() + " Ft" : ""}</div>
               </div>
