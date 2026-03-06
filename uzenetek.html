@@ -84,6 +84,7 @@
             <button id="btnRefresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">
               Frissítés
             </button>
+            <span id="refreshNote" class="hidden text-xs text-slate-500"></span>
             <span id="liveBadge" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Élő figyelés</span>
           </div>
         </div>
@@ -211,6 +212,7 @@
     const btnLogout = $("btnLogout");
     const btnProfile = $("btnProfile");
     const btnInbox = $("btnInbox");
+    const refreshNote = $("refreshNote");
     const btnRefresh = $("btnRefresh");
     const btnSend = $("btnSend");
     const txtMessage = $("txtMessage");
@@ -264,6 +266,15 @@
     function clearError(){
       badgeError.classList.add("hidden");
       errText.textContent = "";
+    }
+
+    let refreshTimer = null;
+    function showRefreshNote(msg){
+      if (!refreshNote) return;
+      refreshNote.textContent = msg;
+      refreshNote.classList.remove("hidden");
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => refreshNote.classList.add("hidden"), 1800);
     }
 
     function showOnly(which){
@@ -699,8 +710,22 @@
 
       // Gombok
       btnRefresh.addEventListener("click", async () => {
-        if (!getTargetFromUrl()) await loadInbox();
-        else await loadConversation();
+        const original = btnRefresh.textContent.trim();
+        btnRefresh.disabled = true;
+        btnRefresh.textContent = "Frissítés...";
+        try {
+          if (targetUid) {
+            await loadConversation();
+            showRefreshNote("Beszélgetés frissítve");
+          } else {
+            await loadInbox();
+            showRefreshNote("Beérkező frissítve");
+          }
+          await updateUnreadUi();
+        } finally {
+          btnRefresh.disabled = false;
+          btnRefresh.textContent = original;
+        }
       });
 
       btnSend.addEventListener("click", async () => {
