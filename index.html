@@ -526,7 +526,7 @@
         };
         const scored = [...hirdetesekCache]
           .map(h => ({ ...h, __score: getAiScore(h, wants) }))
-          .filter(h => h.__score > 0)
+          .filter(h => h.__score >= 4)
           .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
         renderAiResults(scored, wants);
         setAiButtonState(scored.length ? `Ajánlás kész (${Math.min(scored.length, 99)})` : "Nincs találat", false);
@@ -534,6 +534,11 @@
       });
       btnAiReset?.addEventListener("click", () => {
         aiRecommendedIds = [];
+        ['ai-task','ai-city','ai-urgency','ai-budget'].forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+        });
         const box = document.getElementById('ai-results');
         if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
         renderAds(hirdetesekCache);
@@ -541,7 +546,8 @@
         if (btn) {
           const oldText = btn.textContent;
           btn.textContent = "Törölve";
-          setTimeout(() => { btn.textContent = oldText; }, 1200);
+          btn.disabled = true;
+          setTimeout(() => { btn.textContent = oldText; btn.disabled = false; }, 1200);
         }
       });
       await loadAds();
@@ -704,21 +710,40 @@
       return encodeURIComponent(msg);
     }
 
+    function normalizeHu(str) {
+      return String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
     function getAiScore(h, wants) {
       let score = 0;
-      const hay = `${h.cim || ''} ${h.leiras || ''} ${h.kategoria || ''} ${(h.varos || '')}`.toLowerCase();
-      const task = (wants.task || '').toLowerCase();
-      const city = (wants.city || '').toLowerCase();
-      const budget = (wants.budget || '').toLowerCase();
-      if (task) {
-        if ((h.kategoria || '').toLowerCase().includes(task)) score += 5;
-        if (hay.includes(task)) score += 4;
+      const hay = normalizeHu(`${h.cim || ''} ${h.leiras || ''} ${h.kategoria || ''} ${(h.varos || '')}`);
+      const task = normalizeHu(wants.task || '');
+      const city = normalizeHu(wants.city || '');
+      const budget = normalizeHu(wants.budget || '');
+      const taskTokens = task.split(/\s+/).filter(Boolean);
+
+      if (taskTokens.length) {
+        let matchedTokens = 0;
+        for (const token of taskTokens) {
+          if (token.length < 2) continue;
+          if (hay.includes(token)) matchedTokens += 1;
+        }
+        if (!matchedTokens) return 0;
+        score += matchedTokens * 4;
+        if (normalizeHu(h.kategoria || '').includes(task)) score += 3;
       }
+
       if (city) {
-        if ((h.varos || '').toLowerCase().includes(city)) score += 4;
-        const profileCity = (profileSummaryMap.get(h.user_id)?.city || '').toLowerCase();
-        if (profileCity && profileCity.includes(city)) score += 3;
+        const adCity = normalizeHu(h.varos || '');
+        const profileCity = normalizeHu(profileSummaryMap.get(h.user_id)?.city || '');
+        const cityMatched = adCity.includes(city) || profileCity.includes(city);
+        if (!cityMatched) return 0;
+        score += 4;
       }
+
       if ((wants.urgency || '') === 'most') score += 1;
       if (budget && hay.includes(budget)) score += 1;
       if (h.csomag === 'extra') score += 2;
@@ -773,7 +798,8 @@
             </div>`;
           }).join('')}
         </div>`;
-      renderAds(hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id)).concat(hirdetesekCache.filter(h => !aiRecommendedIds.includes(h.id))));
+      const aiOnly = hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
+      renderAds(aiOnly);
     }
 
     async function renderAds(list) {
