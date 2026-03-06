@@ -9,6 +9,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7fafc}</style>
+
+  <meta name="description" content="Nyilvános szakember profil, értékelések és kapcsolatfelvétel a SzakiPiacon." />
+  <link rel="canonical" href="https://szakipiac-2025.hu/szakember.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SzakiPiac" />
+  <meta property="og:title" content="Szakember profil – SzakiPiac-2025.hu" />
+  <meta property="og:description" content="Nyilvános szakember profil, értékelések és kapcsolatfelvétel a SzakiPiacon." />
+  <meta property="og:url" content="https://szakipiac-2025.hu/szakember.html" />
+  <meta property="og:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="hu_HU" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Szakember profil – SzakiPiac-2025.hu" />
+  <meta name="twitter:description" content="Nyilvános szakember profil, értékelések és kapcsolatfelvétel a SzakiPiacon." />
+  <meta name="twitter:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
 </head>
 <body class="text-gray-900">
 
@@ -423,6 +440,21 @@
 
   await loadProfile();
   await loadRatings();
+</script>
+<script>
+(function(){
+  function setMeta(sel, attr, value){ const el=document.querySelector(sel); if(el) el.setAttribute(attr,value); }
+  window.updateSeoMeta = function(profileName, city){
+    const title = `${profileName || 'Szakember profil'} – SzakiPiac`;
+    const desc = `${profileName || 'Szakember'} nyilvános profilja a SzakiPiacon${city ? ' • ' + city : ''}. Értékelések, kapcsolatfelvétel és hirdetések egy helyen.`;
+    document.title = title;
+    setMeta('meta[name="description"]','content',desc);
+    setMeta('meta[property="og:title"]','content',title);
+    setMeta('meta[property="og:description"]','content',desc);
+    setMeta('meta[name="twitter:title"]','content',title);
+    setMeta('meta[name="twitter:description"]','content',desc);
+  };
+})();
 </script>
 </body>
 </html>

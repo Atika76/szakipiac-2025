@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SzakiPiac-2025.hu - Találj megbízható szakembert!</title>
+  <title>SzakiPiac-2025.hu – Találj megbízható szakembert és kérj ajánlatot</title>
 
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -75,6 +75,46 @@
       bottom: 135%;
     }
   </style>
+
+  <meta name="description" content="Szakemberkeresés, ajánlatkérés, építőipari hirdetések, profilok, értékelések és AI eszközök egy helyen." />
+  <link rel="canonical" href="https://szakipiac-2025.hu/index.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SzakiPiac" />
+  <meta property="og:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert és kérj ajánlatot" />
+  <meta property="og:description" content="Szakemberkeresés, ajánlatkérés, építőipari hirdetések, profilok, értékelések és AI eszközök egy helyen." />
+  <meta property="og:url" content="https://szakipiac-2025.hu/index.html" />
+  <meta property="og:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="hu_HU" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert és kérj ajánlatot" />
+  <meta name="twitter:description" content="Szakemberkeresés, ajánlatkérés, építőipari hirdetések, profilok, értékelések és AI eszközök egy helyen." />
+  <meta name="twitter:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <script type="application/ld+json">
+{
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":"Organization",
+        "name":"SzakiPiac",
+        "url":"https://szakipiac-2025.hu/",
+        "logo":"https://szakipiac-2025.hu/logo.png"
+      },
+      {
+        "@type":"WebSite",
+        "name":"SzakiPiac-2025.hu",
+        "url":"https://szakipiac-2025.hu/",
+        "potentialAction":{
+          "@type":"SearchAction",
+          "target":"https://szakipiac-2025.hu/index.html?kereses={search_term_string}",
+          "query-input":"required name=search_term_string"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
@@ -369,6 +409,32 @@
           </div>
         </div>
 
+        <div class="bg-gradient-to-r from-emerald-50 via-white to-indigo-50 p-6 rounded-2xl shadow mb-8 border border-emerald-100">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 class="text-xl md:text-2xl font-bold text-slate-900">🤖 AI szakember ajánló</h2>
+              <p class="text-slate-600 mt-1">Írd be, mire van szükséged, és a rendszer kiemeli a legjobb hirdetéseket.</p>
+            </div>
+            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-sm font-semibold">AI segítség a választáshoz</span>
+          </div>
+          <div class="grid md:grid-cols-4 gap-3 mt-4">
+            <input type="text" id="ai-task" placeholder="Pl. kőműves, burkolás, tetőjavítás" class="w-full border border-slate-200 p-3 rounded-xl">
+            <input type="text" id="ai-city" placeholder="Település / környék" class="w-full border border-slate-200 p-3 rounded-xl">
+            <select id="ai-urgency" class="w-full border border-slate-200 p-3 rounded-xl">
+              <option value="">Mikor kell?</option>
+              <option value="most">Azonnal</option>
+              <option value="1-2 héten belül">1-2 héten belül</option>
+              <option value="ráér">Ráér</option>
+            </select>
+            <input type="text" id="ai-budget" placeholder="Kb. keret / megjegyzés" class="w-full border border-slate-200 p-3 rounded-xl">
+          </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="btnAiRecommend" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold hover:bg-slate-800">AI ajánló indítása</button>
+            <button id="btnAiReset" class="border border-slate-300 text-slate-700 px-5 py-3 rounded-xl font-semibold hover:bg-slate-50">Ajánló törlése</button>
+          </div>
+          <div id="ai-results" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-white p-5"></div>
+        </div>
+
         
         <div class="bg-white p-6 rounded shadow mb-8">
           <div class="flex items-start justify-between gap-4">
@@ -446,6 +512,28 @@
       document.getElementById("search").addEventListener("input", filterAds);
       document.getElementById("filter-city").addEventListener("input", filterAds);
       document.getElementById("category-select").addEventListener("change", filterAds);
+
+      const btnAiRecommend = document.getElementById("btnAiRecommend");
+      const btnAiReset = document.getElementById("btnAiReset");
+      btnAiRecommend?.addEventListener("click", () => {
+        const wants = {
+          task: document.getElementById("ai-task")?.value || "",
+          city: document.getElementById("ai-city")?.value || "",
+          urgency: document.getElementById("ai-urgency")?.value || "",
+          budget: document.getElementById("ai-budget")?.value || ""
+        };
+        const scored = [...hirdetesekCache]
+          .map(h => ({ ...h, __score: getAiScore(h, wants) }))
+          .filter(h => h.__score > 0)
+          .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
+        renderAiResults(scored, wants);
+      });
+      btnAiReset?.addEventListener("click", () => {
+        aiRecommendedIds = [];
+        const box = document.getElementById('ai-results');
+        if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+        renderAds(hirdetesekCache);
+      });
       await loadAds();
     }
 
@@ -577,7 +665,7 @@
           .from("hirdetesek")
           .select("*")
           .gte("lejárati_datum", new Date().toISOString())
-          .order("created_at", { ascending: false });
+          .order("csomag", { ascending: false }).order("created_at", { ascending: false });
         if (error) throw error;
         hirdetesekCache = data || [];
         await loadRatingsSummary(hirdetesekCache);
@@ -586,6 +674,73 @@
         console.error(e);
         if (listEl) listEl.innerHTML = `<p class="text-center text-red-600">Hiba a betöltéskor: ${e?.message || e}</p>`;
       }
+    }
+
+    function getRequestPrefill(h) {
+      const msg = `Szia! A(z) "${h.cim || 'hirdetés'}" kapcsán szeretnék ajánlatot kérni.`;
+      return encodeURIComponent(msg);
+    }
+
+    function getAiScore(h, wants) {
+      let score = 0;
+      const hay = `${h.cim || ''} ${h.leiras || ''} ${h.kategoria || ''} ${(h.varos || '')}`.toLowerCase();
+      const task = (wants.task || '').toLowerCase();
+      const city = (wants.city || '').toLowerCase();
+      const budget = (wants.budget || '').toLowerCase();
+      if (task) {
+        if ((h.kategoria || '').toLowerCase().includes(task)) score += 5;
+        if (hay.includes(task)) score += 4;
+      }
+      if (city) {
+        if ((h.varos || '').toLowerCase().includes(city)) score += 4;
+        const profileCity = (profileSummaryMap.get(h.user_id)?.city || '').toLowerCase();
+        if (profileCity && profileCity.includes(city)) score += 3;
+      }
+      if ((wants.urgency || '') === 'most') score += 1;
+      if (budget && hay.includes(budget)) score += 1;
+      if (h.csomag === 'extra') score += 2;
+      const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
+      if (rating?.count) score += Math.min(3, rating.avg / 2);
+      return score;
+    }
+
+    function renderAiResults(scored, wants) {
+      const box = document.getElementById('ai-results');
+      if (!box) return;
+      if (!scored.length) {
+        aiRecommendedIds = [];
+        box.classList.remove('hidden');
+        box.innerHTML = `<div class="text-slate-700 font-semibold">Nem találtam elég erős egyezést.</div><p class="text-slate-600 mt-1">Próbálj meg más kategóriát vagy települést megadni.</p>`;
+        renderAds(hirdetesekCache);
+        return;
+      }
+      aiRecommendedIds = scored.map(x => x.id);
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div class="text-lg font-bold text-slate-900">AI ajánlott szakemberek</div>
+            <p class="text-slate-600 text-sm mt-1">A találatok a megadott igények alapján lettek kiemelve${wants.task ? `: <b>${escapeHtml(wants.task)}</b>` : ''}${wants.city ? `, <b>${escapeHtml(wants.city)}</b>` : ''}.</p>
+          </div>
+          <a href="#hirdetes-lista" class="text-emerald-700 font-semibold hover:underline">Ugrás a találatokhoz ↓</a>
+        </div>
+        <div class="grid md:grid-cols-3 gap-3 mt-4">
+          ${scored.slice(0,3).map((h, idx) => {
+            const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
+            const profile = h.user_id ? profileSummaryMap.get(h.user_id) : null;
+            return `<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <div class="text-xs font-bold text-emerald-700 uppercase">Top ${idx+1} ajánlat</div>
+              <div class="font-bold text-slate-900 mt-1">${escapeHtml(h.cim || 'Hirdetés')}</div>
+              <div class="text-sm text-slate-600 mt-1">${escapeHtml(profile?.display_name || h.email?.split('@')[0] || 'Szakember')} • ${escapeHtml(profile?.city || h.varos || 'Országos')}</div>
+              <div class="text-sm mt-2">${rating?.count ? `⭐ ${rating.avg.toFixed(1)} (${rating.count})` : '⭐ Új profil / még nincs értékelés'}</div>
+              <div class="mt-3 flex gap-2 flex-wrap">
+                ${h.user_id ? `<a class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold" href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}">Ajánlatkérés</a>` : ''}
+                ${h.user_id ? `<a class="px-3 py-2 rounded-lg border border-emerald-300 text-emerald-800 text-sm font-semibold bg-white" href="szakember.html?uid=${h.user_id}">Profil</a>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      renderAds(hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id)).concat(hirdetesekCache.filter(h => !aiRecommendedIds.includes(h.id))));
     }
 
     function renderAds(list) {
@@ -626,8 +781,11 @@
           const ratingHtml = rating && rating.count
             ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
             : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
+          const isAiPick = aiRecommendedIds.includes(h.id);
+          const aiBadge = isAiPick ? '<div class="absolute top-0 left-0 bg-emerald-500 text-xs font-bold px-2 py-1 rounded-br text-white">AI AJÁNLOTT</div>' : '';
           return `
-            <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
+            <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass} ${isAiPick ? 'ring-2 ring-emerald-300' : ''}">
+              ${aiBadge}
               ${extraBadge}
               <div class="flex justify-between gap-4">
                 <div class="min-w-0 flex-1">
@@ -660,6 +818,7 @@
                   ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
                   ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
                   ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
+                  ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
                 </div>
                 ${delBtn}
               </div>
