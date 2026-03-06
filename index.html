@@ -307,139 +307,6 @@
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || 'Magyarország')}`;
     }
 
-    function buildShareImageCanvas(ad) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 630;
-      const ctx = canvas.getContext('2d');
-
-      // Háttér
-      const grad = ctx.createLinearGradient(0, 0, 1200, 630);
-      grad.addColorStop(0, '#facc15');
-      grad.addColorStop(1, '#fde68a');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Kártya
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      roundRect(ctx, 70, 70, 1060, 490, 28, true, false);
-
-      // Fejléc
-      ctx.fillStyle = '#166534';
-      roundRect(ctx, 95, 95, 530, 82, 22, true, false);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 34px Arial';
-      ctx.fillText('SZAKIPIAC-2025.HU', 125, 148);
-
-      ctx.fillStyle = '#111827';
-      ctx.font = 'bold 52px Arial';
-      wrapCanvasText(ctx, String(ad.cim || 'Új hirdetés a SzakiPiacon'), 110, 250, 620, 60, 3);
-
-      ctx.fillStyle = '#065f46';
-      ctx.font = 'bold 28px Arial';
-      const meta = [ad.kategoria || '', ad.varos || 'Országos', ad.ar ? `${parseInt(ad.ar).toLocaleString('hu-HU')} Ft` : ''].filter(Boolean).join(' • ');
-      wrapCanvasText(ctx, meta || 'Megbízható szakember • Ajánlatkérés', 110, 385, 620, 36, 2);
-
-      ctx.fillStyle = '#374151';
-      ctx.font = '26px Arial';
-      const desc = String(ad.leiras || 'Találj megbízható szakembert vagy kérj ajánlatot percek alatt.').replace(/\s+/g, ' ').trim();
-      wrapCanvasText(ctx, desc, 110, 445, 620, 34, 3);
-
-      // Jobb oldal dísz
-      ctx.fillStyle = '#ecfdf5';
-      roundRect(ctx, 770, 110, 280, 360, 30, true, false);
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(910, 220, 78, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 64px Arial';
-      ctx.fillText('✔', 885, 243);
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 30px Arial';
-      ctx.fillText('Ajánlatkérés', 815, 330);
-      ctx.fillText('egy kattintással', 790, 370);
-
-      // Alsó CTA
-      ctx.fillStyle = '#ffffff';
-      roundRect(ctx, 110, 500, 370, 58, 28, true, false);
-      ctx.fillStyle = '#111827';
-      ctx.font = 'bold 28px Arial';
-      ctx.fillText('szakipiac-2025.hu', 145, 538);
-
-      return canvas;
-    }
-
-    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
-      if (typeof radius === 'number') radius = {tl: radius, tr: radius, br: radius, bl: radius};
-      ctx.beginPath();
-      ctx.moveTo(x + radius.tl, y);
-      ctx.lineTo(x + width - radius.tr, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-      ctx.lineTo(x + width, y + height - radius.br);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-      ctx.lineTo(x + radius.bl, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-      ctx.lineTo(x, y + radius.tl);
-      ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-      ctx.closePath();
-      if (fill) ctx.fill();
-      if (stroke) ctx.stroke();
-    }
-
-    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 99) {
-      const words = String(text || '').split(/\s+/).filter(Boolean);
-      let line = '';
-      let lines = 0;
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const testWidth = ctx.measureText(testLine).width;
-        if (testWidth > maxWidth && n > 0) {
-          ctx.fillText(line.trim(), x, y);
-          line = words[n] + ' ';
-          y += lineHeight;
-          lines++;
-          if (lines >= maxLines - 1) {
-            const rest = [line.trim(), ...words.slice(n + 1)].join(' ');
-            let truncated = rest;
-            while (ctx.measureText(truncated + '…').width > maxWidth && truncated.length > 0) {
-              truncated = truncated.slice(0, -1);
-            }
-            ctx.fillText((truncated || rest).trim() + '…', x, y);
-            return;
-          }
-        } else {
-          line = testLine;
-        }
-      }
-      if (line.trim()) ctx.fillText(line.trim(), x, y);
-    }
-
-    window.generateShareImageById = async function(adId) {
-      try {
-        const ad = (window.hirdetesekCache || []).find(x => String(x.id) === String(adId));
-        if (!ad) {
-          showToast('A hirdetés képe most nem készíthető el.', 'error');
-          return false;
-        }
-        const canvas = buildShareImageCanvas(ad);
-        const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `szakipiac-${String(ad.cim || 'hirdetes').toLowerCase().replace(/[^a-z0-9áéíóöőúüű -]/gi, '').replace(/\s+/g, '-').slice(0, 40) || 'hirdetes'}.png`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        try { window.open(dataUrl, '_blank', 'noopener'); } catch {}
-        showToast('A megosztó kép elkészült és letöltődött.', 'success');
-        return false;
-      } catch (err) {
-        console.error('share image error', err);
-        showToast('Nem sikerült elkészíteni a megosztó képet.', 'error');
-        return false;
-      }
-    }
-
     /* =========================
        2/B) ANALYTICS (NEM TÖRI SZÉT)
        - ha nincs policy / nincs login: csendben eldobja
@@ -873,7 +740,6 @@
         const viewHtml = `<div class="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-xs text-slate-600">👁 Megtekintve nálad: <strong>${viewCount}</strong></div>`;
         const mapBtn = `<a href="${getMapUrl(h)}" target="_blank" rel="noopener" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-200">📍 Térkép</a>`;
         const fbBtn = `<a href="${getFacebookShareUrl(h)}" target="_blank" rel="noopener" class="bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-800">f Facebook</a>`;
-        const shareImageBtn = `<button onclick="return window.generateShareImageById('${h.id}')" class="bg-fuchsia-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-fuchsia-700">🖼️ Megosztó kép</button>`;
         return `
           <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
             ${extraBadge}
@@ -911,7 +777,8 @@
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
                 ${fbBtn}
-                ${shareImageBtn}
+                <button type="button" class="share-image-btn bg-fuchsia-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-fuchsia-700" data-share-title="${(h.cim || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-share-city="${(cityText || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-share-category="${(h.kategoria || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-share-desc="${((h.leiras || '').slice(0, 180)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/
+/g,' ')}">🖼️ Megosztó kép</button>
                 ${mapBtn}
               </div>
               ${delBtn}
