@@ -241,6 +241,7 @@
     let ratingSummaryMap = new Map();
     let profileSummaryMap = new Map();
     let aiRecommendedIds = [];
+    let aiFilterActive = false;
     let unreadMessageCount = 0;
 
     /* =========================
@@ -524,16 +525,19 @@
           urgency: document.getElementById("ai-urgency")?.value || "",
           budget: document.getElementById("ai-budget")?.value || ""
         };
+        const hasInput = Object.values(wants).some(v => String(v || '').trim());
         const scored = [...hirdetesekCache]
           .map(h => ({ ...h, __score: getAiScore(h, wants) }))
-          .filter(h => h.__score >= 4)
+          .filter(h => hasInput ? h.__score >= 2 : true)
           .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
+        aiFilterActive = hasInput;
         renderAiResults(scored, wants);
         setAiButtonState(scored.length ? `Ajánlás kész (${Math.min(scored.length, 99)})` : "Nincs találat", false);
         setTimeout(() => setAiButtonState("AI ajánló indítása", false), 1800);
       });
       btnAiReset?.addEventListener("click", () => {
         aiRecommendedIds = [];
+        aiFilterActive = false;
         ['ai-task','ai-city','ai-urgency','ai-budget'].forEach(id => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -729,7 +733,8 @@
         let matchedTokens = 0;
         for (const token of taskTokens) {
           if (token.length < 2) continue;
-          if (hay.includes(token)) matchedTokens += 1;
+          const shortToken = token.slice(0, Math.max(3, token.length - 2));
+          if (hay.includes(token) || hay.includes(shortToken)) matchedTokens += 1;
         }
         if (!matchedTokens) return 0;
         score += matchedTokens * 4;
@@ -767,12 +772,14 @@
       if (!box) return;
       if (!scored.length) {
         aiRecommendedIds = [];
+        aiFilterActive = true;
         box.classList.remove('hidden');
         box.innerHTML = `<div class="text-slate-700 font-semibold">Nem találtam elég erős egyezést.</div><p class="text-slate-600 mt-1">Próbálj meg más kategóriát vagy települést megadni.</p>`;
-        renderAds(hirdetesekCache);
+        renderAds([]);
         return;
       }
       aiRecommendedIds = scored.map(x => x.id);
+      aiFilterActive = true;
       box.classList.remove('hidden');
       box.innerHTML = `
         <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -906,7 +913,12 @@
       const city = (document.getElementById("filter-city").value || "").toLowerCase();
       const cat = document.getElementById("category-select").value || "";
 
-      const filtered = hirdetesekCache.filter(h => {
+      let baseList = hirdetesekCache;
+      if (aiFilterActive) {
+        baseList = hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
+      }
+
+      const filtered = baseList.filter(h => {
         const hay = ((h.cim || "") + " " + (h.leiras || "")).toLowerCase();
         const okTxt = hay.includes(txt);
         const okCity = !city || ((h.varos || "").toLowerCase().includes(city));
