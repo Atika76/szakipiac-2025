@@ -242,6 +242,7 @@
     let profileSummaryMap = new Map();
     let aiRecommendedIds = [];
     let aiFilterActive = false;
+    let aiFilteredAds = null;
     let currentRenderedAds = [];
     let unreadMessageCount = 0;
 
@@ -542,24 +543,25 @@
           setAiStatus("Találatok keresése...", "info");
           const scored = [...hirdetesekCache]
             .map(h => ({ ...h, __score: getAiScore(h, wants) }))
-            .filter(h => h.__score >= 2)
+            .filter(h => h.__score >= 4)
             .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
           aiFilterActive = true;
           if (!scored.length) {
             aiRecommendedIds = [];
+            aiFilteredAds = [];
             renderAiResults([], wants);
-            currentRenderedAds = [];
-            renderAds([]);
+            filterAds();
             setAiStatus("Nincs találat a megadott feltételekre.", "error");
             return;
           }
 
           const aiOnly = hirdetesekCache.filter(h => scored.some(s => s.id === h.id));
           aiRecommendedIds = aiOnly.map(h => h.id);
+          aiFilteredAds = aiOnly;
           currentRenderedAds = aiOnly;
           renderAiResults(scored, wants);
-          renderAds(aiOnly);
+          filterAds();
           setAiStatus(`${aiOnly.length} találat megjelenítve.`, "success");
         } catch (err) {
           console.error("AI ajánló hiba", err);
@@ -571,6 +573,7 @@
       btnAiReset?.addEventListener("click", () => {
         aiRecommendedIds = [];
         aiFilterActive = false;
+        aiFilteredAds = null;
         currentRenderedAds = [...hirdetesekCache];
         ['ai-task','ai-city','ai-urgency','ai-budget'].forEach(id => {
           const el = document.getElementById(id);
@@ -580,7 +583,7 @@
         const box = document.getElementById('ai-results');
         if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
         setAiStatus("AI szűrés törölve.", "info");
-        renderAds(hirdetesekCache);
+        filterAds();
         const btn = document.getElementById("btnAiReset");
         if (btn) {
           const oldText = btn.textContent;
@@ -736,7 +739,7 @@
         }
 
         currentRenderedAds = [...hirdetesekCache];
-        await renderAds(hirdetesekCache);
+        await renderAds(aiFilterActive ? (aiFilteredAds || []) : hirdetesekCache);
       } catch (e) {
         console.error(e);
         if (listEl) {
@@ -760,21 +763,25 @@
     function getAiScore(h, wants) {
       let score = 0;
       const hay = normalizeHu(`${h.cim || ''} ${h.leiras || ''} ${h.kategoria || ''} ${(h.varos || '')}`);
+      const title = normalizeHu(h.cim || '');
+      const category = normalizeHu(h.kategoria || '');
       const task = normalizeHu(wants.task || '');
       const city = normalizeHu(wants.city || '');
       const budget = normalizeHu(wants.budget || '');
-      const taskTokens = task.split(/\s+/).filter(Boolean);
+      const taskTokens = task.split(/\s+/).filter(Boolean).filter(t => t.length >= 3);
 
       if (taskTokens.length) {
         let matchedTokens = 0;
         for (const token of taskTokens) {
-          if (token.length < 2) continue;
-          const shortToken = token.slice(0, Math.max(3, token.length - 2));
-          if (hay.includes(token) || hay.includes(shortToken)) matchedTokens += 1;
+          const stem = token.slice(0, Math.max(4, token.length - 2));
+          if (title.includes(token) || title.includes(stem)) matchedTokens += 2;
+          else if (category.includes(token) || category.includes(stem)) matchedTokens += 2;
+          else if (hay.includes(token) || hay.includes(stem)) matchedTokens += 1;
         }
-        if (!matchedTokens) return 0;
-        score += matchedTokens * 4;
-        if (normalizeHu(h.kategoria || '').includes(task)) score += 3;
+        const minNeed = Math.max(1, Math.ceil(taskTokens.length * 0.6));
+        if (matchedTokens < minNeed) return 0;
+        score += matchedTokens * 3;
+        if (title.includes(task) || category.includes(task)) score += 3;
       }
 
       if (city) {
@@ -786,11 +793,10 @@
       }
 
       if ((wants.urgency || '') === 'most') score += 1;
-      if (task && normalizeHu(h.cim || '').includes(task.slice(0, Math.min(task.length, 6)))) score += 2;
       if (budget && hay.includes(budget)) score += 1;
-      if (h.csomag === 'extra') score += 2;
+      if (h.csomag === 'extra') score += 1;
       const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
-      if (rating?.count) score += Math.min(3, rating.avg / 2);
+      if (rating?.count) score += Math.min(2, rating.avg / 3);
       return score;
     }
 
@@ -960,7 +966,7 @@
 
       let baseList = hirdetesekCache;
       if (aiFilterActive) {
-        baseList = hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
+        baseList = Array.isArray(aiFilteredAds) ? aiFilteredAds : hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
       }
 
       const filtered = baseList.filter(h => {
