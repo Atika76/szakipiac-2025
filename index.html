@@ -294,11 +294,139 @@
         localStorage.setItem(`sp_ad_views_${adId}`, String(next));
       } catch {}
     }
+    function getAdPermalink(ad) {
+      const origin = window.location.origin || "https://szakipiac-2025.hu";
+      return `${origin}/`;
+    }
+    function getFacebookShareText(ad) {
+      const quoteParts = [
+        ad.cim || 'SzakiPiac hirdetés',
+        ad.kategoria || '',
+        ad.varos || 'Országos',
+        ad.ar ? `${parseInt(ad.ar).toLocaleString('hu-HU')} Ft` : ''
+      ].filter(Boolean);
+      return `${quoteParts.join(' • ')}
+Megnézem a SzakiPiacon: ${getAdPermalink(ad)}`;
+    }
     function getFacebookShareUrl(ad) {
-      const base = window.location.origin + window.location.pathname;
-      const shareUrl = `${base}?ad=${encodeURIComponent(ad.id || "")}`;
-      const quote = `${ad.cim || 'SzakiPiac hirdetés'} – ${ad.varos || 'Országos'} | SzakiPiac-2025.hu`;
+      const shareUrl = getAdPermalink(ad);
+      const quote = getFacebookShareText(ad);
       return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(quote)}`;
+    }
+
+    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      let line = '';
+      let lines = 0;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line ? line + ' ' + words[n] : words[n];
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth && line) {
+          ctx.fillText(line, x, y);
+          line = words[n];
+          y += lineHeight;
+          lines += 1;
+          if (lines >= maxLines - 1) break;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) ctx.fillText(line, x, y);
+    }
+    function generateAdShareImage(ad) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 630;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 1200, 630);
+      grad.addColorStop(0, '#facc15');
+      grad.addColorStop(1, '#fde68a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 58px Arial';
+      ctx.fillText('SZAKIPIAC-2025.HU', 70, 95);
+
+      ctx.fillStyle = '#166534';
+      ctx.font = 'bold 34px Arial';
+      ctx.fillText('Facebook megosztó kép hirdetéshez', 70, 145);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 56px Arial';
+      wrapCanvasText(ctx, ad.cim || 'Új szakember hirdetés', 70, 245, 820, 64, 3);
+
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 30px Arial';
+      const meta = [ad.kategoria || 'Szakember', ad.varos || 'Országos', ad.ar ? `${parseInt(ad.ar).toLocaleString('hu-HU')} Ft` : 'Ár egyeztetéssel'].filter(Boolean).join(' • ');
+      wrapCanvasText(ctx, meta, 70, 410, 820, 42, 2);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '28px Arial';
+      wrapCanvasText(ctx, ad.leiras || 'Kérj ajánlatot percek alatt a SzakiPiacon.', 70, 475, 820, 38, 3);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(860, 120, 250, 250);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(890, 150, 190, 60);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 30px Arial';
+      ctx.fillText('AJÁNLATKÉRÉS', 918, 190);
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText('Megbízható szakember', 860, 440);
+      ctx.font = '26px Arial';
+      ctx.fillText('szakipiac-2025.hu', 860, 485);
+      ctx.fillText('💬 Üzenet • 📞 Hívás • 🌐 Web', 860, 525);
+
+      return canvas.toDataURL('image/png');
+    }
+    function downloadAdShareImage(adOrId) {
+      const ad = (typeof adOrId === 'object' && adOrId)
+        ? adOrId
+        : (hirdetesekCache.find(x => String(x.id) === String(adOrId)) || currentRenderedAds.find(x => String(x.id) === String(adOrId)) || null);
+      if (!ad) {
+        showToast('A hirdetést nem találom a képhez.', 'error');
+        return false;
+      }
+      const dataUrl = generateAdShareImage(ad);
+      const a = document.createElement('a');
+      const safeName = (ad.cim || 'szakipiac-hirdetes').toLowerCase().replace(/[^a-z0-9áéíóöőúüű-]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      a.href = dataUrl;
+      a.download = `${safeName || 'szakipiac-hirdetes'}-facebook.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('A megosztó kép letöltődött. Töltsd fel a Facebook poszthoz.');
+      return false;
+    }
+    function handleFacebookShare(adOrId, ev) {
+      if (ev) {
+        try { ev.preventDefault(); } catch {}
+        try { ev.stopPropagation(); } catch {}
+      }
+      const ad = (typeof adOrId === 'object' && adOrId)
+        ? adOrId
+        : (hirdetesekCache.find(x => String(x.id) === String(adOrId)) || currentRenderedAds.find(x => String(x.id) === String(adOrId)) || null);
+      if (!ad) {
+        showToast('A hirdetést nem találom a megosztáshoz.', 'error');
+        return false;
+      }
+      const shareUrl = getFacebookShareUrl(ad);
+      const shareText = getFacebookShareText(ad);
+      const popup = window.open(shareUrl, '_blank', 'noopener,width=680,height=720');
+      setTimeout(async () => {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(shareText);
+            showToast('A hirdetés szövege a vágólapra került. A Facebookon csak be kell illeszteni.');
+          }
+        } catch {}
+      }, 10);
+      if (!popup) {
+        window.location.href = shareUrl;
+      }
+      return false;
     }
     function getMapUrl(ad) {
       const category = ad.kategoria || ad.category || '';
@@ -411,6 +539,25 @@
     <li>✅ Kiemelés több érdeklődőért</li>
   </ul>
   <a href="#feltoltes" class="inline-flex items-center justify-center bg-green-600 text-white px-5 py-2 rounded font-bold hover:bg-green-700">Hirdetés feltöltése</a>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4 mb-8">
+  <a href="forgalom.html" class="rounded-2xl border border-blue-200 bg-blue-50 p-5 hover:shadow-md transition">
+    <div class="text-sm font-bold text-blue-800 mb-2">📣 Facebook forgalom oldal</div>
+    <div class="text-xl font-extrabold text-slate-900 mb-2">Használd a kész marketing oldalt</div>
+    <div class="text-sm text-slate-700">Külön landing oldal nagy CTA gombokkal. Ide tereld a Facebook kattintásokat.</div>
+    <div class="mt-4 inline-flex text-sm font-bold text-blue-700">Megnyitom →</div>
+  </a>
+  <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+    <div class="text-sm font-bold text-amber-800 mb-2">🖼 Posztkép minden hirdetéshez</div>
+    <div class="text-xl font-extrabold text-slate-900 mb-2">1 kattintásos letöltés</div>
+    <div class="text-sm text-slate-700">A hirdetéskártyán új "Megosztó kép" gomb van. Letölt egy olvasható Facebook képet.</div>
+  </div>
+  <div class="rounded-2xl border border-green-200 bg-green-50 p-5">
+    <div class="text-sm font-bold text-green-800 mb-2">🎯 Erősebb ajánlatkérés</div>
+    <div class="text-xl font-extrabold text-slate-900 mb-2">Nagyobb CTA a főoldalon</div>
+    <div class="text-sm text-slate-700">Gyorsabb kapcsolatfelvétel, több üzenet, jobb átkattintás a hirdetésekre.</div>
+  </div>
 </div>
 
         <div class="bg-white p-6 rounded shadow mb-8">
@@ -739,7 +886,7 @@
         const viewCount = getLocalAdViews(h.id);
         const viewHtml = `<div class="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-xs text-slate-600">👁 Megtekintve nálad: <strong>${viewCount}</strong></div>`;
         const mapBtn = `<a href="${getMapUrl(h)}" target="_blank" rel="noopener" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-200">📍 Térkép</a>`;
-        const fbBtn = `<a href="${getFacebookShareUrl(h)}" target="_blank" rel="noopener" class="bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-800">f Facebook</a>`;
+        const fbBtn = `<a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getAdPermalink(h))}" target="_blank" rel="noopener" onclick="return handleFacebookShare('${String(h.id).replace(/'/g, "\'")}', event)" class="bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-800">f Facebook</a>`;
         return `
           <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
             ${extraBadge}
@@ -775,8 +922,9 @@
                 ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
                 ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
-                ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
+                                ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
                 ${fbBtn}
+                <button onclick="return downloadAdShareImage('${String(h.id).replace(/'/g, "\'")}')" class="bg-fuchsia-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-fuchsia-700">🖼 Megosztó kép</button>
                 ${mapBtn}
               </div>
               ${delBtn}
@@ -863,8 +1011,8 @@
               <div class="text-sm text-emerald-800">A prémium / extra csomagok külön blokkban felül jelennek meg – több kattintás, több üzenet.</div>
             </div>
             <div class="border border-blue-200 bg-blue-50 rounded-xl p-4">
-              <div class="font-bold text-blue-900 mb-1">2. Facebook megosztás</div>
-              <div class="text-sm text-blue-800">Minden hirdetésnél külön megosztó gomb van. Egy jó posztból gyorsan jöhet érdeklődő.</div>
+              <div class="font-bold text-blue-900 mb-1">2. Facebook megosztás + kép</div>
+              <div class="text-sm text-blue-800">Minden hirdetésnél külön Facebook gomb és letölthető megosztó kép van. Egy jó posztból gyorsan jöhet érdeklődő.</div>
             </div>
             <div class="border border-amber-200 bg-amber-50 rounded-xl p-4">
               <div class="font-bold text-amber-900 mb-1">3. Ajánlatkérés + Térkép</div>
