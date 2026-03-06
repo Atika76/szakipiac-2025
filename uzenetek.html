@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Üzenetek – SzakiPiac</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +28,7 @@
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">S</div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <span class="text-lg font-semibold">SzakiPiac</span>
           <span class="text-slate-400">/</span>
           <span class="text-slate-600 font-medium">Üzenetek</span>
@@ -80,6 +81,7 @@
             <button id="btnRefresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">
               Frissítés
             </button>
+            <span id="liveBadge" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Élő figyelés</span>
           </div>
         </div>
 
@@ -219,6 +221,9 @@
     const smallStatus = $("smallStatus");
     const sideStatus = $("sideStatus");
     const subtitle = $("subtitle");
+    const liveBadge = $("liveBadge");
+    let lastKnownUnread = 0;
+    let currentThreadLabel = "";
 
     let session = null;
     let me = null;
@@ -301,6 +306,7 @@
     }
 
     function renderMessages(rows){
+      currentThreadLabel = currentThreadLabel || targetUid || "Beszélgetés";
       messagesList.innerHTML = "";
       if (!rows || rows.length === 0){
         messagesList.innerHTML = `<div class="text-slate-500 text-sm">Még nincs üzenet.</div>`;
@@ -312,11 +318,12 @@
         const bubble = document.createElement("div");
         bubble.className = "flex " + (mine ? "justify-end" : "justify-start");
         const canDelete = !!me; // a policy dönti el a tényleges jogot
+        const senderLabel = mine ? "Te" : "Érdeklődő";
         bubble.innerHTML = `
           <div class="max-w-[85%] rounded-2xl px-4 py-2.5 border ${mine ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-900 border-slate-200"}">
             <div class="flex items-start gap-3">
               <div class="flex-1">
-                <div class="text-sm leading-relaxed">${escapeHtml(row.message || "")}</div>
+                <div class="text-[11px] font-semibold mb-1 ${mine ? "text-white/80" : "text-slate-500"}">${senderLabel}</div><div class="text-sm leading-relaxed">${escapeHtml(row.message || "")}</div>
                 <div class="mt-1 text-[11px] ${mine ? "text-white/70" : "text-slate-500"}">${escapeHtml(fmtTime(row.created_at))}</div>
               </div>
               ${canDelete ? `<button data-del="${escapeHtml(String(row.id))}" class="shrink-0 text-[12px] ${mine ? "text-white/70 hover:text-white" : "text-slate-400 hover:text-slate-700"}" title="Törlés">🗑️</button>` : ""}
@@ -373,6 +380,7 @@
           </div>
         `;
         row.addEventListener("click", async () => {
+          currentThreadLabel = t.label;
           targetUid = t.otherId;
           badgeTarget.classList.remove("hidden");
           targetUidEl.textContent = targetUid;
@@ -435,7 +443,7 @@
           const key = threadKey(otherId);
           const existing = map.get(key);
           const unreadInc = (r.to_user_id === me.id && r.from_visitor_id !== me.id && r.is_read === false) ? 1 : 0;
-          const label = (r.from_visitor_id === otherId) ? (r.from_email || otherId) : (existing?.label || otherId);
+          const label = (r.from_visitor_id === otherId) ? (r.from_email || "Érdeklődő") : (existing?.label || "Beszélgetés");
 
           if (!existing){
             map.set(key, {
@@ -476,7 +484,7 @@
 
       subtitle.textContent = "Beszélgetés";
       msgHint.textContent = "Tipp: Ctrl+Enter = küldés.";
-      chatTitle.textContent = "Beszélgetés";
+      chatTitle.textContent = currentThreadLabel || "Beszélgetés";
 
       // Beszélgetés: (én -> szakember) vagy (szakember -> én)
       // Ehhez az kell, hogy a szakember válasznál a from_visitor_id = saját user.id, to_user_id = a látogató user.id legyen.
@@ -561,6 +569,47 @@
       }
     }
 
+
+    async function updateUnreadUi(){
+      if (!me?.id) return;
+      try{
+        const { count } = await supabase
+          .from("szakember_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("to_user_id", me.id)
+          .eq("is_read", false);
+        const unread = count || 0;
+        inboxHint.textContent = unread > 0 ? `Új üzenetek: ${unread}` : "Nincs olvasatlan üzenet.";
+        if (unread > lastKnownUnread && document.visibilityState !== "visible"){
+          try{
+            if (Notification && Notification.permission === "granted"){
+              new Notification("SzakiPiac – új üzenet", { body: `Olvasatlan üzenetek: ${unread}` });
+            }
+          }catch{}
+        }
+        lastKnownUnread = unread;
+      }catch(e){
+        console.warn("unread ui hiba", e);
+      }
+    }
+
+    async function setupLiveRefresh(){
+      if (!me?.id) return;
+      if (liveBadge) liveBadge.title = "15 másodpercenként frissül";
+      if ("Notification" in window && Notification.permission === "default"){
+        try { await Notification.requestPermission(); } catch {}
+      }
+      setInterval(async () => {
+        if (!me?.id) return;
+        if (!getTargetFromUrl()){
+          await loadInbox();
+        } else if (targetUid){
+          await loadConversation();
+        }
+        await updateUnreadUi();
+      }, 15000);
+    }
+
     async function init(){
       targetUid = getTargetFromUrl();
 
@@ -597,6 +646,9 @@
         btnInbox.classList.remove("hidden");
         await loadConversation();
       }
+
+      await updateUnreadUi();
+      await setupLiveRefresh();
 
       // Auth változás: ne villogjon / ne építsük újra az oldalt, csak frissítsünk
       supabase.auth.onAuthStateChange(async (_event, newSession) => {

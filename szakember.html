@@ -18,8 +18,9 @@
       <img src="szakipiac-logo-promo.png" class="h-9" alt="SzakiPiac" />
       <span>SzakiPiac</span>
     </a>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap">
       <a id="btnMessages" href="#" class="hidden sm:inline-flex px-3 py-2 rounded-md text-sm font-semibold border border-gray-200 hover:bg-gray-50">💬 Üzenet</a>
+      <a id="btnOwnProfile" href="profilom.html" class="hidden px-3 py-2 rounded-md text-sm font-semibold border border-indigo-200 text-indigo-700 hover:bg-indigo-50">⚙️ Profilom</a>
       <a href="index.html#feltoltes" class="px-3 py-2 rounded-md text-sm font-semibold bg-green-600 text-white hover:bg-green-700">Hirdetés feladása</a>
     </div>
   </div>
@@ -315,6 +316,7 @@
     // Edit box (ha saját profil)
     const { data: { session } } = await supaClient.auth.getSession();
     if (session && session.user && session.user.id === uid){
+      $("btnOwnProfile").classList.remove("hidden");
       $("editBox").classList.remove("hidden");
       $("editName").value = profile?.display_name || "";
       $("editCity").value = profile?.city || city || "";

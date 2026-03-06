@@ -198,6 +198,8 @@
 
     let kivalasztottKepek = [];
     let hirdetesekCache = [];
+    let ratingSummaryMap = new Map();
+    let unreadMessageCount = 0;
 
     /* =========================
        2) SEGÉDFÜGGVÉNYEK
@@ -495,6 +497,64 @@
       });
     }
 
+
+    async function loadRatingsSummary(list) {
+      try {
+        const userIds = [...new Set((list || []).map(h => h.user_id).filter(Boolean))];
+        ratingSummaryMap = new Map();
+        if (!userIds.length) return;
+
+        const { data, error } = await supaClient
+          .from("szakember_ratings")
+          .select("user_id,stars")
+          .in("user_id", userIds);
+
+        if (error) throw error;
+
+        const grouped = new Map();
+        for (const row of (data || [])){
+          const key = row.user_id;
+          if (!grouped.has(key)) grouped.set(key, { sum: 0, count: 0 });
+          const item = grouped.get(key);
+          item.sum += Number(row.stars || 0);
+          item.count += 1;
+        }
+
+        ratingSummaryMap = new Map(
+          Array.from(grouped.entries()).map(([key, value]) => [key, {
+            avg: value.count ? (value.sum / value.count) : 0,
+            count: value.count
+          }])
+        );
+      } catch (e) {
+        console.warn("rating summary hiba", e);
+        ratingSummaryMap = new Map();
+      }
+    }
+
+    async function getUnreadMessageCount() {
+      try {
+        const { data: { session } } = await supaClient.auth.getSession();
+        if (!session?.user?.id) return 0;
+        const { count, error } = await supaClient
+          .from("szakember_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("to_user_id", session.user.id)
+          .eq("is_read", false);
+        if (error) throw error;
+        return count || 0;
+      } catch (e) {
+        console.warn("unread count hiba", e);
+        return 0;
+      }
+    }
+
+    function makeUnreadBadge(count) {
+      return count > 0
+        ? `<span class="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold">${count}</span>`
+        : "";
+    }
+
     /* =========================
        6) HIRDETÉSEK BETÖLTÉSE
     ========================= */
@@ -508,6 +568,7 @@
           .order("created_at", { ascending: false });
         if (error) throw error;
         hirdetesekCache = data || [];
+        await loadRatingsSummary(hirdetesekCache);
         renderAds(hirdetesekCache);
       } catch (e) {
         console.error(e);
@@ -541,18 +602,23 @@
               🛡️
             </span>`;
 
+          const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
+          const ratingHtml = rating && rating.count
+            ? `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-sm text-amber-800"><span class="font-bold">⭐ ${rating.avg.toFixed(1)}</span><span class="text-amber-700">(${rating.count} értékelés)</span></div>`
+            : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
           return `
             <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
               ${extraBadge}
-              <div class="flex justify-between">
+              <div class="flex justify-between gap-4">
                 <div>
                   <p class="text-sm font-bold text-green-600 uppercase">${h.kategoria || ""} ${h.varos ? `• ${h.varos}` : ""}</p>
-                  <h3 class="text-xl font-bold mt-1 flex items-center">
-                    ${h.cim || ""}
+                  <h3 class="text-xl font-bold mt-1 flex items-center flex-wrap gap-2">
+                    <span>${h.cim || ""}</span>
                     ${pajzsHtml}
                   </h3>
+                  ${ratingHtml}
                 </div>
-                <div class="text-lg font-bold">${h.ar ? parseInt(h.ar).toLocaleString() + " Ft" : ""}</div>
+                <div class="text-lg font-bold whitespace-nowrap">${h.ar ? parseInt(h.ar).toLocaleString() + " Ft" : ""}</div>
               </div>
               <p class="text-gray-600 my-4 whitespace-pre-line">${h.leiras || ""}</p>
               ${images}
@@ -1053,13 +1119,20 @@
         ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>'
         : '';
 
+      unreadMessageCount = session ? await getUnreadMessageCount() : 0;
+
       const inboxLink = session
-        ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline">Üzeneteim</a>`
+        ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline inline-flex items-center gap-2">Üzeneteim ${makeUnreadBadge(unreadMessageCount)}</a>`
+        : "";
+
+      const profileLink = session
+        ? `<a href="profilom.html" class="text-sm font-bold text-indigo-700 hover:underline">Profilom</a>`
         : "";
 
       const authHTML = session
-        ? `<div class="flex items-center gap-3 justify-center">
+        ? `<div class="flex items-center gap-3 justify-center flex-wrap">
              <span class="text-sm font-bold truncate max-w-[180px]">${session.user.email}</span>
+             ${profileLink}
              ${inboxLink}
              ${adminLink}
              <button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline ml-2">Kilépés</button>

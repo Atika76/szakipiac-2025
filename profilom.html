@@ -9,216 +9,211 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f8fafc}</style>
 </head>
-<body class="bg-slate-50 text-slate-900" style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
+<body class="text-slate-900">
   <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="./index.html" class="flex items-center gap-2 font-bold">
-        <img src="szakipiac-logo-promo.png" class="h-8" alt="SzakiPiac">
-        <span>SzakiPiac</span>
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3 font-bold text-lg">
+        <img src="szakipiac-logo-promo.png" class="h-10" alt="SzakiPiac" />
+        <span>Profilom</span>
       </a>
       <div class="flex items-center gap-2">
-        <a href="./uzenetek.html" class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">💬 Üzenetek</a>
-        <button id="btnLogout" class="hidden px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">Kijelentkezés</button>
+        <a href="uzenetek.html" class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50">Üzeneteim</a>
+        <a id="publicProfileBtn" href="#" class="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700">Nyilvános profil</a>
       </div>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4 py-8">
-    <div id="needLogin" class="bg-white border border-slate-200 rounded-2xl p-6">
-      <h1 class="text-xl font-bold mb-2">Bejelentkezés szükséges</h1>
-      <p class="text-slate-600 mb-4">A saját profil szerkesztéséhez be kell jelentkezned.</p>
-      <a href="./index.html#login" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">Bejelentkezés</a>
-    </div>
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <div id="alert" class="hidden mb-6 rounded-2xl border p-4"></div>
 
-    <div id="panel" class="hidden space-y-6">
-      <div class="bg-white border border-slate-200 rounded-2xl p-6">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 class="text-2xl font-bold">👤 Profilom</h1>
-            <p class="text-slate-600 mt-1">Amit itt kitöltesz, az látszódik a nyilvános szakember oldaladon.</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <section class="lg:col-span-2 bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="h-20 w-20 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center">
+            <img id="avatarPreview" class="hidden h-full w-full object-cover" alt="Avatar" />
+            <span id="avatarFallback" class="text-3xl">👤</span>
           </div>
-          <a id="publicLink" href="#" class="hidden px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50">👀 Nyilvános profil</a>
+          <div>
+            <h1 class="text-2xl font-bold">Saját szakember profil</h1>
+            <p class="text-slate-600 mt-1">Itt tudod módosítani a profilod adatait. Ezek jelennek meg a nyilvános szakember oldalon is.</p>
+          </div>
         </div>
 
-        <form id="form" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2">
-            <label class="text-sm font-semibold">Megjelenő név</label>
-            <input id="display_name" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl. Kovács Attila" />
+        <form id="profileForm" class="space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold mb-1">Megjelenő név</label>
+              <input id="displayName" class="w-full rounded-xl border border-slate-200 p-3" placeholder="pl. Bartha Attila" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Város</label>
+              <input id="city" class="w-full rounded-xl border border-slate-200 p-3" placeholder="pl. Esztergom" />
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold mb-1">Telefon</label>
+              <input id="phone" class="w-full rounded-xl border border-slate-200 p-3" placeholder="+36..." />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Weboldal</label>
+              <input id="website" class="w-full rounded-xl border border-slate-200 p-3" placeholder="https://..." />
+            </div>
           </div>
 
           <div>
-            <label class="text-sm font-semibold">Város</label>
-            <input id="city" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pl. Esztergom" />
+            <label class="block text-sm font-semibold mb-1">Avatar URL</label>
+            <input id="avatarUrl" class="w-full rounded-xl border border-slate-200 p-3" placeholder="https://..." />
           </div>
 
           <div>
-            <label class="text-sm font-semibold">Telefon</label>
-            <input id="phone" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="+36..." />
+            <label class="block text-sm font-semibold mb-1">Bemutatkozás</label>
+            <textarea id="bio" rows="6" class="w-full rounded-xl border border-slate-200 p-3" placeholder="Mutasd be röviden a munkádat, tapasztalatodat, miben vagy erős."></textarea>
           </div>
 
-          <div class="md:col-span-2">
-            <label class="text-sm font-semibold">Weboldal</label>
-            <input id="website" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="https://..." />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="text-sm font-semibold">Bemutatkozás</label>
-            <textarea id="bio" rows="4" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Pár mondat magadról, referenciák, specialitás..."></textarea>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="text-sm font-semibold">Avatar (kép URL)</label>
-            <input id="avatar_url" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="https://.../kep.jpg" />
-            <p class="text-xs text-slate-500 mt-1">Ha nincs feltöltés, elég egy sima link is (pl. Imgur / saját web).</p>
-          </div>
-
-          <div class="md:col-span-2 flex items-center gap-3">
-            <button class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Mentés</button>
-            <span id="status" class="text-sm text-slate-600"></span>
+          <div class="flex flex-wrap items-center gap-3">
+            <button class="px-5 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-semibold">Mentés</button>
+            <button type="button" id="btnReload" class="px-5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-semibold">Újratöltés</button>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div class="bg-white border border-slate-200 rounded-2xl p-6">
-        <h2 class="text-lg font-bold mb-2">⭐ Értékelések</h2>
-        <p class="text-slate-600">A csillagokat a látogatók adják a nyilvános profilodon.</p>
-        <div class="mt-4 flex flex-wrap items-center gap-3">
-          <div class="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200">
-            Átlag: <span id="avg" class="font-bold">–</span> / 5
-            <span id="count" class="text-slate-500 ml-2">(0)</span>
-          </div>
-          <a id="openPublic2" href="#" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50">Megnézem a nyilvános profilt</a>
+      <aside class="space-y-6">
+        <div class="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+          <h2 class="text-lg font-bold">Állapot</h2>
+          <div id="statusBox" class="mt-3 text-sm text-slate-600">Betöltés…</div>
         </div>
-      </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+          <h2 class="text-lg font-bold">Gyors linkek</h2>
+          <div class="mt-3 space-y-2 text-sm">
+            <a href="index.html#feltoltes" class="block text-emerald-700 hover:underline">Új hirdetés feladása</a>
+            <a href="uzenetek.html" class="block text-emerald-700 hover:underline">Beérkező üzenetek</a>
+            <a id="publicProfileLink" href="#" class="block text-emerald-700 hover:underline">Nyilvános szakember profil</a>
+          </div>
+        </div>
+      </aside>
     </div>
   </main>
 
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+<script type="module">
+  const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
+  const supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-    // FONTOS: ugyanazt a projekt URL-t és anon kulcsot használjuk, mint a többi oldalon
-    const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dHBub3Rzd253cmJ5Y3ZmeXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTQ0NDcsImV4cCI6MjA2ODQ5MDQ0N30.CXEfo_8qmIYhkEZFdTsbl9ZB-PRTP6UK8EbIxxpSGZc";
-    const supa = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $ = (id) => document.getElementById(id);
 
-    const $ = (id) => document.getElementById(id);
-    const status = $("status");
-    const needLogin = $("needLogin");
-    const panel = $("panel");
-    const btnLogout = $("btnLogout");
+  function showAlert(msg, type = "info"){
+    const el = $("alert");
+    el.className = "mb-6 rounded-2xl border p-4";
+    if (type === "error") el.classList.add("bg-red-50","border-red-200","text-red-800");
+    else if (type === "ok") el.classList.add("bg-emerald-50","border-emerald-200","text-emerald-800");
+    else el.classList.add("bg-blue-50","border-blue-200","text-blue-800");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
 
-    function setStatus(msg, ok=true){
-      status.textContent = msg || "";
-      status.className = ok ? "text-sm text-emerald-700" : "text-sm text-red-600";
+  function safeUrl(u){
+    const s = (u || "").trim();
+    if (!s) return "";
+    try { return new URL(s).href; } catch { return ""; }
+  }
+
+  function setAvatar(url){
+    const img = $("avatarPreview");
+    const fallback = $("avatarFallback");
+    const safe = safeUrl(url);
+    if (safe){
+      img.src = safe;
+      img.classList.remove("hidden");
+      fallback.classList.add("hidden");
+    } else {
+      img.src = "";
+      img.classList.add("hidden");
+      fallback.classList.remove("hidden");
+    }
+  }
+
+  async function loadProfile(){
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session?.user){
+      location.href = "index.html#auth";
+      return;
     }
 
-    function safeUrl(u){
-      if (!u) return "";
-      const s = String(u).trim();
-      if (!s) return "";
-      if (s.startsWith("http://") || s.startsWith("https://")) return s;
-      return "https://" + s.replace(/^\/+/, "");
+    const uid = session.user.id;
+    const publicUrl = `szakember.html?uid=${encodeURIComponent(uid)}`;
+    $("publicProfileBtn").href = publicUrl;
+    $("publicProfileLink").href = publicUrl;
+    $("statusBox").textContent = `Bejelentkezve: ${session.user.email || "felhasználó"}`;
+
+    const { data: adData } = await supaClient
+      .from("hirdetesek")
+      .select("email,telefonszam,varos,weboldal")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const firstAd = adData && adData[0] ? adData[0] : null;
+
+    let profile = null;
+    try {
+      const { data } = await supaClient
+        .from("szakember_profiles")
+        .select("display_name,city,phone,website,bio,avatar_url")
+        .eq("user_id", uid)
+        .maybeSingle();
+      profile = data;
+    } catch {}
+
+    $("displayName").value = profile?.display_name || "";
+    $("city").value = profile?.city || firstAd?.varos || "";
+    $("phone").value = profile?.phone || firstAd?.telefonszam || "";
+    $("website").value = profile?.website || firstAd?.weboldal || "";
+    $("bio").value = profile?.bio || "";
+    $("avatarUrl").value = profile?.avatar_url || "";
+    setAvatar(profile?.avatar_url || "");
+  }
+
+  $("avatarUrl").addEventListener("input", (e) => setAvatar(e.target.value));
+
+  $("btnReload").addEventListener("click", async () => {
+    await loadProfile();
+    showAlert("Profil újratöltve.", "ok");
+  });
+
+  $("profileForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const { data: { session } } = await supaClient.auth.getSession();
+      if (!session?.user) throw new Error("A mentéshez be kell jelentkezni.");
+
+      const payload = {
+        user_id: session.user.id,
+        display_name: $("displayName").value.trim(),
+        city: $("city").value.trim(),
+        phone: $("phone").value.trim(),
+        website: $("website").value.trim(),
+        bio: $("bio").value.trim(),
+        avatar_url: $("avatarUrl").value.trim(),
+      };
+
+      const { error } = await supaClient.from("szakember_profiles").upsert(payload);
+      if (error) throw error;
+
+      setAvatar(payload.avatar_url);
+      showAlert("Profil mentve.", "ok");
+    } catch (err) {
+      console.error(err);
+      showAlert(err?.message || "Nem sikerült menteni a profilt. Futtasd le a supabase/schema_extra.sql fájlt is.", "error");
     }
+  });
 
-    async function loadRatings(uid){
-      try{
-        const { data, error } = await supa
-          .from("szakember_ratings")
-          .select("stars")
-          .eq("user_id", uid)
-          .order("created_at", { ascending: false })
-          .limit(2000);
-        if (error) throw error;
-        const arr = (data || []).map(r => Number(r.stars||0)).filter(Boolean);
-        const cnt = arr.length;
-        const avg = cnt ? (arr.reduce((a,b)=>a+b,0)/cnt) : 0;
-        $("avg").textContent = cnt ? avg.toFixed(1) : "–";
-        $("count").textContent = `(${cnt})`;
-      }catch(e){
-        console.warn("ratings load", e);
-        $("avg").textContent = "–";
-        $("count").textContent = "(0)";
-      }
-    }
-
-    async function init(){
-      const { data } = await supa.auth.getSession();
-      const session = data?.session;
-      if (!session){
-        needLogin.classList.remove("hidden");
-        panel.classList.add("hidden");
-        return;
-      }
-
-      needLogin.classList.add("hidden");
-      panel.classList.remove("hidden");
-      btnLogout.classList.remove("hidden");
-
-      const uid = session.user.id;
-
-      // Nyilvános link
-      const pubUrl = `./szakember.html?uid=${encodeURIComponent(uid)}`;
-      $("publicLink").href = pubUrl;
-      $("publicLink").classList.remove("hidden");
-      $("openPublic2").href = pubUrl;
-
-      // Profil betöltése
-      try{
-        const { data: prof } = await supa
-          .from("szakember_profiles")
-          .select("display_name,city,phone,website,bio,avatar_url")
-          .eq("user_id", uid)
-          .maybeSingle();
-
-        if (prof){
-          $("display_name").value = prof.display_name || "";
-          $("city").value = prof.city || "";
-          $("phone").value = prof.phone || "";
-          $("website").value = prof.website || "";
-          $("bio").value = prof.bio || "";
-          $("avatar_url").value = prof.avatar_url || "";
-        }
-      }catch(e){
-        console.warn("profile load", e);
-      }
-
-      await loadRatings(uid);
-
-      $("form").addEventListener("submit", async (ev) => {
-        ev.preventDefault();
-        setStatus("Mentés…");
-
-        const payload = {
-          user_id: uid,
-          display_name: $("display_name").value.trim() || null,
-          city: $("city").value.trim() || null,
-          phone: $("phone").value.trim() || null,
-          website: safeUrl($("website").value) || null,
-          bio: $("bio").value.trim() || null,
-          avatar_url: safeUrl($("avatar_url").value) || null
-        };
-
-        try{
-          const { error } = await supa
-            .from("szakember_profiles")
-            .upsert(payload, { onConflict: "user_id" });
-
-          if (error) throw error;
-          setStatus("✅ Mentve!");
-        }catch(e){
-          console.error(e);
-          setStatus("❌ Nem sikerült menteni (RLS / tábla hiányzik?).", false);
-        }
-      });
-
-      btnLogout.addEventListener("click", async () => {
-        await supa.auth.signOut();
-        location.href = "./index.html";
-      });
-    }
-
-    init();
-  </script>
+  await loadProfile();
+</script>
 </body>
 </html>
