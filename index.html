@@ -301,10 +301,12 @@
       return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(quote)}`;
     }
     function getMapUrl(ad) {
-      const category = ad.kategoria || ad.category || '';
-      const title = ad.cim || '';
-      const q = [category, title, ad.varos || '', ad.iranyitoszam || '', ad.cim || ''].filter(Boolean).join(', ');
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || 'Magyarország')}`;
+      const title = String(ad.cim || '').trim();
+      const city = String(ad.varos || '').trim();
+      const zip = String(ad.iranyitoszam || '').trim();
+      const site = 'SzakiPiac-2025';
+      const exact = [site, title, city, zip].filter(Boolean).join(', ');
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(exact || site)}`;
     }
 
     /* =========================
