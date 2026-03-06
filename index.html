@@ -242,6 +242,7 @@
     let profileSummaryMap = new Map();
     let aiRecommendedIds = [];
     let aiFilterActive = false;
+    let currentRenderedAds = [];
     let unreadMessageCount = 0;
 
     /* =========================
@@ -430,9 +431,10 @@
             </select>
             <input type="text" id="ai-budget" placeholder="Kb. keret / megjegyzés" class="w-full border border-slate-200 p-3 rounded-xl">
           </div>
-          <div class="mt-4 flex flex-wrap gap-3">
+          <div class="mt-4 flex flex-wrap items-center gap-3">
             <button id="btnAiRecommend" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold hover:bg-slate-800">AI ajánló indítása</button>
             <button id="btnAiReset" class="border border-slate-300 text-slate-700 px-5 py-3 rounded-xl font-semibold hover:bg-slate-50">Ajánló törlése</button>
+            <span id="ai-status" class="text-sm text-slate-500"></span>
           </div>
           <div id="ai-results" class="hidden mt-5 rounded-2xl border border-emerald-200 bg-white p-5"></div>
         </div>
@@ -517,8 +519,7 @@
 
       const btnAiRecommend = document.getElementById("btnAiRecommend");
       const btnAiReset = document.getElementById("btnAiReset");
-      btnAiRecommend?.addEventListener("click", () => {
-        setAiButtonState("AI keresés...", true);
+      btnAiRecommend?.addEventListener("click", async () => {
         const wants = {
           task: document.getElementById("ai-task")?.value || "",
           city: document.getElementById("ai-city")?.value || "",
@@ -526,18 +527,51 @@
           budget: document.getElementById("ai-budget")?.value || ""
         };
         const hasInput = Object.values(wants).some(v => String(v || '').trim());
-        const scored = [...hirdetesekCache]
-          .map(h => ({ ...h, __score: getAiScore(h, wants) }))
-          .filter(h => hasInput ? h.__score >= 2 : true)
-          .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
-        aiFilterActive = hasInput;
-        renderAiResults(scored, wants);
-        setAiButtonState(scored.length ? `Ajánlás kész (${Math.min(scored.length, 99)})` : "Nincs találat", false);
-        setTimeout(() => setAiButtonState("AI ajánló indítása", false), 1800);
+        if (!hasInput) {
+          setAiStatus("Adj meg legalább 1 feltételt.", "info");
+          setAiButtonState("AI ajánló indítása", false);
+          aiFilterActive = false;
+          aiRecommendedIds = [];
+          currentRenderedAds = [...hirdetesekCache];
+          renderAds(currentRenderedAds);
+          return;
+        }
+
+        try {
+          setAiButtonState("AI keresés...", true);
+          setAiStatus("Találatok keresése...", "info");
+          const scored = [...hirdetesekCache]
+            .map(h => ({ ...h, __score: getAiScore(h, wants) }))
+            .filter(h => h.__score >= 2)
+            .sort((a,b) => b.__score - a.__score || String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+          aiFilterActive = true;
+          if (!scored.length) {
+            aiRecommendedIds = [];
+            renderAiResults([], wants);
+            currentRenderedAds = [];
+            renderAds([]);
+            setAiStatus("Nincs találat a megadott feltételekre.", "error");
+            return;
+          }
+
+          const aiOnly = hirdetesekCache.filter(h => scored.some(s => s.id === h.id));
+          aiRecommendedIds = aiOnly.map(h => h.id);
+          currentRenderedAds = aiOnly;
+          renderAiResults(scored, wants);
+          renderAds(aiOnly);
+          setAiStatus(`${aiOnly.length} találat megjelenítve.`, "success");
+        } catch (err) {
+          console.error("AI ajánló hiba", err);
+          setAiStatus("Hiba történt az AI ajánló közben.", "error");
+        } finally {
+          setAiButtonState("AI ajánló indítása", false);
+        }
       });
       btnAiReset?.addEventListener("click", () => {
         aiRecommendedIds = [];
         aiFilterActive = false;
+        currentRenderedAds = [...hirdetesekCache];
         ['ai-task','ai-city','ai-urgency','ai-budget'].forEach(id => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -545,6 +579,7 @@
         });
         const box = document.getElementById('ai-results');
         if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+        setAiStatus("AI szűrés törölve.", "info");
         renderAds(hirdetesekCache);
         const btn = document.getElementById("btnAiReset");
         if (btn) {
@@ -700,6 +735,7 @@
           console.warn("ratings/profile rész kihagyva", innerError);
         }
 
+        currentRenderedAds = [...hirdetesekCache];
         await renderAds(hirdetesekCache);
       } catch (e) {
         console.error(e);
@@ -750,6 +786,7 @@
       }
 
       if ((wants.urgency || '') === 'most') score += 1;
+      if (task && normalizeHu(h.cim || '').includes(task.slice(0, Math.min(task.length, 6)))) score += 2;
       if (budget && hay.includes(budget)) score += 1;
       if (h.csomag === 'extra') score += 2;
       const rating = h.user_id ? ratingSummaryMap.get(h.user_id) : null;
@@ -767,6 +804,16 @@
       btn.classList.toggle("cursor-not-allowed", disabled);
     }
 
+    function setAiStatus(message = "", type = "info") {
+      const el = document.getElementById("ai-status");
+      if (!el) return;
+      el.textContent = message;
+      el.className = "text-sm";
+      if (type === "success") el.classList.add("text-emerald-700");
+      else if (type === "error") el.classList.add("text-red-600");
+      else el.classList.add("text-slate-500");
+    }
+
     function renderAiResults(scored, wants) {
       const box = document.getElementById('ai-results');
       if (!box) return;
@@ -775,7 +822,6 @@
         aiFilterActive = true;
         box.classList.remove('hidden');
         box.innerHTML = `<div class="text-slate-700 font-semibold">Nem találtam elég erős egyezést.</div><p class="text-slate-600 mt-1">Próbálj meg más kategóriát vagy települést megadni.</p>`;
-        renderAds([]);
         return;
       }
       aiRecommendedIds = scored.map(x => x.id);
@@ -805,15 +851,14 @@
             </div>`;
           }).join('')}
         </div>`;
-      const aiOnly = hirdetesekCache.filter(h => aiRecommendedIds.includes(h.id));
-      renderAds(aiOnly);
     }
 
     async function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
       if (!listEl) return;
+      currentRenderedAds = Array.isArray(list) ? [...list] : [];
       if (!list || !list.length) {
-        listEl.innerHTML = "<p class='text-center text-gray-500'>Nincs találat.</p>";
+        listEl.innerHTML = "<div class='text-center text-gray-500 py-8'><p>Nincs találat.</p><p class='text-sm mt-2'>Próbálj meg más kulcsszót vagy töröld az AI szűrést.</p></div>";
         return;
       }
 
