@@ -1,9 +1,10 @@
-const CACHE_NAME = 'szakipiac-v3'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v4'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
+  '/hirdetes.html',
   '/En/index.html',
   // A logók, amiket az oldalad használ
   'https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png',

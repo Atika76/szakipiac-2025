@@ -80,17 +80,17 @@
   <link rel="canonical" href="https://szakipiac-2025.hu/index.html" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SzakiPiac" />
-  <meta property="og:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert és kérj ajánlatot" />
-  <meta property="og:description" content="Szakemberkeresés, ajánlatkérés, építőipari hirdetések, profilok, értékelések és AI eszközök egy helyen." />
-  <meta property="og:url" content="https://szakipiac-2025.hu/index.html" />
-  <meta property="og:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta property="og:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert" />
+  <meta property="og:description" content="Találj megbízható szakembert vagy kérj ajánlatot percek alatt a SzakiPiacon." />
+  <meta property="og:url" content="https://szakipiac-2025.hu/" />
+  <meta property="og:image" content="https://szakipiac-2025.hu/og-facebook.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="hu_HU" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert és kérj ajánlatot" />
-  <meta name="twitter:description" content="Szakemberkeresés, ajánlatkérés, építőipari hirdetések, profilok, értékelések és AI eszközök egy helyen." />
-  <meta name="twitter:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
+  <meta name="twitter:title" content="SzakiPiac-2025.hu – Találj megbízható szakembert" />
+  <meta name="twitter:description" content="Találj megbízható szakembert vagy kérj ajánlatot percek alatt a SzakiPiacon." />
+  <meta name="twitter:image" content="https://szakipiac-2025.hu/og-facebook.jpg" />
   <meta name="robots" content="index,follow,max-image-preview:large" />
   <script type="application/ld+json">
 {
@@ -294,10 +294,21 @@
         localStorage.setItem(`sp_ad_views_${adId}`, String(next));
       } catch {}
     }
+    function getAdPermalink(ad) {
+      const origin = window.location.origin || "https://szakipiac-2025.hu";
+      const id = encodeURIComponent(ad?.id || "");
+      return `${origin}/hirdetes.html?id=${id}`;
+    }
     function getFacebookShareUrl(ad) {
-      const base = window.location.origin + window.location.pathname;
-      const shareUrl = `${base}?ad=${encodeURIComponent(ad.id || "")}`;
-      const quote = `${ad.cim || 'SzakiPiac hirdetés'} – ${ad.varos || 'Országos'} | SzakiPiac-2025.hu`;
+      const shareUrl = getAdPermalink(ad);
+      const quoteParts = [
+        ad.cim || 'SzakiPiac hirdetés',
+        ad.kategoria || '',
+        ad.varos || 'Országos',
+        ad.ar ? `${parseInt(ad.ar).toLocaleString('hu-HU')} Ft` : ''
+      ].filter(Boolean);
+      const quote = `${quoteParts.join(' • ')}
+Megnézem a SzakiPiacon:`;
       return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(quote)}`;
     }
     function getMapUrl(ad) {
@@ -775,6 +786,7 @@
                 ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
                 ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
+                ${h.id ? `<a href="hirdetes.html?id=${h.id}" class="bg-slate-900 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-800">🔎 Részletek</a>` : ""}
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
                 ${fbBtn}
                 ${mapBtn}
