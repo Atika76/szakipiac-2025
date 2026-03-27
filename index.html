@@ -222,50 +222,6 @@
   </div>
 
   <div id="toast-notification" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-xl transform translate-x-[120%] transition-transform duration-300 z-[110] font-medium flex items-center gap-2"></div>
-  <div id="ajanlat-modal" class="fixed inset-0 bg-black/60 z-[120] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-amber-50">
-        <div>
-          <h3 class="text-lg font-extrabold text-slate-900">📝 Ajánlatkérés 1 kattintással</h3>
-          <p id="ajanlat-modal-subtitle" class="text-sm text-slate-600 mt-1">Írd meg röviden, mire kérsz ajánlatot.</p>
-        </div>
-        <button id="ajanlat-modal-close" type="button" class="text-slate-500 hover:text-slate-800 text-2xl leading-none">&times;</button>
-      </div>
-      <form id="ajanlat-form" class="p-5 space-y-4">
-        <input type="hidden" id="ajanlat-ad-id">
-        <input type="hidden" id="ajanlat-to-user-id">
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-bold mb-1">Neved</label>
-            <input id="ajanlat-nev" type="text" class="w-full border p-3 rounded-xl" placeholder="Pl. Kiss Péter" required>
-          </div>
-          <div>
-            <label class="block text-sm font-bold mb-1">Telefonszám</label>
-            <input id="ajanlat-telefon" type="text" class="w-full border p-3 rounded-xl" placeholder="Pl. +36 30 123 4567">
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-bold mb-1">E-mail címed</label>
-          <input id="ajanlat-email" type="email" class="w-full border p-3 rounded-xl" placeholder="Pl. te@email.hu" required>
-        </div>
-        <div>
-          <label class="block text-sm font-bold mb-1">Város / helyszín</label>
-          <input id="ajanlat-varos" type="text" class="w-full border p-3 rounded-xl" placeholder="Pl. Esztergom">
-        </div>
-        <div>
-          <label class="block text-sm font-bold mb-1">Mit szeretnél?</label>
-          <textarea id="ajanlat-uzenet" class="w-full border p-3 rounded-xl min-h-[140px]" placeholder="Pl. 60 nm lakás festése, glettelése, anyaggal együtt. Mikor tudnád vállalni?" required></textarea>
-        </div>
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
-          Az ajánlatkérés elküldés után a szakember üzenetei közé kerül. Így gyorsabban és kulturáltabban tudtok egyeztetni, mint Facebook kommentekben.
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3 pt-2">
-          <button type="submit" id="ajanlat-submit" class="flex-1 bg-amber-500 text-white px-5 py-3 rounded-xl font-extrabold hover:bg-amber-600">Ajánlatkérés elküldése</button>
-          <button type="button" id="ajanlat-cancel" class="flex-1 bg-slate-100 text-slate-700 px-5 py-3 rounded-xl font-bold hover:bg-slate-200">Mégse</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <script type="module">
     /* =========================
@@ -349,123 +305,6 @@
       const title = ad.cim || '';
       const q = [category, title, ad.varos || '', ad.iranyitoszam || '', ad.cim || ''].filter(Boolean).join(', ');
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || 'Magyarország')}`;
-    }
-
-    function escapeHtml(v) {
-      return String(v ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    function openQuoteModal(adId) {
-      const ad = (window.hirdetesekCache || []).find(x => String(x.id) === String(adId));
-      if (!ad || !ad.user_id) {
-        showToast("Ehhez a hirdetéshez most nem küldhető ajánlatkérés.", "error");
-        return false;
-      }
-      const modal = document.getElementById("ajanlat-modal");
-      const titleEl = document.getElementById("ajanlat-modal-subtitle");
-      const nameEl = document.getElementById("ajanlat-nev");
-      const emailEl = document.getElementById("ajanlat-email");
-      const phoneEl = document.getElementById("ajanlat-telefon");
-      const cityEl = document.getElementById("ajanlat-varos");
-      const msgEl = document.getElementById("ajanlat-uzenet");
-      document.getElementById("ajanlat-ad-id").value = ad.id || "";
-      document.getElementById("ajanlat-to-user-id").value = ad.user_id || "";
-      titleEl.textContent = `${ad.cim || 'Hirdetés'} • ${ad.varos || 'Országos'}`;
-      const savedName = localStorage.getItem("szakipiac_quote_name") || "";
-      const savedEmail = localStorage.getItem("szakipiac_quote_email") || "";
-      const savedPhone = localStorage.getItem("szakipiac_quote_phone") || "";
-      const savedCity = localStorage.getItem("szakipiac_quote_city") || "";
-      if (nameEl && !nameEl.value) nameEl.value = savedName;
-      if (emailEl && !emailEl.value) emailEl.value = savedEmail;
-      if (phoneEl && !phoneEl.value) phoneEl.value = savedPhone;
-      if (cityEl && !cityEl.value) cityEl.value = savedCity;
-      msgEl.value = `Szia! A(z) "${ad.cim || 'hirdetés'}" kapcsán szeretnék ajánlatot kérni.` + (ad.varos ? `
-Helyszín: ${ad.varos}` : "") + `
-
-Röviden leírom a munkát:`;
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-      setTimeout(() => msgEl.focus(), 30);
-      return false;
-    }
-
-    function closeQuoteModal() {
-      const modal = document.getElementById("ajanlat-modal");
-      if (!modal) return;
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    async function submitQuoteRequest(event) {
-      event.preventDefault();
-      const adId = document.getElementById("ajanlat-ad-id").value;
-      const toUserId = document.getElementById("ajanlat-to-user-id").value;
-      const nev = (document.getElementById("ajanlat-nev").value || "").trim();
-      const email = (document.getElementById("ajanlat-email").value || "").trim();
-      const telefon = (document.getElementById("ajanlat-telefon").value || "").trim();
-      const varos = (document.getElementById("ajanlat-varos").value || "").trim();
-      const uzenet = (document.getElementById("ajanlat-uzenet").value || "").trim();
-      const submitBtn = document.getElementById("ajanlat-submit");
-      const ad = (window.hirdetesekCache || []).find(x => String(x.id) === String(adId));
-
-      if (!toUserId || !uzenet || !email || !nev) {
-        showToast("Név, e-mail és üzenet megadása kötelező.", "error");
-        return;
-      }
-
-      const fullMessage = [
-        `AJÁNLATKÉRÉS – ${ad?.cim || 'SzakiPiac hirdetés'}`,
-        nev ? `Név: ${nev}` : "",
-        email ? `E-mail: ${email}` : "",
-        telefon ? `Telefon: ${telefon}` : "",
-        varos ? `Helyszín: ${varos}` : "",
-        ad?.varos ? `Hirdetés városa: ${ad.varos}` : "",
-        "",
-        uzenet
-      ].filter(Boolean).join("
-");
-
-      try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Küldés...";
-        localStorage.setItem("szakipiac_quote_name", nev);
-        localStorage.setItem("szakipiac_quote_email", email);
-        localStorage.setItem("szakipiac_quote_phone", telefon);
-        localStorage.setItem("szakipiac_quote_city", varos);
-
-        const { error } = await supaClient
-          .from("szakember_messages")
-          .insert([{
-            to_user_id: toUserId,
-            from_visitor_id: getVisitorId(),
-            from_email: email,
-            message: fullMessage
-          }]);
-        if (error) throw error;
-
-        try {
-          await trackEvent("quote_request_sent", {
-            ad_id: adId,
-            to_user_id: toUserId,
-            listing_title: ad?.cim || null
-          });
-        } catch {}
-
-        showToast("Az ajánlatkérés elküldve. A szakember az üzeneteinél megkapja.", "success");
-        document.getElementById("ajanlat-form").reset();
-        closeQuoteModal();
-      } catch (err) {
-        console.error("quote request error", err);
-        showToast("Nem sikerült elküldeni az ajánlatkérést.", "error");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Ajánlatkérés elküldése";
-      }
     }
 
     /* =========================
@@ -842,6 +681,11 @@ Röviden leírom a munkát:`;
       }
     }
 
+    function getRequestPrefill(h) {
+      const msg = `Szia! A(z) "${h.cim || 'hirdetés'}" kapcsán szeretnék ajánlatot kérni.`;
+      return encodeURIComponent(msg);
+    }
+
         async function renderAds(list) {
       const listEl = document.getElementById("hirdetes-lista");
       const featuredWrap = document.getElementById("kiemelt-wrap");
@@ -931,7 +775,7 @@ Röviden leírom a munkát:`;
                 ${h.weboldal ? `<a href="${h.weboldal}" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-700">🌐 Weboldal</a>` : ""}
                 ${h.user_id ? `<a href="szakember.html?uid=${h.user_id}" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-indigo-700">👤 Profil</a>` : ""}
                 ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 active:scale-[0.99]">💬 Üzenet küldése</a>` : ""}
-                ${h.user_id ? `<button onclick="return window.openQuoteModal('${h.id}')" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</button>` : ""}
+                ${h.user_id ? `<a href="uzenetek.html?uid=${h.user_id}&prefill=${getRequestPrefill(h)}" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 active:scale-[0.99]">📝 Ajánlatkérés</a>` : ""}
                 ${fbBtn}
                 ${mapBtn}
               </div>
@@ -1511,19 +1355,6 @@ Röviden leírom a munkát:`;
         user_agent: navigator.userAgent
       });
     }
-
-    window.openQuoteModal = openQuoteModal;
-    window.closeQuoteModal = closeQuoteModal;
-
-    document.getElementById("ajanlat-modal-close")?.addEventListener("click", closeQuoteModal);
-    document.getElementById("ajanlat-cancel")?.addEventListener("click", closeQuoteModal);
-    document.getElementById("ajanlat-form")?.addEventListener("submit", submitQuoteRequest);
-    document.getElementById("ajanlat-modal")?.addEventListener("click", (e) => {
-      if (e.target?.id === "ajanlat-modal") closeQuoteModal();
-    });
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeQuoteModal();
-    });
 
     window.openLightbox = (u) => {
       document.getElementById("lightbox-img").src = u;
