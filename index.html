@@ -242,6 +242,7 @@
     let profileSummaryMap = new Map();
     let currentRenderedAds = [];
     let unreadMessageCount = 0;
+    let activeGrantedPackage = null;
 
     /* =========================
        2) SEGÉDFÜGGVÉNYEK
@@ -279,6 +280,66 @@
       toast.className = `fixed top-5 right-5 text-white py-3 px-6 rounded-lg shadow-xl transform transition-transform duration-300 z-[110] ${bg}`;
       toast.classList.remove("translate-x-[120%]");
       setTimeout(() => toast.classList.add("translate-x-[120%]"), 4000);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function packageLabel(csomag) {
+      if (csomag === "extra") return "Extra";
+      if (csomag === "premium") return "Prémium";
+      return "Alap";
+    }
+
+    function packageRank(csomag) {
+      return ({ alap: 1, premium: 2, extra: 3 })[csomag] || 0;
+    }
+
+    function packageDays(csomag) {
+      return csomag === "extra" ? 30 : (csomag === "premium" ? 14 : 7);
+    }
+
+    function addDaysIso(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString();
+    }
+
+    function dateInputValue(value, fallbackDays = 30) {
+      const date = value ? new Date(value) : new Date(addDaysIso(fallbackDays));
+      if (Number.isNaN(date.getTime())) return new Date(addDaysIso(fallbackDays)).toISOString().slice(0, 10);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function isPackageActive(row) {
+      return !!row?.expires_at && new Date(row.expires_at).getTime() >= Date.now();
+    }
+
+    function isPackageCoveredByGrant(csomag) {
+      return isPackageActive(activeGrantedPackage) && packageRank(activeGrantedPackage.csomag) >= packageRank(csomag);
+    }
+
+    async function loadActiveGrantedPackage(userId) {
+      if (!userId) return null;
+      try {
+        const { data, error } = await supaClient
+          .from("user_packages")
+          .select("user_id, csomag, expires_at, note")
+          .eq("user_id", userId)
+          .gte("expires_at", new Date().toISOString())
+          .maybeSingle();
+        if (error) throw error;
+        return data || null;
+      } catch (e) {
+        console.warn("Felhasználói csomag nem elérhető:", e?.message || e);
+        return null;
+      }
     }
 
 
@@ -830,10 +891,17 @@
       const { data: { session } } = await supaClient.auth.getSession();
       const c = document.getElementById("feltoltes-page");
       const isLoggedIn = !!session;
+      activeGrantedPackage = isLoggedIn ? await loadActiveGrantedPackage(session.user.id) : null;
 
       // Mindig látható oldal: ha nincs belépés, a mezők tiltva vannak + kiírjuk a belépési CTA-t.
       const disabledAttr = isLoggedIn ? "" : "disabled";
       const disabledClass = isLoggedIn ? "" : "opacity-60 pointer-events-none select-none";
+      const grantedPackageHtml = activeGrantedPackage ? `
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded mb-6">
+              <div class="font-bold">Admin által adott csomagod: ${packageLabel(activeGrantedPackage.csomag)}</div>
+              <div class="text-sm">Érvényes: ${new Date(activeGrantedPackage.expires_at).toLocaleDateString("hu-HU")}-ig. Ezzel a csomaggal fizetés nélkül adhatsz fel hirdetést.</div>
+            </div>
+          ` : "";
 
       kivalasztottKepek = [];
 
@@ -847,6 +915,8 @@
               (A felületet viszont meg tudod nézni belépés nélkül is.)
             </div>
           ` : ""}
+
+          ${grantedPackageHtml}
 
           <div class="bg-green-50 border border-green-200 text-green-900 p-4 rounded mb-6">
             <h2 class="font-bold text-lg mb-1">🚀 Szerezz több munkát már ma!</h2>
@@ -1020,6 +1090,11 @@
         else if (val === 'extra') { m = 8; p = 1990; info.innerText = "8 kép, Videó, Kiemelt, 30 nap"; vWrap.style.display = "block"; }
         else { info.innerText = "2 kép, 7 nap (Videó nem elérhető)"; const v = document.getElementById("video"); if (v) v.value = ""; }
 
+        if (isPackageCoveredByGrant(val)) {
+          info.innerText += ` • Admin csomaggal fedezve (${packageLabel(activeGrantedPackage.csomag)})`;
+          p = 0;
+        }
+
         max.innerText = m;
 
         // Ha nincs belépve: ne engedjük a beküldést / fizetést
@@ -1069,6 +1144,10 @@
       });
 
       // init
+      if (activeGrantedPackage?.csomag) {
+        const select = document.getElementById("csomag");
+        if (select) select.value = activeGrantedPackage.csomag;
+      }
       updatePackageInfo();
     }
 
@@ -1104,7 +1183,7 @@
         }
 
         const csomag = document.getElementById("csomag").value;
-        const days = csomag === 'extra' ? 30 : (csomag === 'premium' ? 14 : 7);
+        const days = packageDays(csomag);
         const lejarat = new Date();
         lejarat.setDate(lejarat.getDate() + days);
 
@@ -1214,6 +1293,60 @@
         return;
       }
 
+      const usersById = new Map();
+      (data || []).forEach(h => {
+        if (!h.user_id) return;
+        const current = usersById.get(h.user_id) || {
+          user_id: h.user_id,
+          email: h.email || "",
+          ads_count: 0,
+          active_ads_count: 0
+        };
+        current.email = current.email || h.email || "";
+        current.ads_count += 1;
+        if (!h.lejárati_datum || new Date(h.lejárati_datum).getTime() >= Date.now()) current.active_ads_count += 1;
+        usersById.set(h.user_id, current);
+      });
+
+      let adminUsers = [];
+      let usersSourceNote = "";
+      try {
+        const { data: authUsersResp, error: authUsersError } = await supaClient.functions.invoke("admin-users");
+        if (authUsersError) throw authUsersError;
+        adminUsers = (authUsersResp?.users || []).map(u => {
+          const adInfo = usersById.get(u.user_id) || {};
+          return {
+            user_id: u.user_id,
+            email: u.email || adInfo.email || "",
+            ads_count: adInfo.ads_count || 0,
+            active_ads_count: adInfo.active_ads_count || 0
+          };
+        });
+        usersSourceNote = "Az összes regisztrált felhasználó látszik az admin Edge Function alapján.";
+      } catch (e) {
+        adminUsers = Array.from(usersById.values());
+        usersSourceNote = "Az admin Edge Function még nem elérhető, ezért most csak a hirdetéssel rendelkező felhasználók látszanak.";
+        console.warn("admin-users function nem elérhető:", e?.message || e);
+      }
+
+      adminUsers = adminUsers.sort((a, b) => (a.email || "").localeCompare(b.email || ""));
+      const adminUserIds = adminUsers.map(u => u.user_id);
+      const packageMap = new Map();
+      let packageLoadError = null;
+
+      if (adminUserIds.length) {
+        try {
+          const { data: packages, error: packagesError } = await supaClient
+            .from("user_packages")
+            .select("*")
+            .in("user_id", adminUserIds);
+          if (packagesError) throw packagesError;
+          (packages || []).forEach(row => packageMap.set(row.user_id, row));
+        } catch (e) {
+          packageLoadError = e?.message || String(e);
+        }
+      }
+
       const statsHtml = stats ? `
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -1236,6 +1369,82 @@
         </div>
       `;
 
+      const packageErrorHtml = packageLoadError ? `
+        <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4">
+          A felhasználói csomagok táblája még nem elérhető. Futtasd a <code>supabase/admin_user_packages.sql</code> fájlt a Supabase SQL Editorban.<br>
+          <span class="text-xs">${escapeHtml(packageLoadError)}</span>
+        </div>
+      ` : "";
+
+      const userPackageRowsHtml = adminUsers.length ? adminUsers.map(u => {
+        const pkg = packageMap.get(u.user_id);
+        const selected = pkg?.csomag || "alap";
+        const active = isPackageActive(pkg);
+        const statusHtml = pkg
+          ? `<span class="${active ? "text-green-700" : "text-red-600"} font-semibold">${active ? "Aktív" : "Lejárt"}</span>`
+          : `<span class="text-gray-500">Nincs külön csomag</span>`;
+        return `
+          <tr class="border-b align-top">
+            <td class="p-2">
+              <div class="font-semibold">${escapeHtml(u.email || "Nincs email")}</div>
+              <div class="text-xs text-gray-500">${escapeHtml(u.user_id)}</div>
+            </td>
+            <td class="p-2 text-gray-600">${u.active_ads_count} aktív / ${u.ads_count} összes</td>
+            <td class="p-2">
+              <select id="pkg-${u.user_id}" class="border rounded p-2 w-full min-w-[120px]">
+                <option value="alap" ${selected === "alap" ? "selected" : ""}>Alap</option>
+                <option value="premium" ${selected === "premium" ? "selected" : ""}>Prémium</option>
+                <option value="extra" ${selected === "extra" ? "selected" : ""}>Extra</option>
+              </select>
+            </td>
+            <td class="p-2">
+              <input id="pkg-exp-${u.user_id}" type="date" value="${dateInputValue(pkg?.expires_at, packageDays(selected))}" class="border rounded p-2 w-full min-w-[145px]">
+            </td>
+            <td class="p-2">${statusHtml}</td>
+            <td class="p-2">
+              <label class="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                <input id="pkg-ads-${u.user_id}" type="checkbox" checked>
+                aktív hirdetések frissítése
+              </label>
+              <div class="flex gap-2 flex-wrap">
+                <button onclick="window.saveUserPackage('${u.user_id}')" class="bg-green-600 text-white px-3 py-1.5 rounded font-bold hover:bg-green-700">Mentés</button>
+                <button onclick="window.revokeUserPackage('${u.user_id}')" class="text-red-600 px-3 py-1.5 border border-red-200 rounded hover:bg-red-50">Visszavonás</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("") : `
+        <tr><td colspan="6" class="p-4 text-center text-gray-500">Még nincs olyan regisztrált felhasználó, akihez hirdetés tartozik.</td></tr>
+      `;
+
+      const adminPackagesHtml = `
+        <div class="mb-8">
+          <div class="flex items-center justify-between gap-4 mb-3">
+            <div>
+              <h3 class="text-lg font-bold">Felhasználói csomagok</h3>
+              <p class="text-sm text-gray-600">Itt tudsz regisztrált szakembernek csomagot adni vagy módosítani.</p>
+              <p class="text-xs text-gray-500 mt-1">${escapeHtml(usersSourceNote)}</p>
+            </div>
+          </div>
+          ${packageErrorHtml}
+          <div class="overflow-x-auto border border-gray-200 rounded-lg">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-100 text-left">
+                  <th class="p-2">Felhasználó</th>
+                  <th class="p-2">Hirdetések</th>
+                  <th class="p-2">Csomag</th>
+                  <th class="p-2">Érvényes eddig</th>
+                  <th class="p-2">Állapot</th>
+                  <th class="p-2">Művelet</th>
+                </tr>
+              </thead>
+              <tbody>${userPackageRowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
       document.getElementById("admin-page").innerHTML = `
         <div class="bg-white p-6 rounded shadow">
           <div class="flex items-center justify-between mb-4">
@@ -1244,6 +1453,7 @@
           </div>
 
           ${statsHtml}
+          ${adminPackagesHtml}
 
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -1251,6 +1461,7 @@
                 <tr class="bg-gray-100 text-left">
                   <th class="p-2">Cím</th>
                   <th class="p-2">Email</th>
+                  <th class="p-2">Csomag</th>
                   <th class="p-2">Lejárat</th>
                   <th class="p-2">Művelet</th>
                 </tr>
@@ -1258,8 +1469,9 @@
               <tbody>
                 ${(data || []).map(h => `
                   <tr class="border-b">
-                    <td class="p-2 font-bold">${h.cim}</td>
-                    <td class="p-2 text-gray-600">${h.email}</td>
+                    <td class="p-2 font-bold">${escapeHtml(h.cim)}</td>
+                    <td class="p-2 text-gray-600">${escapeHtml(h.email)}</td>
+                    <td class="p-2">${packageLabel(h.csomag)}</td>
                     <td class="p-2 text-blue-600">${new Date(h.lejárati_datum).toLocaleDateString('hu-HU')}</td>
                     <td class="p-2">
                       <button onclick="window.deleteAd('${h.id}')" class="text-red-600 font-bold hover:underline">Törlés</button>
@@ -1280,6 +1492,54 @@
       trackEvent("ad_deleted", { id });
       showAdminPage();
       showToast("Törölve", "success");
+    };
+
+    window.saveUserPackage = async (userId) => {
+      const { data: { session } } = await supaClient.auth.getSession();
+      if (!session || session.user.email !== ADMIN_EMAIL) return showToast("Nincs jogod.", "error");
+
+      const csomag = document.getElementById(`pkg-${userId}`)?.value || "alap";
+      const expiresRaw = document.getElementById(`pkg-exp-${userId}`)?.value;
+      const syncAds = !!document.getElementById(`pkg-ads-${userId}`)?.checked;
+      if (!expiresRaw) return showToast("Adj meg lejárati dátumot.", "error");
+
+      const expiresAt = new Date(`${expiresRaw}T23:59:59`).toISOString();
+      const payload = {
+        user_id: userId,
+        csomag,
+        expires_at: expiresAt,
+        created_by: session.user.id,
+        note: "Admin által beállítva"
+      };
+
+      const { error } = await supaClient.from("user_packages").upsert(payload, { onConflict: "user_id" });
+      if (error) return showToast("Csomag mentési hiba: " + error.message, "error");
+
+      if (syncAds) {
+        const { error: adError } = await supaClient
+          .from("hirdetesek")
+          .update({ csomag, "lejárati_datum": expiresAt })
+          .eq("user_id", userId)
+          .gte("lejárati_datum", new Date().toISOString());
+        if (adError) return showToast("Csomag mentve, de a hirdetések frissítése hibázott: " + adError.message, "error");
+      }
+
+      trackEvent("admin_user_package_saved", { userId, csomag, expiresAt, syncAds });
+      showToast("Csomag mentve.", "success");
+      showAdminPage();
+    };
+
+    window.revokeUserPackage = async (userId) => {
+      const { data: { session } } = await supaClient.auth.getSession();
+      if (!session || session.user.email !== ADMIN_EMAIL) return showToast("Nincs jogod.", "error");
+      if (!confirm("Biztosan visszavonod a felhasználói csomagot?")) return;
+
+      const { error } = await supaClient.from("user_packages").delete().eq("user_id", userId);
+      if (error) return showToast("Visszavonási hiba: " + error.message, "error");
+
+      trackEvent("admin_user_package_revoked", { userId });
+      showToast("Csomag visszavonva.", "success");
+      showAdminPage();
     };
 
     /* =========================
