@@ -3,7 +3,6 @@
 // Required secret/env: SUPABASE_SERVICE_ROLE_KEY
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 
@@ -29,25 +28,42 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") || "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: anonKey,
+        Authorization: authHeader,
+      },
     });
 
-    const { data: authData, error: authError } = await userClient.auth.getUser();
-    if (authError || authData.user?.email !== ADMIN_EMAIL) {
+    if (!userResponse.ok) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 403,
       });
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data, error } = await adminClient.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
+    const currentUser = await userResponse.json();
+    if (currentUser?.email !== ADMIN_EMAIL) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
+    const adminResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
     });
 
-    if (error) throw error;
+    if (!adminResponse.ok) {
+      const errorText = await adminResponse.text();
+      throw new Error(`Auth admin users error: ${adminResponse.status} ${errorText}`);
+    }
+
+    const data = await adminResponse.json();
 
     const users = (data.users || []).map((user) => ({
       user_id: user.id,
