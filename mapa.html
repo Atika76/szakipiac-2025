@@ -179,11 +179,7 @@ function applyFilters() {
 
 async function loadAds() {
   document.getElementById('status').textContent = 'Hirdetések betöltése...';
-  const { data, error } = await supaClient
-    .from('hirdetesek')
-    .select('*')
-    .gte('lejárati_datum', new Date().toISOString())
-    .order('created_at', { ascending: false });
+  const { data, error } = await supaClient.from('hirdetesek').select('*').order('created_at', { ascending: false });
   if (error) {
     document.getElementById('status').textContent = 'Nem sikerült betölteni a hirdetéseket.';
     return;
