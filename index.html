@@ -1603,7 +1603,18 @@
       document.getElementById("btn-next").addEventListener("click", nextReklam);
       document.getElementById("btn-prev").addEventListener("click", prevReklam);
 
-      document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
+      const lightbox = document.getElementById("lightbox");
+      const closeLightbox = () => {
+        lightbox.classList.add("opacity-0");
+        setTimeout(() => lightbox.classList.add("hidden"), 250);
+      };
+      document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", (e) => {
+        if (e.target === lightbox) closeLightbox();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !lightbox.classList.contains("hidden")) closeLightbox();
+      });
 
       // első route + reklám
       handleRouteChange();
@@ -1619,8 +1630,11 @@
     }
 
     window.openLightbox = (u) => {
-      document.getElementById("lightbox-img").src = u;
-      document.getElementById("lightbox").classList.remove("hidden");
+      const lightbox = document.getElementById("lightbox");
+      const img = document.getElementById("lightbox-img");
+      img.src = u;
+      lightbox.classList.remove("hidden");
+      requestAnimationFrame(() => lightbox.classList.remove("opacity-0"));
     };
 
     init();
