@@ -801,8 +801,7 @@
           : `<div class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm text-slate-600">⭐ Még nincs értékelés</div>`;
         const viewCount = getLocalAdViews(h.id);
         const viewHtml = `<div class="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-xs text-slate-600">👁 Megtekintve nálad: <strong>${viewCount}</strong></div>`;
-        const hasLocation = Boolean(h.varos || h.iranyitoszam || h.latitude || h.longitude || h.lat || h.lng);
-        const mapBtn = hasLocation ? `<a href="${getMapUrl(h)}" target="_blank" rel="noopener" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-200">📍 Térkép</a>` : ``;
+        const mapBtn = `<a href="${getMapUrl(h)}" target="_blank" rel="noopener" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-slate-200">📍 Térkép</a>`;
         const fbBtn = `<a href="${getFacebookShareUrl(h)}" target="_blank" rel="noopener" class="bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 hover:bg-blue-800">f Facebook</a>`;
         return `
           <div class="bg-white p-6 rounded-lg shadow-sm relative ${extraClass}">
@@ -1604,7 +1603,18 @@
       document.getElementById("btn-next").addEventListener("click", nextReklam);
       document.getElementById("btn-prev").addEventListener("click", prevReklam);
 
-      document.getElementById("lightbox-close").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
+      const lightbox = document.getElementById("lightbox");
+      const closeLightbox = () => {
+        lightbox.classList.add("opacity-0");
+        setTimeout(() => lightbox.classList.add("hidden"), 250);
+      };
+      document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", (e) => {
+        if (e.target === lightbox) closeLightbox();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !lightbox.classList.contains("hidden")) closeLightbox();
+      });
 
       // első route + reklám
       handleRouteChange();
@@ -1620,8 +1630,11 @@
     }
 
     window.openLightbox = (u) => {
-      document.getElementById("lightbox-img").src = u;
-      document.getElementById("lightbox").classList.remove("hidden");
+      const lightbox = document.getElementById("lightbox");
+      const img = document.getElementById("lightbox-img");
+      img.src = u;
+      lightbox.classList.remove("hidden");
+      requestAnimationFrame(() => lightbox.classList.remove("opacity-0"));
     };
 
     init();
