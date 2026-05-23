@@ -1437,6 +1437,7 @@
           return {
             user_id: u.user_id,
             email: u.email || adInfo.email || "",
+            display_name: u.display_name || "",
             ads_count: adInfo.ads_count || 0,
             active_ads_count: adInfo.active_ads_count || 0
           };
@@ -1451,7 +1452,20 @@
       adminUsers = adminUsers.sort((a, b) => (a.email || "").localeCompare(b.email || ""));
       const adminUserIds = adminUsers.map(u => u.user_id);
       const packageMap = new Map();
+      const adminProfilesMap = new Map();
       let packageLoadError = null;
+
+      if (adminUserIds.length) {
+        try {
+          const { data: adminProfiles } = await supaClient
+            .from("szakember_profiles")
+            .select("user_id,display_name,city")
+            .in("user_id", adminUserIds);
+          (adminProfiles || []).forEach(profile => adminProfilesMap.set(profile.user_id, profile));
+        } catch (e) {
+          console.warn("Admin profilok betöltése sikertelen:", e?.message || e);
+        }
+      }
 
       if (adminUserIds.length) {
         try {
@@ -1497,37 +1511,42 @@
 
       const userPackageRowsHtml = adminUsers.length ? adminUsers.map(u => {
         const pkg = packageMap.get(u.user_id);
+        const profile = adminProfilesMap.get(u.user_id) || {};
+        const displayName = profile.display_name || u.display_name || "";
+        const city = profile.city || "";
         const selected = pkg?.csomag || "alap";
         const active = isPackageActive(pkg);
         const statusHtml = pkg
           ? `<span class="${active ? "text-green-700" : "text-red-600"} font-semibold">${active ? "Aktív" : "Lejárt"}</span>`
           : `<span class="text-gray-500">Nincs külön csomag</span>`;
         return `
-          <tr class="border-b align-top">
-            <td class="p-2">
-              <div class="font-semibold">${escapeHtml(u.email || "Nincs email")}</div>
-              <div class="text-xs text-gray-500">${escapeHtml(u.user_id)}</div>
+          <tr class="border-b align-top user-package-row" data-search="${escapeHtml(((displayName || "") + " " + (city || "") + " " + (u.email || "") + " " + (u.user_id || "")).toLowerCase())}">
+            <td class="p-2 max-w-0">
+              ${displayName ? `<div class="font-bold text-gray-900 break-words leading-tight">${escapeHtml(displayName)}</div>` : ""}
+              <div class="${displayName ? "text-xs text-gray-700" : "font-semibold"} break-words leading-tight">${escapeHtml(u.email || "Nincs email")}</div>
+              ${city ? `<div class="text-[11px] text-gray-500 break-words leading-tight mt-0.5">${escapeHtml(city)}</div>` : ""}
+              <div class="text-[11px] text-gray-500 break-all leading-tight mt-1">${escapeHtml(u.user_id)}</div>
             </td>
-            <td class="p-2 text-gray-600">${u.active_ads_count} aktív / ${u.ads_count} összes</td>
+            <td class="p-2 text-gray-600 whitespace-normal leading-tight">${u.active_ads_count} aktív<br><span class="text-xs text-gray-500">${u.ads_count} összes</span></td>
             <td class="p-2">
-              <select id="pkg-${u.user_id}" class="border rounded p-2 w-full min-w-[120px]">
+              <select id="pkg-${u.user_id}" class="border rounded p-1.5 w-full text-sm">
                 <option value="alap" ${selected === "alap" ? "selected" : ""}>Alap</option>
                 <option value="premium" ${selected === "premium" ? "selected" : ""}>Prémium</option>
                 <option value="extra" ${selected === "extra" ? "selected" : ""}>Extra</option>
               </select>
             </td>
             <td class="p-2">
-              <input id="pkg-exp-${u.user_id}" type="date" value="${dateInputValue(pkg?.expires_at, packageDays(selected))}" class="border rounded p-2 w-full min-w-[145px]">
+              <input id="pkg-exp-${u.user_id}" type="date" value="${dateInputValue(pkg?.expires_at, packageDays(selected))}" class="border rounded p-1.5 w-full text-sm">
             </td>
-            <td class="p-2">${statusHtml}</td>
+            <td class="p-2 text-sm leading-tight">${statusHtml}</td>
             <td class="p-2">
-              <label class="flex items-center gap-2 text-xs text-gray-600 mb-2">
-                <input id="pkg-ads-${u.user_id}" type="checkbox" checked>
-                aktív hirdetések frissítése
+              <label class="flex items-start gap-1.5 text-[11px] text-gray-600 mb-2 leading-tight">
+                <input id="pkg-ads-${u.user_id}" type="checkbox" checked class="mt-0.5 shrink-0">
+                <span>aktív hirdetések frissítése</span>
               </label>
-              <div class="flex gap-2 flex-wrap">
-                <button onclick="window.saveUserPackage('${u.user_id}')" class="bg-green-600 text-white px-3 py-1.5 rounded font-bold hover:bg-green-700">Mentés</button>
-                <button onclick="window.revokeUserPackage('${u.user_id}')" class="text-red-600 px-3 py-1.5 border border-red-200 rounded hover:bg-red-50">Visszavonás</button>
+              <div class="grid grid-cols-1 gap-1">
+                <button onclick="window.saveUserPackage('${u.user_id}')" class="bg-green-600 text-white px-2 py-1 rounded font-bold hover:bg-green-700 text-xs">Mentés</button>
+                <button onclick="window.revokeUserPackage('${u.user_id}')" class="text-red-600 px-2 py-1 border border-red-200 rounded hover:bg-red-50 text-xs">Visszavonás</button>
               </div>
             </td>
           </tr>
@@ -1538,22 +1557,37 @@
 
       const adminPackagesHtml = `
         <div class="mb-8">
-          <div class="flex items-center justify-between gap-4 mb-3">
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-3">
             <div>
               <h3 class="text-lg font-bold">Felhasználói csomagok</h3>
               <p class="text-sm text-gray-600">Itt tudsz regisztrált szakembernek csomagot adni vagy módosítani.</p>
               <p class="text-xs text-gray-500 mt-1">${escapeHtml(usersSourceNote)}</p>
             </div>
+            <div class="w-full md:w-72">
+              <label for="admin-user-search" class="block text-xs font-bold text-gray-600 mb-1">Keresés név / email szerint</label>
+              <input id="admin-user-search" type="search" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Pl.: B, bartha, gmail...">
+            </div>
           </div>
           ${packageErrorHtml}
-          <div class="overflow-x-auto border border-gray-200 rounded-lg">
-            <table class="w-full text-sm">
+          <div id="admin-user-search-empty" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-3 text-sm">
+            Nincs találat erre a keresésre.
+          </div>
+          <div class="overflow-hidden border border-gray-200 rounded-lg">
+            <table class="w-full text-xs md:text-sm table-fixed">
+              <colgroup>
+                <col style="width:27%">
+                <col style="width:13%">
+                <col style="width:15%">
+                <col style="width:17%">
+                <col style="width:10%">
+                <col style="width:18%">
+              </colgroup>
               <thead>
                 <tr class="bg-gray-100 text-left">
                   <th class="p-2">Felhasználó</th>
-                  <th class="p-2">Hirdetések</th>
+                  <th class="p-2">Hird.</th>
                   <th class="p-2">Csomag</th>
-                  <th class="p-2">Érvényes eddig</th>
+                  <th class="p-2">Érvényes</th>
                   <th class="p-2">Állapot</th>
                   <th class="p-2">Művelet</th>
                 </tr>
@@ -1601,6 +1635,24 @@
           </div>
         </div>
       `;
+
+      const adminUserSearch = document.getElementById("admin-user-search");
+      if (adminUserSearch) {
+        const rows = Array.from(document.querySelectorAll(".user-package-row"));
+        const emptyBox = document.getElementById("admin-user-search-empty");
+        const filterRows = () => {
+          const q = adminUserSearch.value.trim().toLowerCase();
+          let visibleCount = 0;
+          rows.forEach(row => {
+            const haystack = row.dataset.search || "";
+            const visible = !q || haystack.includes(q);
+            row.style.display = visible ? "" : "none";
+            if (visible) visibleCount += 1;
+          });
+          if (emptyBox) emptyBox.classList.toggle("hidden", visibleCount !== 0);
+        };
+        adminUserSearch.addEventListener("input", filterRows);
+      }
     }
 
     window.deleteAd = async (id) => {

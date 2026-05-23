@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v4-kivitelezespro'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v5-admin-csomag-kereso'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [

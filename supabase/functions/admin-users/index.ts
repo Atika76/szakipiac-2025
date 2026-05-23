@@ -65,12 +65,16 @@ serve(async (req) => {
 
     const data = await adminResponse.json();
 
-    const users = (data.users || []).map((user) => ({
-      user_id: user.id,
-      email: user.email || "",
-      created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at,
-    }));
+    const users = (data.users || []).map((user) => {
+      const meta = user.user_metadata || user.raw_user_meta_data || {};
+      return {
+        user_id: user.id,
+        email: user.email || "",
+        display_name: meta.display_name || meta.full_name || meta.name || "",
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+      };
+    });
 
     return new Response(JSON.stringify({ users }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
