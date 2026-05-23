@@ -1,0 +1,9 @@
+KivitelezésPRO oldal megnyitása:
+
+A feltöltés után nyisd meg így:
+https://szakipiac-2025.hu/kivitelezes-pro.html
+
+Fontos:
+- A főoldal, Rólunk, Kapcsolat, Hirdetés feltöltése és AI Kalkulátor oldalak az eredeti formában maradtak.
+- Csak a kivitelezes-pro.html oldal lett kompaktabbra készítve.
+- Opcionális Supabase SQL: supabase/kivitelezes_pro_schema.sql

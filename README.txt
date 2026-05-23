@@ -44,6 +44,3 @@ Minden fő .html oldalad <head> részébe be van téve:
 
 Jó használatot kíván:  
 SzakiPiac fejlesztői asszisztens (ChatGPT)
-
-- kivitelezes-pro.html .. ÚJ: teljes kivitelezési asszisztens szakágakkal, ütemezéssel, ellenőrzőlistával, alvállalkozó-kezeléssel, költségbecsléssel, JSON export/import funkcióval és PDF készítéssel
-- supabase/kivitelezes_pro_schema.sql .. opcionális Supabase tábla a KivitelezésPRO projektek mentéséhez
