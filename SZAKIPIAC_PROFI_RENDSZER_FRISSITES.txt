@@ -1,0 +1,12 @@
+SzakiPiac profi átláthatósági frissítés
+
+Ebben a csomagban a főoldal és a rendszerindító felület lett újrarendezve:
+- tisztább fejléc
+- Eszközök menüpont: AI Kalkulátor, KivitelezésPRO, Energia számítás
+- új főoldali bemutató blokk
+- 3 fő útvonal: szakember keresése, hirdetés feladása, kalkuláció/kivitelezés
+- átláthatóbb kereső és hirdetéslista
+- felújítási útmutatók rendezettebb megjelenése
+- kompaktabb belépett felhasználói sáv
+
+A meglévő működést nem töröltük: Supabase, hirdetések, üzenetek, admin, kalkulátor és KivitelezésPRO maradt.
