@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v10-kereses-gomb-fix'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v11-nincs-talalat-kereso'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
