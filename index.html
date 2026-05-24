@@ -549,15 +549,13 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
                 <h2 class="text-2xl font-black text-gray-900">Szakember keresése</h2>
-                <p class="text-gray-600 text-sm">Írd be, mit keresel, válassz várost vagy kategóriát.</p>
+                <p class="text-gray-600 text-sm">Válassz szakmát, és ha szeretnél, szűrj város szerint is.</p>
               </div>
               <button type="button" onclick="window.toggleQuickFilters?.()" class="text-xs font-bold bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-full hover:bg-green-100 active:scale-[0.98] transition">⚡ Gyors szűrés</button>
             </div>
-            <div class="grid md:grid-cols-3 gap-4">
-              <input type="text" id="search" placeholder="Pl. burkoló, festő, villanyszerelő..." class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
-              <input type="text" id="filter-city" placeholder="Város" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
+            <div class="grid md:grid-cols-2 gap-4">
               <select id="category-select" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
-                <option value="">Összes kategória</option>
+                <option value="">Összes szakma / kategória</option>
                 <option>Kőműves</option>
                 <option>Burkoló</option>
                 <option>Festő</option>
@@ -572,6 +570,7 @@
                 <option>Számítástechnika</option>
                 <option>Egyéb</option>
               </select>
+              <input type="text" id="filter-city" placeholder="Város (opcionális)" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
             </div>
             <div id="quick-filter-panel" class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -581,13 +580,13 @@
                 <button type="button" data-quick-filter="Festő" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🎨 Festő</button>
                 <button type="button" data-quick-filter="Villanyszerelő" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">⚡ Villanyszerelő</button>
                 <button type="button" data-quick-filter="Víz-Gáz-Fűtés" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🚰 Víz-Gáz-Fűtés</button>
-                <button type="button" data-quick-filter="Ács" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🏠 Ács / Tetőfedő</button>
+                <button type="button" data-quick-filter="Ács / Tetőfedő" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🏠 Ács / Tetőfedő</button>
                 <button type="button" data-quick-filter="Bádogos" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🔧 Bádogos</button>
                 <button type="button" data-quick-filter="Gipszkarton" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">⬜ Gipszkarton</button>
                 <button type="button" data-quick-filter="" class="quick-filter-btn rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">Összes mutatása</button>
               </div>
               <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-                <div id="filter-result-info" class="text-emerald-900 font-semibold">Válassz szakmát vagy írj be keresőszót.</div>
+                <div id="filter-result-info" class="text-emerald-900 font-semibold">Válassz szakmát vagy várost.</div>
                 <button type="button" onclick="window.clearAdFilters?.()" class="self-start sm:self-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">Szűrés törlése</button>
               </div>
             </div>
@@ -638,9 +637,8 @@
           </section>
         </div>
       `;
-      document.getElementById("search").addEventListener("input", filterAds);
-      document.getElementById("filter-city").addEventListener("input", filterAds);
-      document.getElementById("category-select").addEventListener("change", filterAds);
+      document.getElementById("filter-city")?.addEventListener("input", () => filterAds(false));
+      document.getElementById("category-select")?.addEventListener("change", () => filterAds(false));
       document.querySelectorAll("[data-quick-filter]").forEach(btn => {
         btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
       });
@@ -1059,11 +1057,10 @@
     function updateFilterResultInfo(count, total) {
       const info = document.getElementById("filter-result-info");
       if (!info) return;
-      const txt = (document.getElementById("search")?.value || "").trim();
       const city = (document.getElementById("filter-city")?.value || "").trim();
       const cat = document.getElementById("category-select")?.value || "";
-      const active = [txt && `keresés: „${txt}”`, city && `város: „${city}”`, cat && `szakma: „${cat}”`].filter(Boolean).join(" · ");
-      info.textContent = active ? `Találatok: ${count} / ${total} (${active})` : `Összes hirdetés: ${total}. Válassz szakmát vagy írj be keresőszót.`;
+      const active = [cat && `szakma: „${cat}”`, city && `város: „${city}”`].filter(Boolean).join(" · ");
+      info.textContent = active ? `Találatok: ${count} / ${total} (${active})` : `Összes hirdetés: ${total}. Válassz szakmát vagy várost.`;
     }
 
     function highlightQuickFilterButtons(activeValue) {
@@ -1078,18 +1075,19 @@
     }
 
     window.applyQuickFilter = function(value) {
-      const searchInput = document.getElementById("search");
       const categorySelect = document.getElementById("category-select");
       const selected = String(value || "").trim();
 
-      if (!selected) {
-        if (searchInput) searchInput.value = "";
-        if (categorySelect) categorySelect.value = "";
-      } else {
-        if (searchInput) searchInput.value = selected;
-        if (categorySelect) {
-          const exactOption = Array.from(categorySelect.options).find(opt => normalizeSearchText(opt.value || opt.textContent) === normalizeSearchText(selected));
-          categorySelect.value = exactOption ? exactOption.value : "";
+      if (categorySelect) {
+        if (!selected) {
+          categorySelect.value = "";
+        } else {
+          const selectedNorm = normalizeSearchText(selected);
+          const option = Array.from(categorySelect.options).find(opt => {
+            const optionText = normalizeSearchText(opt.value || opt.textContent);
+            return optionText === selectedNorm || optionText.includes(selectedNorm) || selectedNorm.includes(optionText);
+          });
+          categorySelect.value = option ? option.value : "";
         }
       }
 
@@ -1097,10 +1095,8 @@
     };
 
     window.clearAdFilters = function() {
-      const searchInput = document.getElementById("search");
       const cityInput = document.getElementById("filter-city");
       const categorySelect = document.getElementById("category-select");
-      if (searchInput) searchInput.value = "";
       if (cityInput) cityInput.value = "";
       if (categorySelect) categorySelect.value = "";
       filterAds(true);
@@ -1120,10 +1116,8 @@
     }
 
     async function filterAds(scrollToResults = false) {
-      const txtRaw = document.getElementById("search")?.value || "";
       const cityRaw = document.getElementById("filter-city")?.value || "";
       const catRaw = document.getElementById("category-select")?.value || "";
-      const txt = normalizeSearchText(txtRaw);
       const city = normalizeSearchText(cityRaw);
       const cat = normalizeSearchText(catRaw);
       const baseList = Array.isArray(hirdetesekCache) ? hirdetesekCache : [];
@@ -1132,15 +1126,14 @@
         const hay = adSearchText(h);
         const categoryText = normalizeSearchText(h.kategoria || "");
         const cityText = normalizeSearchText([h.varos, (h.user_id ? profileSummaryMap.get(h.user_id)?.city : "")].filter(Boolean).join(" "));
-        const okTxt = !txt || hay.includes(txt);
         const okCity = !city || cityText.includes(city) || hay.includes(city);
         const okCat = !cat || categoryText.includes(cat) || hay.includes(cat);
-        return okTxt && okCity && okCat;
+        return okCity && okCat;
       });
 
       await renderAds(filtered);
       updateFilterResultInfo(filtered.length, baseList.length);
-      highlightQuickFilterButtons(catRaw || txtRaw);
+      highlightQuickFilterButtons(catRaw);
 
       if (scrollToResults) {
         setTimeout(() => {
