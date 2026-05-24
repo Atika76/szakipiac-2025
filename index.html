@@ -551,7 +551,7 @@
                 <h2 class="text-2xl font-black text-gray-900">Szakember keresése</h2>
                 <p class="text-gray-600 text-sm">Írd be, mit keresel, válassz várost vagy kategóriát.</p>
               </div>
-              <span class="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-2 rounded-full">Gyors szűrés</span>
+              <button type="button" onclick="window.toggleQuickFilters?.()" class="text-xs font-bold bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-full hover:bg-green-100 active:scale-[0.98] transition">⚡ Gyors szűrés</button>
             </div>
             <div class="grid md:grid-cols-3 gap-4">
               <input type="text" id="search" placeholder="Pl. burkoló, festő, villanyszerelő..." class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
@@ -572,6 +572,24 @@
                 <option>Számítástechnika</option>
                 <option>Egyéb</option>
               </select>
+            </div>
+            <div id="quick-filter-panel" class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-black uppercase tracking-wide text-emerald-800 mr-1">Gyors szakmakeresés:</span>
+                <button type="button" data-quick-filter="Kőműves" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🧱 Kőműves</button>
+                <button type="button" data-quick-filter="Burkoló" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🔲 Burkoló</button>
+                <button type="button" data-quick-filter="Festő" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🎨 Festő</button>
+                <button type="button" data-quick-filter="Villanyszerelő" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">⚡ Villanyszerelő</button>
+                <button type="button" data-quick-filter="Víz-Gáz-Fűtés" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🚰 Víz-Gáz-Fűtés</button>
+                <button type="button" data-quick-filter="Ács" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🏠 Ács / Tetőfedő</button>
+                <button type="button" data-quick-filter="Bádogos" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">🔧 Bádogos</button>
+                <button type="button" data-quick-filter="Gipszkarton" class="quick-filter-btn rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">⬜ Gipszkarton</button>
+                <button type="button" data-quick-filter="" class="quick-filter-btn rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">Összes mutatása</button>
+              </div>
+              <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+                <div id="filter-result-info" class="text-emerald-900 font-semibold">Válassz szakmát vagy írj be keresőszót.</div>
+                <button type="button" onclick="window.clearAdFilters?.()" class="self-start sm:self-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">Szűrés törlése</button>
+              </div>
             </div>
           </section>
 
@@ -623,6 +641,9 @@
       document.getElementById("search").addEventListener("input", filterAds);
       document.getElementById("filter-city").addEventListener("input", filterAds);
       document.getElementById("category-select").addEventListener("change", filterAds);
+      document.querySelectorAll("[data-quick-filter]").forEach(btn => {
+        btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
+      });
 
       await loadAds();
     }
@@ -878,6 +899,7 @@
 
         currentRenderedAds = [...hirdetesekCache];
         await renderAds(hirdetesekCache);
+        updateFilterResultInfo(hirdetesekCache.length, hirdetesekCache.length);
       } catch (e) {
         console.error(e);
         if (listEl) {
@@ -1009,21 +1031,113 @@
       }
     }
 
-    function filterAds() {
-      const txt = (document.getElementById("search").value || "").toLowerCase();
-      const city = (document.getElementById("filter-city").value || "").toLowerCase();
-      const cat = document.getElementById("category-select").value || "";
-      let baseList = hirdetesekCache;
+    function normalizeSearchText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[-_/]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function adSearchText(h) {
+      const profileInfo = h.user_id ? profileSummaryMap.get(h.user_id) : null;
+      return normalizeSearchText([
+        h.cim,
+        h.leiras,
+        h.kategoria,
+        h.varos,
+        h.email,
+        h.telefonszam,
+        h.weboldal,
+        profileInfo?.display_name,
+        profileInfo?.city
+      ].filter(Boolean).join(" "));
+    }
+
+    function updateFilterResultInfo(count, total) {
+      const info = document.getElementById("filter-result-info");
+      if (!info) return;
+      const txt = (document.getElementById("search")?.value || "").trim();
+      const city = (document.getElementById("filter-city")?.value || "").trim();
+      const cat = document.getElementById("category-select")?.value || "";
+      const active = [txt && `keresés: „${txt}”`, city && `város: „${city}”`, cat && `szakma: „${cat}”`].filter(Boolean).join(" · ");
+      info.textContent = active ? `Találatok: ${count} / ${total} (${active})` : `Összes hirdetés: ${total}. Válassz szakmát vagy írj be keresőszót.`;
+    }
+
+    function highlightQuickFilterButtons(activeValue) {
+      const activeNorm = normalizeSearchText(activeValue);
+      document.querySelectorAll("[data-quick-filter]").forEach(btn => {
+        const same = normalizeSearchText(btn.dataset.quickFilter || "") === activeNorm;
+        btn.classList.toggle("bg-emerald-700", same && !!activeNorm);
+        btn.classList.toggle("text-white", same && !!activeNorm);
+        btn.classList.toggle("border-emerald-700", same && !!activeNorm);
+        btn.classList.toggle("bg-white", !(same && !!activeNorm));
+      });
+    }
+
+    window.applyQuickFilter = function(value) {
+      const searchInput = document.getElementById("search");
+      const categorySelect = document.getElementById("category-select");
+      const selected = String(value || "").trim();
+
+      if (!selected) {
+        if (searchInput) searchInput.value = "";
+        if (categorySelect) categorySelect.value = "";
+      } else {
+        if (searchInput) searchInput.value = selected;
+        if (categorySelect) {
+          const exactOption = Array.from(categorySelect.options).find(opt => normalizeSearchText(opt.value || opt.textContent) === normalizeSearchText(selected));
+          categorySelect.value = exactOption ? exactOption.value : "";
+        }
+      }
+
+      filterAds(true);
+    };
+
+    window.clearAdFilters = function() {
+      const searchInput = document.getElementById("search");
+      const cityInput = document.getElementById("filter-city");
+      const categorySelect = document.getElementById("category-select");
+      if (searchInput) searchInput.value = "";
+      if (cityInput) cityInput.value = "";
+      if (categorySelect) categorySelect.value = "";
+      filterAds(true);
+    };
+
+    window.toggleQuickFilters = function() {
+      const panel = document.getElementById("quick-filter-panel");
+      if (!panel) return;
+      panel.classList.toggle("hidden");
+    };
+
+    function filterAds(scrollToResults = false) {
+      const txtRaw = document.getElementById("search")?.value || "";
+      const cityRaw = document.getElementById("filter-city")?.value || "";
+      const catRaw = document.getElementById("category-select")?.value || "";
+      const txt = normalizeSearchText(txtRaw);
+      const city = normalizeSearchText(cityRaw);
+      const cat = normalizeSearchText(catRaw);
+      const baseList = Array.isArray(hirdetesekCache) ? hirdetesekCache : [];
 
       const filtered = baseList.filter(h => {
-        const hay = ((h.cim || "") + " " + (h.leiras || "")).toLowerCase();
-        const okTxt = hay.includes(txt);
-        const okCity = !city || ((h.varos || "").toLowerCase().includes(city));
-        const okCat = !cat || (h.kategoria === cat);
+        const hay = adSearchText(h);
+        const categoryText = normalizeSearchText(h.kategoria || "");
+        const cityText = normalizeSearchText([h.varos, (h.user_id ? profileSummaryMap.get(h.user_id)?.city : "")].filter(Boolean).join(" "));
+        const okTxt = !txt || hay.includes(txt);
+        const okCity = !city || cityText.includes(city) || hay.includes(city);
+        const okCat = !cat || categoryText.includes(cat) || hay.includes(cat);
         return okTxt && okCity && okCat;
       });
 
       renderAds(filtered);
+      updateFilterResultInfo(filtered.length, baseList.length);
+      highlightQuickFilterButtons(catRaw || txtRaw);
+
+      if (scrollToResults) {
+        setTimeout(() => document.getElementById("hirdetes-lista")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+      }
     }
 
     /* =========================

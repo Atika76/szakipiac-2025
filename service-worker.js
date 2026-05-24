@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v6-rolunk-zold-hero'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v7-gyors-szures-fix'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
