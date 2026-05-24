@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v7-gyors-szures-fix'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v8-gyors-szures-scroll-fix'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
@@ -65,3 +65,5 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+// gyors-szures-scroll-fix-20260524

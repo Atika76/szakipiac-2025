@@ -1112,7 +1112,14 @@
       panel.classList.toggle("hidden");
     };
 
-    function filterAds(scrollToResults = false) {
+    function getFirstResultScrollTarget(filteredList) {
+      const list = Array.isArray(filteredList) ? filteredList : [];
+      const hasFeatured = list.some(h => ["extra", "premium"].includes((h.csomag || "").toLowerCase()));
+      if (hasFeatured) return document.getElementById("kiemelt-wrap") || document.getElementById("hirdetes-lista");
+      return document.getElementById("hirdetes-lista") || document.getElementById("kiemelt-wrap");
+    }
+
+    async function filterAds(scrollToResults = false) {
       const txtRaw = document.getElementById("search")?.value || "";
       const cityRaw = document.getElementById("filter-city")?.value || "";
       const catRaw = document.getElementById("category-select")?.value || "";
@@ -1131,12 +1138,15 @@
         return okTxt && okCity && okCat;
       });
 
-      renderAds(filtered);
+      await renderAds(filtered);
       updateFilterResultInfo(filtered.length, baseList.length);
       highlightQuickFilterButtons(catRaw || txtRaw);
 
       if (scrollToResults) {
-        setTimeout(() => document.getElementById("hirdetes-lista")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+        setTimeout(() => {
+          const target = getFirstResultScrollTarget(filtered);
+          target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
       }
     }
 
