@@ -549,11 +549,11 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
                 <h2 class="text-2xl font-black text-gray-900">Szakember keresése</h2>
-                <p class="text-gray-600 text-sm">Válassz szakmát, és ha szeretnél, szűrj város szerint is.</p>
+                <p class="text-gray-600 text-sm">Válassz szakmát, adj meg várost ha kell, majd kattints a keresésre.</p>
               </div>
               <button type="button" onclick="window.toggleQuickFilters?.()" class="text-xs font-bold bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-full hover:bg-green-100 active:scale-[0.98] transition">⚡ Gyors szűrés</button>
             </div>
-            <div class="grid md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1.25fr)_minmax(0,.85fr)_auto] gap-3 items-stretch">
               <select id="category-select" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
                 <option value="">Összes szakma / kategória</option>
                 <option>Kőműves</option>
@@ -570,7 +570,8 @@
                 <option>Számítástechnika</option>
                 <option>Egyéb</option>
               </select>
-              <input type="text" id="filter-city" placeholder="Város (opcionális)" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
+              <input type="text" id="filter-city" placeholder="Város vagy országos" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-200 focus:outline-none">
+              <button type="button" id="search-ads-btn" onclick="window.searchAds?.()" class="w-full md:w-auto whitespace-nowrap rounded-xl bg-emerald-600 px-5 py-3 font-black text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98] transition">🔎 Keresés</button>
             </div>
             <div id="quick-filter-panel" class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -638,7 +639,14 @@
         </div>
       `;
       document.getElementById("filter-city")?.addEventListener("input", () => filterAds(false));
+      document.getElementById("filter-city")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          window.searchAds?.();
+        }
+      });
       document.getElementById("category-select")?.addEventListener("change", () => filterAds(false));
+      document.getElementById("search-ads-btn")?.addEventListener("click", () => window.searchAds?.());
       document.querySelectorAll("[data-quick-filter]").forEach(btn => {
         btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
       });
@@ -1099,6 +1107,10 @@
       const categorySelect = document.getElementById("category-select");
       if (cityInput) cityInput.value = "";
       if (categorySelect) categorySelect.value = "";
+      filterAds(true);
+    };
+
+    window.searchAds = function() {
       filterAds(true);
     };
 

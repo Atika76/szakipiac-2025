@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v9-szakma-varos-szures-fix'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v10-kereses-gomb-fix'; // Új verziószám, hogy frissüljön
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
@@ -66,4 +66,4 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// szakma-varos-szures-fix-20260524
+// kereses-gomb-fix-20260524
