@@ -4,6 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const allowedOrigins = new Set([
   "https://szakipiac-2025.hu",
   "https://www.szakipiac-2025.hu",
+  "https://barthaattila.github.io",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
 ]);
 
 function corsHeaders(req: Request) {
@@ -43,7 +46,8 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const quoteId = String(body.quote_id || body.id || "").trim();
+    // A régi/aktuális kalkulator.html quoteId néven küldi, ezért ezt is elfogadjuk.
+    const quoteId = String(body.quote_id || body.quoteId || body.id || "").trim();
     if (!quoteId) return json(req, { ok: false, error: "Hiányzó ajánlat azonosító." }, 400);
 
     const userClient = createClient(supabaseUrl, anonKey, {
