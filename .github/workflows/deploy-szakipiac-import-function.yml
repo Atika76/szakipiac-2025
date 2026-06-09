@@ -20,7 +20,22 @@ jobs:
         with:
           version: latest
 
+      - name: Prepare Supabase temp folder
+        run: |
+          echo "Repo tartalom ellenőrzése:"
+          ls -la
+          echo "Supabase mappa ellenőrzése:"
+          ls -la supabase || true
+
+          if [ ! -d "supabase" ]; then
+            echo "HIBA: nincs supabase mappa a repo főkönyvtárában."
+            exit 1
+          fi
+
+          rm -rf supabase/.temp
+          mkdir -p supabase/.temp
+
       - name: Deploy send-quote-to-epitesnaplo
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: supabase functions deploy send-quote-to-epitesnaplo --project-ref bxtpnotswnwrbycvfypz
+        run: supabase functions deploy send-quote-to-epitesnaplo --project-ref bxtpnotswnwrbycvfypz --debug
