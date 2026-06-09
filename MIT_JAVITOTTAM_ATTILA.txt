@@ -1,0 +1,36 @@
+SZAKIPIAC IMPORT JAVÍTÁS – GITHUBRÓL FRISSEN LETÖLTÖTT ALAPHOZ
+
+Ezt a csomagot a szakipiac-2025-main.zip alapján készítettem.
+
+Amit találtam:
+- A kalkulator.html már tartalmazza az „Építési Napló” gombot.
+- A kalkulator.html már hívja a send-quote-to-epitesnaplo Edge Functiont.
+- De a GitHub ZIP-ben NINCS benne a supabase/functions/send-quote-to-epitesnaplo/index.ts.
+- A supabase/config.toml sem tartalmazta a send-quote-to-epitesnaplo function bejegyzést.
+- Az ajanlatok_schema.sql sem volt a csomagban.
+
+Amit javítottam:
+1. Hozzáadtam:
+   supabase/functions/send-quote-to-epitesnaplo/index.ts
+
+2. Javítottam:
+   supabase/config.toml
+
+3. Hozzáadtam:
+   supabase/ajanlatok_schema.sql
+
+4. Hozzáadtam:
+   .github/workflows/deploy-szakipiac-import-function.yml
+
+5. Hozzáadtam:
+   DEPLOY-SZAKIPIAC-IMPORT.ps1
+
+Fontos:
+- A Supabase secret kulcsokat nem írtam bele a fájlokba.
+- Ha a Supabase Edge Function Secrets alatt már megvannak, nem kell újra beírni.
+- Ha GitHub Actionsből deployolsz, a GitHub repó Settings / Secrets részén kell a SUPABASE_ACCESS_TOKEN.
+
+A function elfogadja a kalkulator.html jelenlegi küldését is:
+body: { quoteId: id }
+
+Ez fontos, mert a korábbi function csak quote_id vagy id néven kereste volna az azonosítót, és emiatt hibát dobhatott volna.

@@ -9,3 +9,10 @@ entrypoint = "./functions/generate-ad/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-ad/*.html" ]
+
+# SzakiPiac -> Építési Napló átküldő function
+# A felhasználó SzakiPiac bejelentkezését ellenőrzi, ezért verify_jwt = true.
+[functions.send-quote-to-epitesnaplo]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-quote-to-epitesnaplo/index.ts"
