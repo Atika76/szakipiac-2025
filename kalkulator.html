@@ -1035,14 +1035,10 @@ async function saveToSupabase() {
     payload
   };
 
-  const { data: savedQuote, error } = await supa
-    .from("ajanlatok")
-    .insert([row])
-    .select("id")
-    .single();
+  const { error } = await supa.from("ajanlatok").insert([row]);
   if (error) return toast("Mentési hiba: " + error.message, "error");
 
-  toast(savedQuote?.id ? "Mentve ✅ Most átküldheted az Építési Naplóba." : "Mentve ✅");
+  toast("Mentve ✅");
   await loadSaved();
 }
 
@@ -1093,7 +1089,7 @@ async function loadSaved() {
             <div class="font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
             <div class="flex gap-2 mt-2 justify-end">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
-              <button data-epitesnaplo="${r.id}" class="px-3 py-1.5 rounded-xl bg-amber-500 text-gray-900 hover:bg-amber-400 font-extrabold text-sm">Építési Napló</button>
+              <button data-epitesnaplo="${r.id}" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-extrabold text-sm">Építési Napló</button>
               <button data-del="${r.id}" class="px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>
           </div>
@@ -1106,8 +1102,9 @@ async function loadSaved() {
     btn.addEventListener("click", async () => loadOne(btn.dataset.load));
   });
   list.querySelectorAll("button[data-epitesnaplo]").forEach(btn => {
-    btn.addEventListener("click", async () => sendToEpitesNaplo(btn.dataset.epitesnaplo));
+    btn.addEventListener("click", async () => sendQuoteToEpitesNaplo(btn.dataset.epitesnaplo));
   });
+
   list.querySelectorAll("button[data-del]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.del;
@@ -1120,6 +1117,24 @@ async function loadSaved() {
   });
 }
 
+
+async function sendQuoteToEpitesNaplo(id) {
+  const session = await refreshSession();
+  if (!session) return toast("Átküldéshez jelentkezz be!", "error");
+
+  toast("Import link készítése az Építési Naplóhoz...", "info");
+  const { data, error } = await supa.functions.invoke("send-quote-to-epitesnaplo", {
+    body: { quoteId: id }
+  });
+
+  if (error || !data?.ok) {
+    return toast("Átküldési hiba: " + (data?.error || error?.message || "ismeretlen hiba"), "error");
+  }
+
+  toast("Import link elkészült ✅", "ok");
+  window.open(data.import_url, "_blank", "noopener,noreferrer");
+}
+
 async function loadOne(id) {
   const { data, error } = await supa.from("ajanlatok").select("payload").eq("id", id).single();
   if (error) return toast("Betöltés hiba: " + error.message, "error");
@@ -1127,28 +1142,6 @@ async function loadOne(id) {
 
   applyPayload(data.payload);
   toast("Betöltve ✅");
-}
-
-async function sendToEpitesNaplo(id) {
-  const session = await refreshSession();
-  if (!session) return toast("Átküldéshez jelentkezz be!", "error");
-  if (!id) return toast("Hiányzó ajánlat azonosító.", "error");
-
-  try {
-    toast("Átküldés az Építési Naplóba...", "info");
-    const { data, error } = await supa.functions.invoke("send-quote-to-epitesnaplo", {
-      body: { quote_id: id }
-    });
-    if (error || data?.ok === false) {
-      throw new Error(data?.error || error?.message || "Nem sikerült az átküldés.");
-    }
-    if (!data?.import_url) throw new Error("Az Építési Napló nem adott import linket.");
-
-    toast("Átküldve ✅ Nyílik az Építési Napló import.", "success");
-    window.location.href = data.import_url;
-  } catch (e) {
-    toast("Átküldési hiba: " + (e.message || e), "error");
-  }
 }
 
 /* =========================

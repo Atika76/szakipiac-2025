@@ -225,6 +225,7 @@
           <div class="space-y-2">
             <button id="btnSaveLocal" class="w-full rounded-xl bg-slate-900 text-white px-4 py-3 font-extrabold hover:bg-slate-800">💾 Mentés böngészőbe</button>
             <button id="btnSaveSupabase" class="w-full rounded-xl bg-green-600 text-white px-4 py-3 font-extrabold hover:bg-green-700">☁️ Mentés Supabase-ba</button>
+            <button id="btnSaveAndOpenEpitesNaplo" class="w-full rounded-xl bg-emerald-700 text-white px-4 py-3 font-extrabold hover:bg-emerald-800">🏗️ Mentés + Építési Napló</button>
             <button id="btnExportJson" class="w-full rounded-xl bg-white border border-slate-300 px-4 py-3 font-extrabold hover:bg-slate-50">⬇️ JSON export</button>
             <label class="block w-full rounded-xl bg-white border border-slate-300 px-4 py-3 font-extrabold hover:bg-slate-50 text-center cursor-pointer">
               ⬆️ JSON import
@@ -245,6 +246,22 @@
             <b>Használat:</b> válassz sablont, írd át a tételeket, pipáld az ellenőrzőlistát, majd ments vagy készíts PDF-et az ügyfélnek.
           </div>
         </div>
+
+        <div class="bg-white rounded-3xl soft-shadow border border-slate-200 p-5">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 class="text-xl font-black">Mentett projektjeim</h3>
+              <p class="text-sm text-slate-500">A belépett ügyfél a saját mentéseit látja. Admin módban minden projekt megjelenik.</p>
+            </div>
+            <button id="btnRefreshSavedProjects" class="rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 font-extrabold text-sm hover:bg-slate-200">Frissítés</button>
+          </div>
+          <div id="savedProjectsList" class="space-y-3 text-sm">
+            <div class="text-slate-500">Betöltés...</div>
+          </div>
+          <div id="savedProjectsAdminNote" class="hidden mt-3 rounded-2xl bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-900">
+            Admin módban minden ügyfél KivitelezésPRO mentését látod.
+          </div>
+        </div>
       </aside>
     </div>
   </main>
@@ -254,6 +271,7 @@ const SUPABASE_URL = "https://bxtpnotswnwrbycvfypz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 const LOCAL_KEY = "szakipiac_kivitelezes_pro_v1";
+const supa = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 const TRADE_DATA = {
   bontas: {
@@ -943,16 +961,33 @@ function importJson(file) {
   reader.readAsText(file);
 }
 
-async function saveSupabase() {
+async function refreshSession() {
+  if (!supa) return null;
+  const { data } = await supa.auth.getSession();
+  return data?.session || null;
+}
+
+function normalizeProjectStateForSave() {
+  readProjectForm();
+  const t = totals();
+  return {
+    ...state,
+    photos: [],
+    totals: t,
+    source_type: "kivitelezes_pro",
+    saved_at: new Date().toISOString()
+  };
+}
+
+async function saveSupabase(options = {}) {
   readProjectForm();
   try {
-    if (!window.supabase) return toast("A Supabase könyvtár nem töltődött be.", "error");
-    const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data: { session } } = await supa.auth.getSession();
+    if (!supa) return toast("A Supabase könyvtár nem töltődött be.", "error");
+    const session = await refreshSession();
     if (!session) return toast("Supabase mentéshez előbb jelentkezz be a SzakiPiac oldalon.", "info");
 
     const t = totals();
-    const payload = { ...state, photos: [] };
+    const payload = normalizeProjectStateForSave();
     const row = {
       user_id: session.user.id,
       user_email: session.user.email,
@@ -963,11 +998,136 @@ async function saveSupabase() {
       status: "draft",
       payload
     };
-    const { error } = await supa.from("kivitelezes_projektek").insert([row]);
+    const { data, error } = await supa
+      .from("kivitelezes_projektek")
+      .insert([row])
+      .select("id")
+      .single();
     if (error) throw error;
     toast("Projekt mentve Supabase-ba ✅");
+    await loadSavedProjects();
+
+    if (options.openEpitesNaplo && data?.id) {
+      await sendKivitelezesToEpitesNaplo(data.id);
+    }
+    return data?.id || null;
   } catch (e) {
     toast("Supabase mentési hiba: " + (e.message || e), "error");
+    return null;
+  }
+}
+
+async function loadSavedProjects() {
+  const list = $("savedProjectsList");
+  const note = $("savedProjectsAdminNote");
+  if (!list) return;
+  if (!supa) {
+    list.innerHTML = `<div class="text-red-600">A Supabase könyvtár nem töltődött be.</div>`;
+    return;
+  }
+
+  const session = await refreshSession();
+  if (!session) {
+    list.innerHTML = `<div class="text-slate-500">Jelentkezz be, és itt látod majd a saját mentett KivitelezésPRO projektjeidet.</div>`;
+    note?.classList.add("hidden");
+    return;
+  }
+
+  const isAdmin = String(session.user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  note?.classList.toggle("hidden", !isAdmin);
+  list.innerHTML = `<div class="text-slate-500">Mentett projektek betöltése...</div>`;
+
+  const { data, error } = await supa
+    .from("kivitelezes_projektek")
+    .select("id, created_at, project_name, client_name, location, total_gross, user_email, status")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    list.innerHTML = `<div class="text-red-600">Betöltési hiba: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  if (!data || !data.length) {
+    list.innerHTML = `<div class="text-slate-500">Még nincs mentett KivitelezésPRO projekted.</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(row => {
+    const dt = new Date(row.created_at).toLocaleString("hu-HU");
+    const owner = isAdmin ? `<div class="text-xs text-slate-500">Tulaj: ${escapeHtml(row.user_email || "")}</div>` : "";
+    return `
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-extrabold text-slate-900 truncate">${escapeHtml(row.project_name || "Névtelen projekt")}</div>
+            <div class="text-xs text-slate-600">${dt}</div>
+            <div class="text-xs text-slate-600 truncate">${escapeHtml(row.client_name || "—")} • ${escapeHtml(row.location || "—")}</div>
+            ${owner}
+          </div>
+          <div class="text-right shrink-0">
+            <div class="font-black text-green-700">${fmt(row.total_gross || 0)}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-3">
+          <button data-load-kiv="${row.id}" class="rounded-xl bg-white border border-slate-300 px-2 py-2 font-extrabold hover:bg-slate-100">Betölt</button>
+          <button data-epites-kiv="${row.id}" class="rounded-xl bg-emerald-600 text-white px-2 py-2 font-extrabold hover:bg-emerald-700">Építési Napló</button>
+          <button data-delete-kiv="${row.id}" class="rounded-xl bg-red-600 text-white px-2 py-2 font-extrabold hover:bg-red-700">Töröl</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  list.querySelectorAll("button[data-load-kiv]").forEach(btn => btn.addEventListener("click", () => loadSavedProject(btn.dataset.loadKiv)));
+  list.querySelectorAll("button[data-epites-kiv]").forEach(btn => btn.addEventListener("click", () => sendKivitelezesToEpitesNaplo(btn.dataset.epitesKiv)));
+  list.querySelectorAll("button[data-delete-kiv]").forEach(btn => btn.addEventListener("click", () => deleteSavedProject(btn.dataset.deleteKiv)));
+}
+
+async function loadSavedProject(id) {
+  try {
+    const { data, error } = await supa.from("kivitelezes_projektek").select("payload").eq("id", id).single();
+    if (error) throw error;
+    if (!data?.payload) return toast("Ehhez a mentéshez nincs projektadat.", "error");
+    state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...data.payload, photos: [] };
+    writeProjectForm();
+    renderAll();
+    toast("Mentett projekt betöltve ✅");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (e) {
+    toast("Betöltés hiba: " + (e.message || e), "error");
+  }
+}
+
+async function deleteSavedProject(id) {
+  if (!confirm("Biztos törlöd ezt a mentett projektet?")) return;
+  try {
+    const { error } = await supa.from("kivitelezes_projektek").delete().eq("id", id);
+    if (error) throw error;
+    toast("Mentett projekt törölve ✅");
+    await loadSavedProjects();
+  } catch (e) {
+    toast("Törlés hiba: " + (e.message || e), "error");
+  }
+}
+
+async function sendKivitelezesToEpitesNaplo(id) {
+  const session = await refreshSession();
+  if (!session) return toast("Építési Napló átadáshoz előbb jelentkezz be a SzakiPiac oldalon.", "error");
+
+  toast("Import link készítése az Építési Naplóhoz...", "info");
+  try {
+    const { data, error } = await supa.functions.invoke("send-quote-to-epitesnaplo", {
+      body: { kivitelezesProjectId: id }
+    });
+
+    if (error || !data?.ok) {
+      return toast("Átküldési hiba: " + (data?.error || error?.message || "ismeretlen hiba"), "error");
+    }
+
+    toast("Építési Napló import link elkészült ✅", "ok");
+    window.open(data.import_url, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    toast("Átküldési hiba: " + (e.message || e), "error");
   }
 }
 
@@ -1030,7 +1190,9 @@ function bindEvents() {
   $("btnSaveLocalTop").addEventListener("click", saveLocal);
   $("btnLoadLocal").addEventListener("click", loadLocal);
   $("btnExportJson").addEventListener("click", exportJson);
-  $("btnSaveSupabase").addEventListener("click", saveSupabase);
+  $("btnSaveSupabase").addEventListener("click", () => saveSupabase());
+  $("btnSaveAndOpenEpitesNaplo")?.addEventListener("click", () => saveSupabase({ openEpitesNaplo: true }));
+  $("btnRefreshSavedProjects")?.addEventListener("click", loadSavedProjects);
   $("btnPdf").addEventListener("click", makePdf);
   $("btnPdfTop").addEventListener("click", makePdf);
 
@@ -1040,6 +1202,7 @@ function bindEvents() {
 
 bindEvents();
 applyTemplate("completeFlat");
+loadSavedProjects();
 </script>
 </body>
 </html>
