@@ -336,7 +336,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
     return `
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-7">
         <div class="flex items-start justify-between gap-4 mb-6"><div><h2 class="text-2xl font-black">${job ? "Munka módosítása" : "Új munka feladása"}</h2><p class="text-sm text-slate-600 mt-1">30 napig ingyenesen megjelenik. A kapcsolati adataid rejtve maradnak.</p></div><span class="bg-emerald-100 text-emerald-800 rounded-full px-3 py-1 text-xs font-black">INGYENES</span></div>
-        <form id="mf-job-form" data-edit-id="${esc(job?.id || "")}" class="space-y-5">
+        <form id="mf-job-form" novalidate data-edit-id="${esc(job?.id || "")}" class="space-y-5">
           <label class="block text-sm font-bold">Milyen munkára keresel szakembert? *<input name="cim" required minlength="8" maxlength="120" value="${esc(job?.cim || "")}" class="mt-1 w-full rounded-xl border border-slate-300 p-3" placeholder="Pl. Fürdőszoba burkolásához keresek szakembert"></label>
           <label class="block text-sm font-bold">Részletes leírás *<textarea name="leiras" required minlength="30" maxlength="4000" rows="7" class="mt-1 w-full rounded-xl border border-slate-300 p-3" placeholder="Mekkora a munka, mi a jelenlegi állapot, milyen elképzelésed van?">${esc(job?.leiras || "")}</textarea><span class="block text-xs text-slate-500 mt-1">Ne írj ide telefonszámot vagy e-mail-címet.</span></label>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -350,9 +350,29 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
             <label class="text-sm font-bold">Becsült keret maximum (Ft)<input name="koltseg_max" type="number" min="0" step="1000" value="${esc(job?.koltseg_max ?? "")}" class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
           </div>
           <label class="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm"><input name="terms" type="checkbox" required class="mt-1"><span>Megerősítem, hogy valós munkát adok fel, és a leírás nem tartalmaz nyilvános kapcsolati adatot.</span></label>
-          <div class="flex flex-wrap gap-3"><button type="submit" class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
+          <div data-mf-status class="hidden rounded-xl border p-3 text-sm font-bold"></div><div class="flex flex-wrap gap-3"><button type="submit" class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800 active:scale-95 disabled:opacity-60 disabled:cursor-wait transition">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
         </form>
       </div>`;
+  }
+
+  function setFormStatus(form, message, type = "info") {
+    const box = form?.querySelector?.("[data-mf-status]");
+    if (!box) return;
+    const styles = type === "error"
+      ? "rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3 text-sm font-bold"
+      : type === "success"
+        ? "rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 p-3 text-sm font-bold"
+        : "rounded-xl border border-blue-200 bg-blue-50 text-blue-700 p-3 text-sm font-bold";
+    box.className = styles;
+    box.textContent = message;
+  }
+
+  function focusInvalid(form, field, message) {
+    setFormStatus(form, message, "error");
+    showToast(message, "error");
+    field?.classList?.add("border-rose-400", "ring-2", "ring-rose-100");
+    field?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    setTimeout(() => field?.focus?.(), 150);
   }
 
   async function renderFormPanel(panel, editJob = null) {
@@ -371,32 +391,44 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
   async function saveJob(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    form.querySelectorAll(".border-rose-400").forEach(el => el.classList.remove("border-rose-400", "ring-2", "ring-rose-100"));
     const data = new FormData(form);
+    const text = name => String(data.get(name) || "").trim();
+    if (text("cim").length < 8) return focusInvalid(form, form.elements.cim, "Adj meg egy legalább 8 karakteres munkacímet.");
+    if (text("leiras").length < 30) return focusInvalid(form, form.elements.leiras, "A részletes leírás legyen legalább 30 karakter.");
+    if (!data.get("szakma")) return focusInvalid(form, form.elements.szakma, "Válassz szakmát.");
+    if (!data.get("megye")) return focusInvalid(form, form.elements.megye, "Válassz megyét.");
+    if (text("telepules").length < 2) return focusInvalid(form, form.elements.telepules, "Írd be a települést.");
+    if (!form.elements.terms.checked) return focusInvalid(form, form.elements.terms, "A közzétételhez pipáld be a megerősítést.");
     const min = data.get("koltseg_min") ? Number(data.get("koltseg_min")) : null;
     const max = data.get("koltseg_max") ? Number(data.get("koltseg_max")) : null;
-    if (min != null && max != null && max < min) return showToast("A maximális keret nem lehet kisebb a minimálisnál.", "error");
+    if (min != null && max != null && max < min) return focusInvalid(form, form.elements.koltseg_max, "A maximális keret nem lehet kisebb a minimálisnál.");
     const contactPattern = /(?:\+?36[\s-]?)?(?:\d[\s-]?){8,}|[\w.+-]+@[\w.-]+\.[a-z]{2,}/i;
-    if (contactPattern.test(String(data.get("leiras")))) return showToast("A leírásból töröld a telefonszámot vagy e-mail-címet. A kapcsolatfelvételt biztonságosan kezeljük.", "error");
+    if (contactPattern.test(text("leiras"))) return focusInvalid(form, form.elements.leiras, "A leírásból töröld a telefonszámot vagy e-mail-címet. A kapcsolatfelvételt biztonságosan kezeljük.");
     const payload = {
       owner_id: session.user.id,
-      cim: String(data.get("cim")).trim(), leiras: String(data.get("leiras")).trim(),
-      szakma: data.get("szakma"), megye: data.get("megye"), telepules: String(data.get("telepules")).trim(),
+      cim: text("cim"), leiras: text("leiras"),
+      szakma: data.get("szakma"), megye: data.get("megye"), telepules: text("telepules"),
       iranyitoszam: String(data.get("iranyitoszam") || "").trim() || null,
       surgosseg: data.get("surgosseg"), koltseg_min: min, koltseg_max: max,
       kezdes_datum: data.get("kezdes_datum") || null,
       lejar_at: new Date(Date.now() + 30 * 86400000).toISOString()
     };
     const button = form.querySelector("button[type=submit]");
-    button.disabled = true; button.textContent = "Mentés…";
+    button.disabled = true; button.textContent = "Mentés…"; setFormStatus(form, "Mentés folyamatban…", "info");
     const editId = form.dataset.editId;
     let result;
     if (editId) result = await client.from("munkafigyelo_hirdetesek").update(payload).eq("id", editId).select().single();
     else result = await client.from("munkafigyelo_hirdetesek").insert({ ...payload, allapot: "aktiv", forras_tipus: "megrendelo" }).select().single();
     if (result.error) {
       button.disabled = false; button.textContent = editId ? "Módosítás mentése" : "Munka közzététele";
-      const hint = /munkafigyelo|permission|policy|schema|relation/i.test(result.error.message || "") ? " Ellenőrizd, hogy a MUNKAFIGYELO_SUPABASE_SQL_FUTTASD.sql le lett-e futtatva a Supabase SQL Editorban." : "";
-      return showToast(result.error.message + hint, "error");
+      console.error("Munkafigyelő mentési hiba:", result.error);
+      const hint = /munkafigyelo|permission|policy|schema|relation|row-level|rls/i.test(result.error.message || "") ? " Ellenőrizd, hogy a javított Munkafigyelő SQL lett-e lefuttatva a Supabase SQL Editorban." : "";
+      const msg = (result.error.message || "Ismeretlen mentési hiba") + hint;
+      setFormStatus(form, msg, "error");
+      return showToast(msg, "error");
     }
+    setFormStatus(form, editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.", "success");
     showToast(editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.");
     trackEvent?.(editId ? "munkafigyelo_ad_updated" : "munkafigyelo_ad_created", { ad_id: result.data.id, szakma: payload.szakma, megye: payload.megye });
     if (!editId) client.functions.invoke("munkafigyelo-push", { body: { hirdetesId: result.data.id } }).catch(() => {});
@@ -455,11 +487,11 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-7">
         <div class="flex items-start gap-4"><div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl">🔔</div><div><h2 class="text-2xl font-black">Munkaértesítések</h2><p class="text-sm text-slate-600 mt-1">Csak azokról az új munkákról küldünk push üzenetet, amelyek megfelelnek a választásaidnak.</p></div></div>
         ${!supported ? `<div class="mt-6 bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl">Ez a böngésző nem támogatja a webes push értesítést. Próbáld Chrome, Edge vagy Android böngészőben.</div>` : `
-        <form id="mf-push-form" class="mt-7 space-y-6">
+        <form id="mf-push-form" novalidate class="mt-7 space-y-6">
           <fieldset><legend class="font-black mb-3">Szakmák</legend><p class="text-xs text-slate-500 mb-3">Ha egyet sem jelölsz, minden szakmáról értesítünk.</p><div class="grid grid-cols-2 md:grid-cols-3 gap-2">${checkboxes("szakmak", SZAKMAK, saved?.szakmak || [])}</div></fieldset>
           <fieldset><legend class="font-black mb-3">Megyék</legend><p class="text-xs text-slate-500 mb-3">Ha egyet sem jelölsz, az egész országot figyeljük.</p><div class="grid grid-cols-2 md:grid-cols-3 gap-2">${checkboxes("megyek", MEGYEK, saved?.megyek || [])}</div></fieldset>
           <fieldset><legend class="font-black mb-3">Sürgősség</legend><div class="grid grid-cols-1 sm:grid-cols-3 gap-2">${checkboxes("surgossegek", ["normal", "hamarosan", "surgos"], saved?.surgossegek || ["normal", "hamarosan", "surgos"], x => SURGOSSEG[x].label)}</div></fieldset>
-          <div class="flex flex-wrap gap-3"><button class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black">${subscription ? "Beállítások mentése" : "Push értesítés bekapcsolása"}</button>${subscription ? `<button type="button" data-push-off class="px-5 py-3 rounded-xl border border-rose-200 text-rose-600 font-bold">Kikapcsolás ezen az eszközön</button>` : ""}</div>
+          <div data-mf-status class="hidden rounded-xl border p-3 text-sm font-bold"></div><div class="flex flex-wrap gap-3"><button type="submit" class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black active:scale-95 disabled:opacity-60 disabled:cursor-wait transition">${subscription ? "Beállítások mentése" : "Push értesítés bekapcsolása"}</button>${subscription ? `<button type="button" data-push-off class="px-5 py-3 rounded-xl border border-rose-200 text-rose-600 font-bold">Kikapcsolás ezen az eszközön</button>` : ""}</div>
           <p class="text-xs text-slate-500">Az értesítést bármikor kikapcsolhatod. A böngésző technikai azonosítóját csak a push üzenetek kézbesítéséhez tároljuk.</p>
         </form>`}
       </div>`;
@@ -474,9 +506,14 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
 
   async function savePush(event) {
     event.preventDefault();
-    if (Notification.permission === "denied") return showToast("A böngészőben le van tiltva az értesítés. A címsor melletti lakatnál engedélyezheted.", "error");
+    const formEl = event.currentTarget;
+    const button = formEl.querySelector("button[type=submit]");
+    const originalText = button?.textContent || "Beállítások mentése";
+    if (button) { button.disabled = true; button.textContent = "Mentés…"; }
+    setFormStatus(formEl, "Értesítési beállítások mentése…", "info");
+    if (Notification.permission === "denied") { if (button) { button.disabled = false; button.textContent = originalText; } setFormStatus(formEl, "A böngészőben le van tiltva az értesítés. A címsor melletti lakatnál engedélyezheted.", "error"); return showToast("A böngészőben le van tiltva az értesítés. A címsor melletti lakatnál engedélyezheted.", "error"); }
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") return showToast("Az értesítés nem lett engedélyezve.", "info");
+    if (permission !== "granted") { if (button) { button.disabled = false; button.textContent = originalText; } setFormStatus(formEl, "Az értesítés nem lett engedélyezve.", "error"); return showToast("Az értesítés nem lett engedélyezve.", "info"); }
     const reg = await navigator.serviceWorker.ready;
     let subscription = await reg.pushManager.getSubscription();
     if (!subscription) subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
@@ -485,7 +522,12 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
     const values = name => form.getAll(name);
     const payload = { user_id: session.user.id, endpoint: subscription.endpoint, p256dh: json.keys.p256dh, auth_key: json.keys.auth, szakmak: values("szakmak"), megyek: values("megyek"), surgossegek: values("surgossegek"), aktiv: true };
     const { error } = await client.from("munkafigyelo_push_feliratkozasok").upsert(payload, { onConflict: "endpoint" });
-    if (error) return showToast(error.message, "error");
+    if (error) {
+      if (button) { button.disabled = false; button.textContent = originalText; }
+      setFormStatus(formEl, error.message, "error");
+      return showToast(error.message, "error");
+    }
+    setFormStatus(formEl, "A munkaértesítés beállításai elmentve.", "success");
     showToast("A munkaértesítés beállításai elmentve."); trackEvent?.("munkafigyelo_push_enabled", {}); await renderPushPanel(root.querySelector("#mf-panel"));
   }
 
