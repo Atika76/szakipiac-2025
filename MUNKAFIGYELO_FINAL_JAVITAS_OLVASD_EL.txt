@@ -1,0 +1,12 @@
+Munkafigyelő végső gomb/mentés visszajelzés javítás
+
+Javítások:
+- Munka közzététele gomb azonnal visszajelez: Ellenőrzés… / Mentés…
+- Ha nincs bepipálva a megerősítés, már egyértelmű hibaüzenetet ad.
+- Supabase/RLS mentési hibát a form alatt és toastban is kiírja.
+- Push bekapcsolás try/catch védelemmel kapott látható hibajelzést.
+- Push bekapcsolás sikeres esetén: A push értesítés bekapcsolva.
+- Admin külső munka felvétele magyarázó szöveget kapott.
+- Admin külső munka mentése is mutat Mentés… állapotot és hibát.
+
+Feltöltés után: Ctrl+F5. Ha továbbra is régi fájlt látsz: F12 -> Application -> Service Workers -> Unregister, majd Ctrl+F5.
