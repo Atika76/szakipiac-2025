@@ -1,5 +1,5 @@
--- SzakiPiac Munkafigyelő
--- Megrendelői munkák, védett kapcsolatfelvétel, jelentések és web push beállítások.
+-- SzakiPiac Munkafigyelő KÖTELEZŐ javító SQL
+-- Ezt futtasd le a Supabase SQL Editorban. Többször is biztonságosan futtatható.
 
 create extension if not exists pgcrypto;
 
@@ -14,37 +14,60 @@ $$;
 create table if not exists public.munkafigyelo_hirdetesek (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid references auth.users(id) on delete cascade,
-  cim text not null check (char_length(cim) between 8 and 120),
-  leiras text not null check (char_length(leiras) between 30 and 4000),
-  szakma text not null check (char_length(szakma) between 2 and 80),
-  megye text not null check (char_length(megye) between 2 and 80),
-  telepules text not null check (char_length(telepules) between 2 and 100),
+  cim text not null,
+  leiras text not null,
+  szakma text not null,
+  megye text not null,
+  telepules text not null,
   iranyitoszam text,
-  surgosseg text not null default 'normal' check (surgosseg in ('normal', 'hamarosan', 'surgos')),
-  koltseg_min bigint check (koltseg_min is null or koltseg_min >= 0),
-  koltseg_max bigint check (koltseg_max is null or koltseg_max >= 0),
+  surgosseg text not null default 'normal',
+  koltseg_min bigint,
+  koltseg_max bigint,
   kezdes_datum date,
-  allapot text not null default 'aktiv' check (allapot in ('aktiv', 'lezart', 'betoltve', 'letiltva')),
-  forras_tipus text not null default 'megrendelo' check (forras_tipus in ('megrendelo', 'nyilvanos_forras', 'kozbeszerzes')),
+  allapot text not null default 'aktiv',
+  forras_tipus text not null default 'megrendelo',
   forras_url text,
   lejar_at timestamptz not null default (now() + interval '30 days'),
   push_kuldve_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint munkafigyelo_koltseg_sorrend check (
-    koltseg_min is null or koltseg_max is null or koltseg_max >= koltseg_min
-  ),
-  constraint munkafigyelo_forras_url check (
-    forras_tipus = 'megrendelo' or forras_url is not null
-  )
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_munkafigyelo_aktiv_friss
-  on public.munkafigyelo_hirdetesek (allapot, lejar_at, created_at desc);
-create index if not exists idx_munkafigyelo_owner
-  on public.munkafigyelo_hirdetesek (owner_id, created_at desc);
-create index if not exists idx_munkafigyelo_szures
-  on public.munkafigyelo_hirdetesek (szakma, megye, surgosseg);
+alter table public.munkafigyelo_hirdetesek add column if not exists owner_id uuid references auth.users(id) on delete cascade;
+alter table public.munkafigyelo_hirdetesek add column if not exists iranyitoszam text;
+alter table public.munkafigyelo_hirdetesek add column if not exists surgosseg text not null default 'normal';
+alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_min bigint;
+alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_max bigint;
+alter table public.munkafigyelo_hirdetesek add column if not exists kezdes_datum date;
+alter table public.munkafigyelo_hirdetesek add column if not exists allapot text not null default 'aktiv';
+alter table public.munkafigyelo_hirdetesek add column if not exists forras_tipus text not null default 'megrendelo';
+alter table public.munkafigyelo_hirdetesek add column if not exists forras_url text;
+alter table public.munkafigyelo_hirdetesek add column if not exists lejar_at timestamptz not null default (now() + interval '30 days');
+alter table public.munkafigyelo_hirdetesek add column if not exists push_kuldve_at timestamptz;
+alter table public.munkafigyelo_hirdetesek add column if not exists created_at timestamptz not null default now();
+alter table public.munkafigyelo_hirdetesek add column if not exists updated_at timestamptz not null default now();
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_cim_len;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_cim_len check (char_length(cim) between 8 and 120) not valid;
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_leiras_len;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_leiras_len check (char_length(leiras) between 30 and 4000) not valid;
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_surgosseg_check;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_surgosseg_check check (surgosseg in ('normal', 'hamarosan', 'surgos')) not valid;
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_allapot_check;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_allapot_check check (allapot in ('aktiv', 'lezart', 'betoltve', 'letiltva')) not valid;
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_forras_tipus_check;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_forras_tipus_check check (forras_tipus in ('megrendelo', 'nyilvanos_forras', 'kozbeszerzes')) not valid;
+
+alter table public.munkafigyelo_hirdetesek drop constraint if exists munkafigyelo_koltseg_sorrend;
+alter table public.munkafigyelo_hirdetesek add constraint munkafigyelo_koltseg_sorrend check (koltseg_min is null or koltseg_max is null or koltseg_max >= koltseg_min) not valid;
+
+create index if not exists idx_munkafigyelo_aktiv_friss on public.munkafigyelo_hirdetesek (allapot, lejar_at, created_at desc);
+create index if not exists idx_munkafigyelo_owner on public.munkafigyelo_hirdetesek (owner_id, created_at desc);
+create index if not exists idx_munkafigyelo_szures on public.munkafigyelo_hirdetesek (szakma, megye, surgosseg);
 
 create or replace function public.munkafigyelo_set_updated_at()
 returns trigger
@@ -62,48 +85,29 @@ before update on public.munkafigyelo_hirdetesek
 for each row execute function public.munkafigyelo_set_updated_at();
 
 alter table public.munkafigyelo_hirdetesek enable row level security;
-revoke all on public.munkafigyelo_hirdetesek from anon, authenticated;
 grant select, insert, update, delete on public.munkafigyelo_hirdetesek to authenticated;
 
 drop policy if exists "munkafigyelo_owner_admin_select" on public.munkafigyelo_hirdetesek;
-create policy "munkafigyelo_owner_admin_select"
-on public.munkafigyelo_hirdetesek for select to authenticated
-using (owner_id = auth.uid() or public.is_szakipiac_admin());
+create policy "munkafigyelo_owner_admin_select" on public.munkafigyelo_hirdetesek
+for select to authenticated using (owner_id = auth.uid() or public.is_szakipiac_admin());
 
 drop policy if exists "munkafigyelo_owner_insert" on public.munkafigyelo_hirdetesek;
-create policy "munkafigyelo_owner_insert"
-on public.munkafigyelo_hirdetesek for insert to authenticated
-with check (
-  owner_id = auth.uid()
-  and forras_tipus = 'megrendelo'
-  and allapot = 'aktiv'
-  and lejar_at <= now() + interval '31 days'
-);
+create policy "munkafigyelo_owner_insert" on public.munkafigyelo_hirdetesek
+for insert to authenticated with check (owner_id = auth.uid() and forras_tipus = 'megrendelo');
 
 drop policy if exists "munkafigyelo_admin_insert" on public.munkafigyelo_hirdetesek;
-create policy "munkafigyelo_admin_insert"
-on public.munkafigyelo_hirdetesek for insert to authenticated
-with check (public.is_szakipiac_admin());
+create policy "munkafigyelo_admin_insert" on public.munkafigyelo_hirdetesek
+for insert to authenticated with check (public.is_szakipiac_admin());
 
 drop policy if exists "munkafigyelo_owner_admin_update" on public.munkafigyelo_hirdetesek;
-create policy "munkafigyelo_owner_admin_update"
-on public.munkafigyelo_hirdetesek for update to authenticated
-using (owner_id = auth.uid() or public.is_szakipiac_admin())
-with check (
-  public.is_szakipiac_admin()
-  or (
-    owner_id = auth.uid()
-    and forras_tipus = 'megrendelo'
-    and allapot in ('aktiv', 'lezart', 'betoltve')
-  )
-);
+create policy "munkafigyelo_owner_admin_update" on public.munkafigyelo_hirdetesek
+for update to authenticated using (owner_id = auth.uid() or public.is_szakipiac_admin())
+with check (public.is_szakipiac_admin() or owner_id = auth.uid());
 
 drop policy if exists "munkafigyelo_owner_admin_delete" on public.munkafigyelo_hirdetesek;
-create policy "munkafigyelo_owner_admin_delete"
-on public.munkafigyelo_hirdetesek for delete to authenticated
-using (owner_id = auth.uid() or public.is_szakipiac_admin());
+create policy "munkafigyelo_owner_admin_delete" on public.munkafigyelo_hirdetesek
+for delete to authenticated using (owner_id = auth.uid() or public.is_szakipiac_admin());
 
--- A nyilvános nézet szándékosan nem tartalmaz owner_id-t vagy kapcsolati adatot.
 create or replace view public.munkafigyelo_nyilvanos
 with (security_invoker = false)
 as
@@ -113,7 +117,8 @@ select
   forras_tipus, forras_url, lejar_at, created_at, updated_at,
   (owner_id is not null) as kapcsolat_elerheto
 from public.munkafigyelo_hirdetesek
-where allapot = 'aktiv' and lejar_at > now();
+where allapot = 'aktiv' and lejar_at > now()
+  and (forras_tipus = 'megrendelo' or coalesce(trim(forras_url), '') <> '');
 
 revoke all on public.munkafigyelo_nyilvanos from public;
 grant select on public.munkafigyelo_nyilvanos to anon, authenticated;
@@ -122,83 +127,80 @@ create table if not exists public.munkafigyelo_jelentesek (
   id uuid primary key default gen_random_uuid(),
   hirdetes_id uuid not null references public.munkafigyelo_hirdetesek(id) on delete cascade,
   reporter_id uuid not null references auth.users(id) on delete cascade,
-  ok text not null check (ok in ('spam', 'teves', 'lejart', 'jogserto', 'egyeb')),
-  megjegyzes text check (megjegyzes is null or char_length(megjegyzes) <= 1000),
-  allapot text not null default 'uj' check (allapot in ('uj', 'kezelve', 'elutasitva')),
+  ok text not null,
+  megjegyzes text,
+  allapot text not null default 'uj',
   created_at timestamptz not null default now(),
-  unique (hirdetes_id, reporter_id)
+  unique(hirdetes_id, reporter_id)
 );
 
 alter table public.munkafigyelo_jelentesek enable row level security;
 grant select, insert, update, delete on public.munkafigyelo_jelentesek to authenticated;
 
 drop policy if exists "munkafigyelo_jelentes_sajat_vagy_admin_select" on public.munkafigyelo_jelentesek;
-create policy "munkafigyelo_jelentes_sajat_vagy_admin_select"
-on public.munkafigyelo_jelentesek for select to authenticated
-using (reporter_id = auth.uid() or public.is_szakipiac_admin());
+create policy "munkafigyelo_jelentes_sajat_vagy_admin_select" on public.munkafigyelo_jelentesek
+for select to authenticated using (reporter_id = auth.uid() or public.is_szakipiac_admin());
 
 drop policy if exists "munkafigyelo_jelentes_insert" on public.munkafigyelo_jelentesek;
-create policy "munkafigyelo_jelentes_insert"
-on public.munkafigyelo_jelentesek for insert to authenticated
-with check (reporter_id = auth.uid() and allapot = 'uj');
+create policy "munkafigyelo_jelentes_insert" on public.munkafigyelo_jelentesek
+for insert to authenticated with check (reporter_id = auth.uid());
 
 drop policy if exists "munkafigyelo_jelentes_admin_update" on public.munkafigyelo_jelentesek;
-create policy "munkafigyelo_jelentes_admin_update"
-on public.munkafigyelo_jelentesek for update to authenticated
-using (public.is_szakipiac_admin()) with check (public.is_szakipiac_admin());
+create policy "munkafigyelo_jelentes_admin_update" on public.munkafigyelo_jelentesek
+for update to authenticated using (public.is_szakipiac_admin()) with check (public.is_szakipiac_admin());
 
 drop policy if exists "munkafigyelo_jelentes_admin_delete" on public.munkafigyelo_jelentesek;
-create policy "munkafigyelo_jelentes_admin_delete"
-on public.munkafigyelo_jelentesek for delete to authenticated
-using (public.is_szakipiac_admin());
+create policy "munkafigyelo_jelentes_admin_delete" on public.munkafigyelo_jelentesek
+for delete to authenticated using (public.is_szakipiac_admin());
 
-create table if not exists public.munkafigyelo_push_feliratkozasok (
+
+
+-- Belső üzenetrendszer, hogy a szakember tudjon írni a megrendelőnek.
+create table if not exists public.szakember_messages (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  endpoint text not null unique,
-  p256dh text not null,
-  auth_key text not null,
-  szakmak text[] not null default '{}',
-  megyek text[] not null default '{}',
-  surgossegek text[] not null default '{normal,hamarosan,surgos}',
-  aktiv boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  to_user_id uuid not null,
+  from_visitor_id text not null,
+  from_email text,
+  message text not null,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
 );
 
-create index if not exists idx_munkafigyelo_push_user
-  on public.munkafigyelo_push_feliratkozasok (user_id);
+create index if not exists idx_szakember_messages_to_user_id on public.szakember_messages(to_user_id);
+create index if not exists idx_szakember_messages_created_at on public.szakember_messages(created_at desc);
 
-drop trigger if exists trg_munkafigyelo_push_updated_at on public.munkafigyelo_push_feliratkozasok;
-create trigger trg_munkafigyelo_push_updated_at
-before update on public.munkafigyelo_push_feliratkozasok
-for each row execute function public.munkafigyelo_set_updated_at();
+alter table public.szakember_messages enable row level security;
+grant select, insert, update, delete on public.szakember_messages to authenticated;
+grant insert on public.szakember_messages to anon;
 
-alter table public.munkafigyelo_push_feliratkozasok enable row level security;
-revoke all on public.munkafigyelo_push_feliratkozasok from anon, authenticated;
-grant select, insert, update, delete on public.munkafigyelo_push_feliratkozasok to authenticated;
+drop policy if exists "messages_recipient_read" on public.szakember_messages;
+drop policy if exists "messages_participant_read" on public.szakember_messages;
+create policy "messages_participant_read"
+on public.szakember_messages for select to authenticated
+using (auth.uid() = to_user_id or auth.uid()::text = from_visitor_id);
 
-drop policy if exists "munkafigyelo_push_sajat_vagy_admin_select" on public.munkafigyelo_push_feliratkozasok;
-create policy "munkafigyelo_push_sajat_vagy_admin_select"
-on public.munkafigyelo_push_feliratkozasok for select to authenticated
-using (user_id = auth.uid() or public.is_szakipiac_admin());
+drop policy if exists "messages_public_insert" on public.szakember_messages;
+create policy "messages_public_insert"
+on public.szakember_messages for insert to anon, authenticated
+with check (
+  to_user_id is not null
+  and from_visitor_id is not null
+  and length(from_visitor_id) > 5
+  and message is not null
+  and length(message) > 1
+);
 
-drop policy if exists "munkafigyelo_push_sajat_insert" on public.munkafigyelo_push_feliratkozasok;
-create policy "munkafigyelo_push_sajat_insert"
-on public.munkafigyelo_push_feliratkozasok for insert to authenticated
-with check (user_id = auth.uid());
+drop policy if exists "messages_recipient_update" on public.szakember_messages;
+create policy "messages_recipient_update"
+on public.szakember_messages for update to authenticated
+using (auth.uid() = to_user_id)
+with check (auth.uid() = to_user_id);
 
-drop policy if exists "munkafigyelo_push_sajat_update" on public.munkafigyelo_push_feliratkozasok;
-create policy "munkafigyelo_push_sajat_update"
-on public.munkafigyelo_push_feliratkozasok for update to authenticated
-using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "messages_participant_delete" on public.szakember_messages;
+create policy "messages_participant_delete"
+on public.szakember_messages for delete to authenticated
+using (auth.uid() = to_user_id or auth.uid()::text = from_visitor_id);
 
-drop policy if exists "munkafigyelo_push_sajat_delete" on public.munkafigyelo_push_feliratkozasok;
-create policy "munkafigyelo_push_sajat_delete"
-on public.munkafigyelo_push_feliratkozasok for delete to authenticated
-using (user_id = auth.uid() or public.is_szakipiac_admin());
-
--- Kapcsolatfelvétel úgy, hogy a hirdető azonosítója ne kerüljön a böngészőbe.
 create or replace function public.munkafigyelo_kapcsolat_kuldese(
   p_hirdetes_id uuid,
   p_uzenet text
@@ -248,31 +250,115 @@ $$;
 revoke all on function public.munkafigyelo_kapcsolat_kuldese(uuid, text) from public;
 grant execute on function public.munkafigyelo_kapcsolat_kuldese(uuid, text) to authenticated;
 
--- A meglévő üzenetrendszerben a feladó is láthassa és törölhesse a saját üzeneteit.
-drop policy if exists "messages_participant_read" on public.szakember_messages;
-create policy "messages_participant_read"
-on public.szakember_messages for select to authenticated
-using (auth.uid() = to_user_id or auth.uid()::text = from_visitor_id);
+create table if not exists public.munkafigyelo_push_feliratkozasok (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth_key text not null,
+  szakmak text[] not null default array[]::text[],
+  megyek text[] not null default array[]::text[],
+  surgossegek text[] not null default array[]::text[],
+  aktiv boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-drop policy if exists "messages_participant_delete" on public.szakember_messages;
-create policy "messages_participant_delete"
-on public.szakember_messages for delete to authenticated
-using (auth.uid() = to_user_id or auth.uid()::text = from_visitor_id);
+alter table public.munkafigyelo_push_feliratkozasok enable row level security;
+grant select, insert, update, delete on public.munkafigyelo_push_feliratkozasok to authenticated;
 
-grant delete on public.szakember_messages to authenticated;
+drop policy if exists "munkafigyelo_push_sajat_vagy_admin_select" on public.munkafigyelo_push_feliratkozasok;
+create policy "munkafigyelo_push_sajat_vagy_admin_select" on public.munkafigyelo_push_feliratkozasok
+for select to authenticated using (user_id = auth.uid() or public.is_szakipiac_admin());
+
+drop policy if exists "munkafigyelo_push_sajat_insert" on public.munkafigyelo_push_feliratkozasok;
+create policy "munkafigyelo_push_sajat_insert" on public.munkafigyelo_push_feliratkozasok
+for insert to authenticated with check (user_id = auth.uid());
+
+drop policy if exists "munkafigyelo_push_sajat_update" on public.munkafigyelo_push_feliratkozasok;
+create policy "munkafigyelo_push_sajat_update" on public.munkafigyelo_push_feliratkozasok
+for update to authenticated using (user_id = auth.uid() or public.is_szakipiac_admin()) with check (user_id = auth.uid() or public.is_szakipiac_admin());
+
+drop policy if exists "munkafigyelo_push_sajat_delete" on public.munkafigyelo_push_feliratkozasok;
+create policy "munkafigyelo_push_sajat_delete" on public.munkafigyelo_push_feliratkozasok
+for delete to authenticated using (user_id = auth.uid() or public.is_szakipiac_admin());
+
+create or replace function public.munkafigyelo_munka_feladasa(
+  p_cim text,
+  p_leiras text,
+  p_szakma text,
+  p_megye text,
+  p_telepules text,
+  p_iranyitoszam text default null,
+  p_surgosseg text default 'normal',
+  p_koltseg_min bigint default null,
+  p_koltseg_max bigint default null,
+  p_kezdes_datum date default null
+)
+returns public.munkafigyelo_hirdetesek
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_row public.munkafigyelo_hirdetesek%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Munka feladásához be kell jelentkezni.';
+  end if;
+  if char_length(trim(coalesce(p_cim, ''))) < 8 then
+    raise exception 'Adj meg egy legalább 8 karakteres munkacímet.';
+  end if;
+  if char_length(trim(coalesce(p_leiras, ''))) < 30 then
+    raise exception 'A részletes leírás legyen legalább 30 karakter.';
+  end if;
+  if p_koltseg_min is not null and p_koltseg_min < 0 then
+    raise exception 'A minimum keret nem lehet negatív.';
+  end if;
+  if p_koltseg_max is not null and p_koltseg_max < 0 then
+    raise exception 'A maximum keret nem lehet negatív.';
+  end if;
+  if p_koltseg_min is not null and p_koltseg_max is not null and p_koltseg_max < p_koltseg_min then
+    raise exception 'A maximális keret nem lehet kisebb a minimálisnál.';
+  end if;
+
+  insert into public.munkafigyelo_hirdetesek (
+    owner_id, cim, leiras, szakma, megye, telepules, iranyitoszam,
+    surgosseg, koltseg_min, koltseg_max, kezdes_datum,
+    allapot, forras_tipus, forras_url, lejar_at
+  ) values (
+    auth.uid(), trim(p_cim), trim(p_leiras), trim(p_szakma), trim(p_megye), trim(p_telepules), nullif(trim(coalesce(p_iranyitoszam, '')), ''),
+    coalesce(nullif(p_surgosseg, ''), 'normal'), p_koltseg_min, p_koltseg_max, p_kezdes_datum,
+    'aktiv', 'megrendelo', null, now() + interval '30 days'
+  ) returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.munkafigyelo_munka_feladasa(text, text, text, text, text, text, text, bigint, bigint, date) from public;
+grant execute on function public.munkafigyelo_munka_feladasa(text, text, text, text, text, text, text, bigint, bigint, date) to authenticated;
+
+-- Link nélküli külső/teszt találatok törlése.
+delete from public.munkafigyelo_hirdetesek
+where forras_tipus <> 'megrendelo'
+  and coalesce(trim(forras_url), '') = '';
 
 
+-- Duplikált külső linkek rendezése, hogy a unique index ne hibázzon.
+delete from public.munkafigyelo_hirdetesek a
+using public.munkafigyelo_hirdetesek b
+where a.forras_url is not null
+  and a.forras_url = b.forras_url
+  and a.ctid < b.ctid;
 
--- Kezdő közbeszerzési/nyilvános munkák import a SzakiLead ZIP-ből.
--- Többször is futtatható, a forrás URL alapján nem dupláz.
 create unique index if not exists idx_munkafigyelo_unique_forras_url
   on public.munkafigyelo_hirdetesek (forras_url)
   where forras_url is not null;
 
 insert into public.munkafigyelo_hirdetesek
-  (cim, leiras, szakma, megye, telepules, surgosseg, forras_tipus, forras_url, created_at, allapot, lejar_at)
+  (cim, leiras, szakma, megye, telepules, surgosseg, forras_tipus, forras_url, created_at)
 values
-('Villanyszerelőt keresek családi házhoz', 'Teljes vezetékcsere és új elosztótábla kialakítása szükséges.', 'Burkoló', 'Pest', 'Érd', 'normal', 'nyilvanos_forras', '', '2026-07-04T10:01:53.178Z'::timestamptz),
 ('Magyarország – Közúti híd építése – K-híd felújítása (ép. ber. kivitelezés)', 'Kiíró: Budapest Közút Zártkörűen Működő Részvénytársaság
 
 Becsült érték/keret: Közbeszerzés', 'Generálkivitelező', 'Országos', 'Budapest', 'normal', 'kozbeszerzes', 'https://ted.europa.eu/hu/notice/456926-2026/html', '2026-07-03T00:00:00.000Z'::timestamptz),

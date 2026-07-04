@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v15-munkafigyelo-gombok-20260704';
+const CACHE_NAME = 'szakipiac-v16-munkafigyelo-kotelezo-mentes-fix-20260704';
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [

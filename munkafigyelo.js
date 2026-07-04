@@ -76,6 +76,16 @@ function mergeWithFallback(rows) {
   return Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
+function isUsablePublicJob(job) {
+  if (!job || !job.id || !job.cim || !job.leiras) return false;
+  const tipus = job.forras_tipus || "megrendelo";
+  const sourceUrl = safeUrl(job.forras_url);
+  // Külső/közbeszerzés csak akkor jelenjen meg, ha van megnyitható eredeti link.
+  if (tipus !== "megrendelo") return !!sourceUrl;
+  // Megrendelői munka csak akkor jelenjen meg, ha belső kapcsolat elérhető.
+  return job.kapcsolat_elerheto !== false;
+}
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replaceAll("-", "+").replaceAll("_", "/");
@@ -348,6 +358,8 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
     showModal(`<h2 class="text-xl font-black">Visszaélés jelentése</h2><form id="mf-report-form" class="mt-5 space-y-4"><label class="block text-sm font-bold">Mi a probléma?<select name="ok" class="mt-1 w-full rounded-xl border border-slate-300 p-3"><option value="spam">Spam vagy reklám</option><option value="teves">Téves / félrevezető</option><option value="lejart">Már nem aktuális</option><option value="jogserto">Jog- vagy szabálysértő</option><option value="egyeb">Egyéb</option></select></label><label class="block text-sm font-bold">Megjegyzés (nem kötelező)<textarea name="megjegyzes" maxlength="1000" rows="4" class="mt-1 w-full rounded-xl border border-slate-300 p-3"></textarea></label><button class="w-full bg-rose-600 text-white rounded-xl py-3 font-black">Jelentés elküldése</button></form>`);
     root.querySelector("#mf-report-form").addEventListener("submit", async event => {
       event.preventDefault();
+      await refreshSession();
+      if (!session?.user?.id) return showToast("A jelentéshez újra be kell jelentkezned.", "info");
       const form = new FormData(event.currentTarget);
       const { error } = await client.from("munkafigyelo_jelentesek").insert({ hirdetes_id: id, reporter_id: session.user.id, ok: form.get("ok"), megjegyzes: form.get("megjegyzes") || null });
       if (error) return showToast(error.code === "23505" ? "Ezt a hirdetést már jelentetted." : error.message, "error");
@@ -374,7 +386,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
             <label class="text-sm font-bold">Becsült keret maximum (Ft)<input name="koltseg_max" type="number" min="0" step="1000" value="${esc(job?.koltseg_max ?? "")}" class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
           </div>
           <label class="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm"><input name="terms" type="checkbox" required class="mt-1"><span>Megerősítem, hogy valós munkát adok fel, és a leírás nem tartalmaz nyilvános kapcsolati adatot.</span></label>
-          <div data-mf-status class="hidden rounded-xl border p-3 text-sm font-bold"></div><div class="flex flex-wrap gap-3"><button type="submit" class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800 active:scale-95 disabled:opacity-60 disabled:cursor-wait transition">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
+          <div data-mf-status class="hidden rounded-xl border p-3 text-sm font-bold"></div><div class="flex flex-wrap gap-3"><button type="button" data-mf-submit-job class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800 active:scale-95 disabled:opacity-60 disabled:cursor-wait transition">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
         </form>
       </div>`;
   }
@@ -409,52 +421,88 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       form.elements.surgosseg.value = editJob.surgosseg;
       form.querySelector("[data-cancel-edit]")?.addEventListener("click", () => switchTab("mine"));
     }
-    form.addEventListener("submit", saveJob);
-    form.querySelector("button[type=submit]")?.addEventListener("click", event => {
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      saveJob(form);
+    });
+    form.querySelector("[data-mf-submit-job]")?.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
-      saveJob({ preventDefault() {}, currentTarget: form });
+      saveJob(form);
     });
   }
 
-  async function saveJob(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const button = form.querySelector("button[type=submit]");
+  async function saveJob(formOrEvent) {
+    const form = formOrEvent?.currentTarget || formOrEvent;
+    if (!form) return;
+
+    const button = form.querySelector("[data-mf-submit-job]") || form.querySelector("button[type=submit]");
     const editId = form.dataset.editId;
     const originalText = editId ? "Módosítás mentése" : "Munka közzététele";
     if (form.dataset.saving === "1") return;
-    form.dataset.saving = "1";
-    const resetButton = () => { if (button) { button.disabled = false; button.textContent = originalText; } form.dataset.saving = "0"; };
-    if (button) { button.disabled = true; button.textContent = "Ellenőrzés…"; }
-    setFormStatus(form, "A megadott adatok ellenőrzése…", "info");
-    form.querySelectorAll(".border-rose-400").forEach(el => el.classList.remove("border-rose-400", "ring-2", "ring-rose-100"));
-    const data = new FormData(form);
-    const text = name => String(data.get(name) || "").trim();
-    const invalid = (field, message) => { resetButton(); return focusInvalid(form, field, message); };
-    if (text("cim").length < 8) return invalid(form.elements.cim, "Adj meg egy legalább 8 karakteres munkacímet.");
-    if (text("leiras").length < 30) return invalid(form.elements.leiras, "A részletes leírás legyen legalább 30 karakter.");
-    if (!data.get("szakma")) return invalid(form.elements.szakma, "Válassz szakmát.");
-    if (!data.get("megye")) return invalid(form.elements.megye, "Válassz megyét.");
-    if (text("telepules").length < 2) return invalid(form.elements.telepules, "Írd be a települést.");
-    if (!form.elements.terms.checked) return invalid(form.elements.terms, "A közzétételhez pipáld be a megerősítést a gomb felett.");
-    const min = data.get("koltseg_min") ? Number(data.get("koltseg_min")) : null;
-    const max = data.get("koltseg_max") ? Number(data.get("koltseg_max")) : null;
-    if (min != null && max != null && max < min) return invalid(form.elements.koltseg_max, "A maximális keret nem lehet kisebb a minimálisnál.");
-    const contactPattern = /(?:\+?36[\s-]?)?(?:\d[\s-]?){8,}|[\w.+-]+@[\w.-]+\.[a-z]{2,}/i;
-    if (contactPattern.test(text("leiras"))) return invalid(form.elements.leiras, "A leírásból töröld a telefonszámot vagy e-mail-címet. A kapcsolatfelvételt biztonságosan kezeljük.");
-    const payload = {
-      owner_id: session.user.id,
-      cim: text("cim"), leiras: text("leiras"),
-      szakma: data.get("szakma"), megye: data.get("megye"), telepules: text("telepules"),
-      iranyitoszam: String(data.get("iranyitoszam") || "").trim() || null,
-      surgosseg: data.get("surgosseg"), koltseg_min: min, koltseg_max: max,
-      kezdes_datum: data.get("kezdes_datum") || null,
-      lejar_at: new Date(Date.now() + 30 * 86400000).toISOString()
+
+    const resetButton = () => {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+        button.classList.remove("opacity-70");
+      }
+      form.dataset.saving = "0";
     };
-    if (button) { button.textContent = "Mentés…"; }
-    setFormStatus(form, "Mentés folyamatban…", "info");
+
     try {
+      form.dataset.saving = "1";
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Ellenőrzés…";
+        button.classList.add("opacity-70");
+      }
+      setFormStatus(form, "Elindult a mentés. A megadott adatok ellenőrzése…", "info");
+      form.querySelectorAll(".border-rose-400").forEach(el => el.classList.remove("border-rose-400", "ring-2", "ring-rose-100"));
+
+      await refreshSession();
+      if (!session?.user?.id) {
+        resetButton();
+        return focusInvalid(form, form.elements.cim, "A munkafeladáshoz újra be kell jelentkezned. Nyisd meg a Kilépés/Belépés részt, jelentkezz be, majd próbáld újra.");
+      }
+
+      const data = new FormData(form);
+      const text = name => String(data.get(name) || "").trim();
+      const invalid = (field, message) => { resetButton(); return focusInvalid(form, field, message); };
+
+      if (text("cim").length < 8) return invalid(form.elements.cim, "Adj meg egy legalább 8 karakteres munkacímet.");
+      if (text("leiras").length < 30) return invalid(form.elements.leiras, "A részletes leírás legyen legalább 30 karakter.");
+      if (!data.get("szakma")) return invalid(form.elements.szakma, "Válassz szakmát.");
+      if (!data.get("megye")) return invalid(form.elements.megye, "Válassz megyét.");
+      if (text("telepules").length < 2) return invalid(form.elements.telepules, "Írd be a települést.");
+      if (!form.elements.terms.checked) return invalid(form.elements.terms, "A közzétételhez pipáld be a megerősítést a gomb felett.");
+
+      const min = data.get("koltseg_min") ? Number(data.get("koltseg_min")) : null;
+      const max = data.get("koltseg_max") ? Number(data.get("koltseg_max")) : null;
+      if (Number.isNaN(min) || Number.isNaN(max)) return invalid(form.elements.koltseg_min, "A költségkeret csak szám lehet.");
+      if (min != null && max != null && max < min) return invalid(form.elements.koltseg_max, "A maximális keret nem lehet kisebb a minimálisnál.");
+
+      const contactPattern = /(?:\+?36[\s-]?)?(?:\d[\s-]?){8,}|[\w.+-]+@[\w.-]+\.[a-z]{2,}/i;
+      if (contactPattern.test(text("leiras"))) return invalid(form.elements.leiras, "A leírásból töröld a telefonszámot vagy e-mail-címet. A kapcsolatfelvételt biztonságosan kezeljük.");
+
+      const payload = {
+        owner_id: session.user.id,
+        cim: text("cim"),
+        leiras: text("leiras"),
+        szakma: data.get("szakma"),
+        megye: data.get("megye"),
+        telepules: text("telepules"),
+        iranyitoszam: String(data.get("iranyitoszam") || "").trim() || null,
+        surgosseg: data.get("surgosseg") || "normal",
+        koltseg_min: min,
+        koltseg_max: max,
+        kezdes_datum: data.get("kezdes_datum") || null,
+        lejar_at: new Date(Date.now() + 30 * 86400000).toISOString()
+      };
+
+      if (button) button.textContent = "Mentés…";
+      setFormStatus(form, "Mentés folyamatban a Supabase adatbázisba…", "info");
+
       let result;
       if (editId) {
         result = await client.from("munkafigyelo_hirdetesek").update(payload).eq("id", editId).select().single();
@@ -471,27 +519,40 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
           p_koltseg_max: payload.koltseg_max,
           p_kezdes_datum: payload.kezdes_datum
         });
-        if (rpcResult.error && !/Could not find the function|PGRST202|schema cache/i.test(rpcResult.error.message || "")) throw rpcResult.error;
-        if (!rpcResult.error) {
-          result = { data: rpcResult.data, error: null };
+
+        if (rpcResult.error) {
+          // Ha a javító SQL még nincs fent, próbálunk direkt insertet is, hogy látszódjon a pontos RLS/SQL hiba.
+          if (/Could not find the function|PGRST202|schema cache/i.test(rpcResult.error.message || "")) {
+            result = await client.from("munkafigyelo_hirdetesek").insert({ ...payload, allapot: "aktiv", forras_tipus: "megrendelo", forras_url: null }).select().single();
+          } else {
+            throw rpcResult.error;
+          }
         } else {
-          result = await client.from("munkafigyelo_hirdetesek").insert({ ...payload, allapot: "aktiv", forras_tipus: "megrendelo" }).select().single();
+          const saved = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+          result = { data: saved, error: null };
         }
       }
-      if (result.error) throw result.error;
+
+      if (result?.error) throw result.error;
+      const savedJob = Array.isArray(result?.data) ? result.data[0] : result?.data;
+
       setFormStatus(form, editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.", "success");
       showToast(editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.");
-      trackEvent?.(editId ? "munkafigyelo_ad_updated" : "munkafigyelo_ad_created", { ad_id: result.data.id, szakma: payload.szakma, megye: payload.megye });
-      if (!editId) client.functions.invoke("munkafigyelo-push", { body: { hirdetesId: result.data.id } }).catch(() => {});
+      trackEvent?.(editId ? "munkafigyelo_ad_updated" : "munkafigyelo_ad_created", { ad_id: savedJob?.id || null, szakma: payload.szakma, megye: payload.megye });
+      if (!editId && savedJob?.id) client.functions.invoke("munkafigyelo-push", { body: { hirdetesId: savedJob.id } }).catch(() => {});
+
       form.dataset.saving = "0";
       await switchTab("mine");
     } catch (err) {
       resetButton();
       console.error("Munkafigyelő mentési hiba:", err);
-      const hint = /munkafigyelo|permission|policy|schema|relation|row-level|rls|violates|check constraint/i.test(err?.message || "") ? " Ellenőrizd, hogy a javított Munkafigyelő SQL lett-e lefuttatva a Supabase SQL Editorban." : "";
-      const msg = (err?.message || "Ismeretlen mentési hiba") + hint;
+      const raw = err?.message || err?.details || err?.hint || "Ismeretlen mentési hiba";
+      const hint = /munkafigyelo|permission|policy|schema|relation|row-level|rls|violates|function/i.test(raw)
+        ? " Futtasd le a ZIP-ben lévő MUNKAFIGYELO_KOTELEZO_SQL_FUTTASD.sql fájlt a Supabase SQL Editorban."
+        : "";
+      const msg = raw + hint;
       setFormStatus(form, msg, "error");
-      showToast("Nem sikerült közzétenni: " + (err?.message || "ismeretlen hiba"), "error");
+      showToast("Nem sikerült közzétenni: " + raw, "error");
     }
   }
 
@@ -595,6 +656,8 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       const json = subscription.toJSON();
       const form = new FormData(event.currentTarget);
       const values = name => form.getAll(name);
+      await refreshSession();
+      if (!session?.user?.id) throw new Error("Az értesítés mentéséhez újra be kell jelentkezni.");
       const payload = { user_id: session.user.id, endpoint: subscription.endpoint, p256dh: json.keys.p256dh, auth_key: json.keys.auth, szakmak: values("szakmak"), megyek: values("megyek"), surgossegek: values("surgossegek"), aktiv: true };
       const { error } = await client.from("munkafigyelo_push_feliratkozasok").upsert(payload, { onConflict: "endpoint" });
       if (error) throw error;
