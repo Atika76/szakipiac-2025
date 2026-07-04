@@ -39,6 +39,22 @@ create table if not exists public.munkafigyelo_hirdetesek (
   )
 );
 
+
+-- Ha a tábla korábban már részben létrejött, ezek pótolják a hiányzó oszlopokat.
+alter table public.munkafigyelo_hirdetesek add column if not exists owner_id uuid references auth.users(id) on delete cascade;
+alter table public.munkafigyelo_hirdetesek add column if not exists iranyitoszam text;
+alter table public.munkafigyelo_hirdetesek add column if not exists surgosseg text not null default 'normal';
+alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_min bigint;
+alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_max bigint;
+alter table public.munkafigyelo_hirdetesek add column if not exists kezdes_datum date;
+alter table public.munkafigyelo_hirdetesek add column if not exists allapot text not null default 'aktiv';
+alter table public.munkafigyelo_hirdetesek add column if not exists forras_tipus text not null default 'megrendelo';
+alter table public.munkafigyelo_hirdetesek add column if not exists forras_url text;
+alter table public.munkafigyelo_hirdetesek add column if not exists lejar_at timestamptz not null default (now() + interval '30 days');
+alter table public.munkafigyelo_hirdetesek add column if not exists push_kuldve_at timestamptz;
+alter table public.munkafigyelo_hirdetesek add column if not exists created_at timestamptz not null default now();
+alter table public.munkafigyelo_hirdetesek add column if not exists updated_at timestamptz not null default now();
+
 create index if not exists idx_munkafigyelo_aktiv_friss
   on public.munkafigyelo_hirdetesek (allapot, lejar_at, created_at desc);
 create index if not exists idx_munkafigyelo_owner
@@ -263,6 +279,70 @@ grant delete on public.szakember_messages to authenticated;
 
 
 
+
+-- Megrendelői munka feladása biztos RPC-n keresztül. Ez megkerüli a böngészős RLS-buktatókat,
+-- de továbbra is a bejelentkezett felhasználót teszi tulajdonossá.
+create or replace function public.munkafigyelo_munka_feladasa(
+  p_cim text,
+  p_leiras text,
+  p_szakma text,
+  p_megye text,
+  p_telepules text,
+  p_iranyitoszam text default null,
+  p_surgosseg text default 'normal',
+  p_koltseg_min bigint default null,
+  p_koltseg_max bigint default null,
+  p_kezdes_datum date default null
+)
+returns public.munkafigyelo_hirdetesek
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_row public.munkafigyelo_hirdetesek%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Munka feladásához be kell jelentkezni.';
+  end if;
+  if char_length(trim(coalesce(p_cim, ''))) < 8 then
+    raise exception 'Adj meg egy legalább 8 karakteres munkacímet.';
+  end if;
+  if char_length(trim(coalesce(p_leiras, ''))) < 30 then
+    raise exception 'A részletes leírás legyen legalább 30 karakter.';
+  end if;
+  if p_koltseg_min is not null and p_koltseg_min < 0 then
+    raise exception 'A minimum keret nem lehet negatív.';
+  end if;
+  if p_koltseg_max is not null and p_koltseg_max < 0 then
+    raise exception 'A maximum keret nem lehet negatív.';
+  end if;
+  if p_koltseg_min is not null and p_koltseg_max is not null and p_koltseg_max < p_koltseg_min then
+    raise exception 'A maximális keret nem lehet kisebb a minimálisnál.';
+  end if;
+
+  insert into public.munkafigyelo_hirdetesek (
+    owner_id, cim, leiras, szakma, megye, telepules, iranyitoszam,
+    surgosseg, koltseg_min, koltseg_max, kezdes_datum,
+    allapot, forras_tipus, forras_url, lejar_at
+  ) values (
+    auth.uid(), trim(p_cim), trim(p_leiras), p_szakma, p_megye, trim(p_telepules), nullif(trim(coalesce(p_iranyitoszam, '')), ''),
+    coalesce(nullif(p_surgosseg, ''), 'normal'), p_koltseg_min, p_koltseg_max, p_kezdes_datum,
+    'aktiv', 'megrendelo', null, now() + interval '30 days'
+  ) returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.munkafigyelo_munka_feladasa(text, text, text, text, text, text, text, bigint, bigint, date) from public;
+grant execute on function public.munkafigyelo_munka_feladasa(text, text, text, text, text, text, text, bigint, bigint, date) to authenticated;
+
+-- Hibás, link nélküli külső minták törlése, mert ezekre nem lehet válaszolni és nem lehet megnyitni.
+delete from public.munkafigyelo_hirdetesek
+where forras_tipus <> 'megrendelo'
+  and coalesce(trim(forras_url), '') = '';
+
 -- Kezdő közbeszerzési/nyilvános munkák import a SzakiLead ZIP-ből.
 -- Többször is futtatható, a forrás URL alapján nem dupláz.
 create unique index if not exists idx_munkafigyelo_unique_forras_url
@@ -270,9 +350,8 @@ create unique index if not exists idx_munkafigyelo_unique_forras_url
   where forras_url is not null;
 
 insert into public.munkafigyelo_hirdetesek
-  (cim, leiras, szakma, megye, telepules, surgosseg, forras_tipus, forras_url, created_at, allapot, lejar_at)
+  (cim, leiras, szakma, megye, telepules, surgosseg, forras_tipus, forras_url, created_at)
 values
-('Villanyszerelőt keresek családi házhoz', 'Teljes vezetékcsere és új elosztótábla kialakítása szükséges.', 'Burkoló', 'Pest', 'Érd', 'normal', 'nyilvanos_forras', '', '2026-07-04T10:01:53.178Z'::timestamptz),
 ('Magyarország – Közúti híd építése – K-híd felújítása (ép. ber. kivitelezés)', 'Kiíró: Budapest Közút Zártkörűen Működő Részvénytársaság
 
 Becsült érték/keret: Közbeszerzés', 'Generálkivitelező', 'Országos', 'Budapest', 'normal', 'kozbeszerzes', 'https://ted.europa.eu/hu/notice/456926-2026/html', '2026-07-03T00:00:00.000Z'::timestamptz),
