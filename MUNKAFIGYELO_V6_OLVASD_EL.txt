@@ -1,0 +1,12 @@
+Munkafigyelő V6 direkt gomb javítás
+
+A Munka feladása űrlapon sárga verziódoboznak kell látszania:
+Friss Munkafigyelő verzió aktív: V6-DIREKT-ONCLICK-20260704-1905
+
+Ha ezt nem látod, akkor nem ez a verzió fut, hanem régi cache vagy régi GitHub deploy.
+
+Feltöltés után:
+1. GitHub Actions deploy legyen zöld.
+2. Nyisd meg az oldalt inkognitó ablakban.
+3. Vagy F12 > Application > Service Workers > Unregister, utána Ctrl+F5.
+4. Supabase-ben futtasd: MUNKAFIGYELO_EROS_KOTELEZO_SQL_FUTTASD.sql

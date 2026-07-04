@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v17-munkafigyelo-force-submit-v5-20260704';
+const CACHE_NAME = 'szakipiac-v18-munkafigyelo-v6-direkt-onclick-20260704';
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
@@ -79,6 +79,7 @@ self.addEventListener('fetch', event => {
   const networkFirst = event.request.mode === 'navigate' ||
     url.pathname.endsWith('/index.html') ||
     url.pathname.endsWith('/munkafigyelo.js') ||
+    url.pathname.endsWith('/munkafigyelo-v6.js') ||
     url.pathname.endsWith('/service-worker.js');
 
   if (networkFirst) {
@@ -98,3 +99,5 @@ self.addEventListener('fetch', event => {
 
 // nincs-talalat-lathato-visszajelzes-20260524
 // munkafigyelo-force-submit-v5-20260704
+
+// munkafigyelo-v6-direkt-onclick-20260704
