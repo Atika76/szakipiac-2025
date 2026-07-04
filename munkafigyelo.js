@@ -178,7 +178,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
         <button type="button" data-save-lead="${esc(lead.id)}" class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-black hover:bg-slate-50">${saved ? "★ Mentve" : "☆ Mentés"}</button>
       </div>
       <p class="text-slate-700 mt-4 whitespace-pre-line line-clamp-4">${esc(lead.leiras)}</p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-sm">
+      <div class="grid grid-cols-1 2xl:grid-cols-3 gap-3 mt-4 text-sm">
         <div class="rounded-xl bg-slate-50 p-3"><b>Keret:</b><br>${esc(budgetText(lead))}</div>
         <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés:</b><br>${esc(formatDate(lead.kezdes_datum))}</div>
         <div class="rounded-xl bg-slate-50 p-3"><b>Forrás:</b><br>${esc(typeLabel(lead.forras_tipus))}</div>
@@ -198,7 +198,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     root.querySelector("[data-mf-count]").textContent = `${leads.length} találat`;
     list.innerHTML = leads.length
       ? leads.map(card).join("")
-      : `<div class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Most nincs találat ezekkel a szűrőkkel.</div>`;
+      : `<div class="md:col-span-2 bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Most nincs találat ezekkel a szűrőkkel.</div>`;
     wireListButtons();
   }
 
@@ -246,7 +246,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
       ${lastLoadError ? `<div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 mb-5 text-sm font-bold">A munkák most nem tölthetők be. Kérjük, próbáld újra később.</div>` : ""}
 
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+      <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
         <div>
           <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
             <div class="flex flex-wrap gap-2 mb-4">
@@ -262,7 +262,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
             </div>
             <div class="mt-3 text-sm font-black text-slate-600" data-mf-count></div>
           </div>
-          <div class="space-y-4" data-mf-list></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-mf-list></div>
         </div>
 
         <aside class="space-y-4">
@@ -374,7 +374,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     root.querySelector("[data-mf-megye]")?.addEventListener("change", renderList);
     root.querySelector("[data-show-saved]")?.addEventListener("click", () => {
       const saved = allLeads.filter(item => savedIds().has(item.id));
-      root.querySelector("[data-mf-list]").innerHTML = saved.length ? saved.map(card).join("") : `<div class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Még nincs mentett munka.</div>`;
+      root.querySelector("[data-mf-list]").innerHTML = saved.length ? saved.map(card).join("") : `<div class="md:col-span-2 bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Még nincs mentett munka.</div>`;
       root.querySelector("[data-mf-count]").textContent = `${saved.length} mentett találat`;
       wireListButtons();
     });
