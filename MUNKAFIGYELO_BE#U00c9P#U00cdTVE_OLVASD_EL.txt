@@ -1,0 +1,32 @@
+SzakiPiac + SzakiLead Munkafigyelő beépítés
+
+Mit csináltam:
+- A SzakiLead projekt bekerült a SzakiPiac mappába: /munkafigyelo/
+- A SzakiPiac főmenüjébe bekerült a "🛰️ Munkafigyelő" menüpont asztali és mobil nézetben is.
+- A SzakiLead teljes forrása benne van, de a veszélyes/nagy mappák NINCSENEK benne:
+  - node_modules nincs benne
+  - data nincs benne
+  - .env nincs benne
+  - .git nincs benne
+
+Fontos:
+- A Munkafigyelő program továbbra is Node/Express + adatbázis alapú rendszer.
+- GitHub Pages-en önmagában csak a felület tud megjelenni, de az API/adatbázis/push rész nem fog teljesen működni.
+- Teljes működéshez Render/VPS/Supabase/PostgreSQL irány kell.
+
+Helyi futtatás a Munkafigyelőhöz:
+1. Nyisd meg a szakipiac mappát.
+2. Menj be: munkafigyelo
+3. Futtasd:
+   npm install
+   npm run build
+   npm start
+
+A SzakiPiac főoldaláról a menüpont ide mutat:
+munkafigyelo/index.html
+
+Ha teljes éles rendszer kell, akkor a következő lépés:
+- Render deployment
+- PostgreSQL adatbázis
+- környezeti változók beállítása
+- admin jelszó/e-mail beállítása
