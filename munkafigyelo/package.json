@@ -1,0 +1,39 @@
+{
+  "name": "szakilead-pro",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c green,cyan \"node --watch server/index.js\" \"vite\"",
+    "dev:web": "vite",
+    "dev:api": "node --watch server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "check": "node server/self-test.js",
+    "check:http": "node scripts/http-self-test.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "latest",
+    "concurrently": "latest",
+    "cookie": "^2.0.1",
+    "dotenv": "latest",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "kysely": "^0.29.2",
+    "lucide-react": "latest",
+    "node-cron": "latest",
+    "nodemailer": "^9.0.3",
+    "pg": "^8.22.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "rss-parser": "latest",
+    "vite": "latest",
+    "web-push": "latest"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.3"
+  }
+}

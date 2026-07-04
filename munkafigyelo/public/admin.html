@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><title>SzakiLead Pro Admin</title>
+  <link rel="icon" href="/icon.svg"><link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <header><a href="/"><img src="/icon.svg" alt=""><span><b>SzakiLead Pro</b><small>ADMIN KÖZPONT</small></span></a><button id="logout" hidden>Kijelentkezés</button></header>
+    <section id="login" class="login-card">
+      <div class="lock">⚿</div><h1>Adminisztráció</h1><p>Jelentkezz be az admin e-mail-címmel és jelszóval.</p>
+      <form id="login-form"><input id="email" type="email" autocomplete="username" placeholder="Admin e-mail" required><input id="password" type="password" autocomplete="current-password" placeholder="Jelszó" minlength="12" required><button>Belépés</button></form>
+      <button id="forgot" class="link-button" type="button">Elfelejtettem a jelszavam</button><p id="login-error" class="error"></p>
+    </section>
+    <section id="reset" class="login-card" hidden>
+      <div class="lock">🔑</div><h1>Új jelszó</h1><p>Adj meg legalább 12 karakteres új jelszót.</p>
+      <form id="reset-form"><input id="new-password" type="password" autocomplete="new-password" minlength="12" required placeholder="Új jelszó"><button>Jelszó mentése</button></form><p id="reset-error" class="error"></p>
+    </section>
+    <section id="dashboard" hidden>
+      <div class="title-row"><div><h1>SzakiLead Pro áttekintés</h1><p>Valós használat, ügyfélhirdetések és biztonsági jelzések</p></div><button id="refresh">Frissítés</button></div>
+      <div id="metrics" class="metrics"></div>
+      <div class="grid">
+        <article class="panel"><div class="panel-head"><div><h2>Legnézettebb munkák</h2><p>Elmúlt 30 nap</p></div></div><div class="table-wrap"><table><thead><tr><th>Munka</th><th>Forrás</th><th>Megnyitás</th></tr></thead><tbody id="top-leads"></tbody></table></div></article>
+        <article class="panel"><div class="panel-head"><div><h2>Napi érdeklődés</h2><p>Elmúlt 30 nap</p></div></div><div id="daily" class="daily"></div></article>
+      </div>
+      <article class="panel submissions"><div class="panel-head"><div><h2>Jóváhagyásra váró hirdetések</h2><p>Csak megerősített és valós munkát engedj át.</p></div><span id="pending-count"></span></div><div id="submission-list"></div></article>
+      <article class="panel submissions"><div class="panel-head"><div><h2>Kapcsolatfelvételek</h2><p>A megrendelőknek továbbított érdeklődések.</p></div></div><div id="contact-list"></div></article>
+      <article class="panel submissions"><div class="panel-head"><div><h2>Visszaélés-jelentések</h2><p>Felhasználói biztonsági bejelentések.</p></div></div><div id="report-list"></div></article>
+    </section>
+  </main>
+  <script src="/admin.js" defer></script>
+</body>
+</html>
