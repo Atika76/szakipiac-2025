@@ -174,7 +174,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       publicJobs = BEAGYAZOTT_KOZBESZERZESEK;
       return { fallback: true, error };
     }
-    publicJobs = mergeWithFallback(data || []);
+    publicJobs = (data || []).length ? (data || []) : BEAGYAZOTT_KOZBESZERZESEK;
     return { fallback: !(data || []).length, error: null };
   }
 
@@ -350,7 +350,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
             <label class="text-sm font-bold">Becsült keret maximum (Ft)<input name="koltseg_max" type="number" min="0" step="1000" value="${esc(job?.koltseg_max ?? "")}" class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
           </div>
           <label class="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm"><input name="terms" type="checkbox" required class="mt-1"><span>Megerősítem, hogy valós munkát adok fel, és a leírás nem tartalmaz nyilvános kapcsolati adatot.</span></label>
-          <div class="flex flex-wrap gap-3"><button class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
+          <div class="flex flex-wrap gap-3"><button type="submit" class="bg-emerald-700 text-white px-6 py-3 rounded-xl font-black hover:bg-emerald-800">${job ? "Módosítás mentése" : "Munka közzététele"}</button>${job ? `<button type="button" data-cancel-edit class="px-5 py-3 rounded-xl border border-slate-300 font-bold">Mégse</button>` : ""}</div>
         </form>
       </div>`;
   }

@@ -1,0 +1,7 @@
+Javítások:
+
+1. A Munka közzététele gomb most már tényleg submit gomb (type="submit"), ezért a munka feladása nem akad el JavaScript hibán.
+
+2. A beépített ZIP-es minták/közbeszerzések csak akkor jelennek meg, ha a Supabase tábla üres vagy nem elérhető. Így nem duplázódnak a hirdetések az SQL lefuttatása után.
+
+Feltöltés után Ctrl+F5-tel frissítsd az oldalt, vagy mobilon töröld az oldal gyorsítótárát / frissítsd újra.
