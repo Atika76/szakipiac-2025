@@ -1,3 +1,4 @@
+const MUNKAFIGYELO_BUILD = "force-submit-v5-20260704";
 const VAPID_PUBLIC_KEY = "BI9GtCoUOzjMo4ILFJ84E2Ud1nWzt58dd8g3efiESKRXb71BRD2okYXt0lqCR4-VE5-Y2R89aQ2_eKQdLs9b_Qk";
 
 const SZAKMAK = [
@@ -154,7 +155,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
     `;
     bindShell();
     await switchTab(currentTab);
-    trackEvent?.("munkafigyelo_open", { logged_in: !!session });
+    (typeof trackEvent === "function" ? trackEvent : () => {})("munkafigyelo_open", { logged_in: !!session });
   }
 
   function bindShell() {
@@ -349,7 +350,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       if (error) { showToast(error.message, "error"); button.disabled = false; button.textContent = "Üzenet elküldése"; return; }
       closeModal();
       showToast("Az üzenet megérkezett a megrendelőhöz.");
-      trackEvent?.("munkafigyelo_contact", { ad_id: id });
+      (typeof trackEvent === "function" ? trackEvent : () => {})("munkafigyelo_contact", { ad_id: id });
     });
   }
 
@@ -371,7 +372,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
     const minDate = new Date().toISOString().slice(0, 10);
     return `
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-7">
-        <div class="flex items-start justify-between gap-4 mb-6"><div><h2 class="text-2xl font-black">${job ? "Munka módosítása" : "Új munka feladása"}</h2><p class="text-sm text-slate-600 mt-1">30 napig ingyenesen megjelenik. A kapcsolati adataid rejtve maradnak.</p></div><span class="bg-emerald-100 text-emerald-800 rounded-full px-3 py-1 text-xs font-black">INGYENES</span></div>
+        <div class="flex items-start justify-between gap-4 mb-6"><div><h2 class="text-2xl font-black">${job ? "Munka módosítása" : "Új munka feladása"}</h2><p class="text-sm text-slate-600 mt-1">30 napig ingyenesen megjelenik. A kapcsolati adataid rejtve maradnak.</p><p class="mt-1 text-[11px] font-bold text-slate-400">Munkafigyelő verzió: ${esc(MUNKAFIGYELO_BUILD)}</p></div><span class="bg-emerald-100 text-emerald-800 rounded-full px-3 py-1 text-xs font-black">INGYENES</span></div>
         <form id="mf-job-form" novalidate data-edit-id="${esc(job?.id || "")}" class="space-y-5">
           <label class="block text-sm font-bold">Milyen munkára keresel szakembert? *<input name="cim" required minlength="8" maxlength="120" value="${esc(job?.cim || "")}" class="mt-1 w-full rounded-xl border border-slate-300 p-3" placeholder="Pl. Fürdőszoba burkolásához keresek szakembert"></label>
           <label class="block text-sm font-bold">Részletes leírás *<textarea name="leiras" required minlength="30" maxlength="4000" rows="7" class="mt-1 w-full rounded-xl border border-slate-300 p-3" placeholder="Mekkora a munka, mi a jelenlegi állapot, milyen elképzelésed van?">${esc(job?.leiras || "")}</textarea><span class="block text-xs text-slate-500 mt-1">Ne írj ide telefonszámot vagy e-mail-címet.</span></label>
@@ -405,6 +406,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
 
   function focusInvalid(form, field, message) {
     setFormStatus(form, message, "error");
+    showToast?.(message, "error");
     showToast(message, "error");
     field?.classList?.add("border-rose-400", "ring-2", "ring-rose-100");
     field?.scrollIntoView?.({ behavior: "smooth", block: "center" });
@@ -421,15 +423,32 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       form.elements.surgosseg.value = editJob.surgosseg;
       form.querySelector("[data-cancel-edit]")?.addEventListener("click", () => switchTab("mine"));
     }
+    const submitButton = form.querySelector("[data-mf-submit-job]");
+    const runSaveFromClick = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      setFormStatus(form, "A gomb kattintása érzékelve. Ellenőrzés indul…", "info");
+      saveJob(form);
+    };
     form.addEventListener("submit", event => {
       event.preventDefault();
       saveJob(form);
     });
-    form.querySelector("[data-mf-submit-job]")?.addEventListener("click", event => {
+    submitButton?.addEventListener("pointerdown", () => {
+      if (form.dataset.saving !== "1") setFormStatus(form, "A gombnyomást érzékeltem…", "info");
+    });
+    submitButton?.addEventListener("click", runSaveFromClick);
+    panel.addEventListener("click", event => {
+      const button = event.target?.closest?.("[data-mf-submit-job]");
+      if (!button || !panel.contains(button)) return;
       event.preventDefault();
       event.stopPropagation();
-      saveJob(form);
-    });
+      const clickedForm = button.closest("form");
+      if (clickedForm) {
+        setFormStatus(clickedForm, "A mentés indítása elindult…", "info");
+        saveJob(clickedForm);
+      }
+    }, true);
   }
 
   async function saveJob(formOrEvent) {
@@ -538,7 +557,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
 
       setFormStatus(form, editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.", "success");
       showToast(editId ? "A munka módosítva." : "A munka megjelent a Munkafigyelőben.");
-      trackEvent?.(editId ? "munkafigyelo_ad_updated" : "munkafigyelo_ad_created", { ad_id: savedJob?.id || null, szakma: payload.szakma, megye: payload.megye });
+      (typeof trackEvent === "function" ? trackEvent : () => {})(editId ? "munkafigyelo_ad_updated" : "munkafigyelo_ad_created", { ad_id: savedJob?.id || null, szakma: payload.szakma, megye: payload.megye });
       if (!editId && savedJob?.id) client.functions.invoke("munkafigyelo-push", { body: { hirdetesId: savedJob.id } }).catch(() => {});
 
       form.dataset.saving = "0";
@@ -663,7 +682,7 @@ export function createMunkafigyelo({ client, showToast, trackEvent, adminEmail }
       if (error) throw error;
       setFormStatus(formEl, "A push értesítés bekapcsolva és a beállítások elmentve.", "success");
       showToast("A push értesítés bekapcsolva.");
-      trackEvent?.("munkafigyelo_push_enabled", {});
+      (typeof trackEvent === "function" ? trackEvent : () => {})("munkafigyelo_push_enabled", {});
       await renderPushPanel(root.querySelector("#mf-panel"));
     } catch (err) {
       resetButton();

@@ -1,0 +1,10 @@
+Munkafigyelő erős javítás
+
+1) A Munka közzététele gomb most már pointerdown/click/delegált eseményből is indítja a mentést.
+2) A form alatt azonnal kiírja, hogy a kattintást érzékelte.
+3) A munkafigyelo.js új verzióval töltődik: force-submit-v5-20260704.
+4) Javítva lett az SQL-ben lévő duplikált USING sor, ami miatt a kötelező SQL hibával megállhatott.
+
+Futtasd Supabase-ben: MUNKAFIGYELO_EROS_KOTELEZO_SQL_FUTTASD.sql
+Utána GitHub deploy, majd Ctrl+F5.
+Ha nem látod a formnál ezt: Munkafigyelő verzió: force-submit-v5-20260704, akkor még a régi oldal fut/cache-ből jön.

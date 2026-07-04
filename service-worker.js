@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v16-munkafigyelo-kotelezo-mentes-fix-20260704';
+const CACHE_NAME = 'szakipiac-v17-munkafigyelo-force-submit-v5-20260704';
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
@@ -97,3 +97,4 @@ self.addEventListener('fetch', event => {
 });
 
 // nincs-talalat-lathato-visszajelzes-20260524
+// munkafigyelo-force-submit-v5-20260704
