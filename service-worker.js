@@ -1,9 +1,10 @@
-const CACHE_NAME = 'szakipiac-v13-nincs-talalat-lathato-visszajelzes'; // Új verziószám, hogy frissüljön
+const CACHE_NAME = 'szakipiac-v14-munkafigyelo-push';
 
 // Azok a fájlok, amik az app "burkolatát" (shell) adják
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
+  '/munkafigyelo.js',
   '/kivitelezes-pro.html',
   '/En/index.html',
   // A logók, amiket az oldalad használ
@@ -21,6 +22,43 @@ self.addEventListener('install', event => {
       return cache.addAll(APP_SHELL_URLS);
     })
   );
+});
+
+// Munkafigyelő web push. A szerver csak a felhasználó által beállított
+// szakma/megye/sürgősség szűrőnek megfelelő munkát küldi ide.
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch {
+    payload = { body: event.data ? event.data.text() : 'Új munka érkezett.' };
+  }
+
+  const title = payload.title || 'SzakiPiac Munkafigyelő';
+  const options = {
+    body: payload.body || 'Új munka érkezett a beállított területeden.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: payload.tag || 'szakipiac-munkafigyelo',
+    renotify: true,
+    data: { url: payload.url || '/index.html#munkafigyelo' },
+    actions: [{ action: 'open', title: 'Munka megnyitása' }]
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const destination = new URL(event.notification.data?.url || '/index.html#munkafigyelo', self.location.origin).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if ('focus' in client) {
+        await client.navigate(destination);
+        return client.focus();
+      }
+    }
+    return self.clients.openWindow(destination);
+  })());
 });
 
 // Aktiválás: Töröljük a régi (pl. 'szakipiac-v1') cache-t

@@ -16,3 +16,8 @@ entrypoint = "./functions/generate-ad/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-quote-to-epitesnaplo/index.ts"
+
+[functions.munkafigyelo-push]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/munkafigyelo-push/index.ts"
