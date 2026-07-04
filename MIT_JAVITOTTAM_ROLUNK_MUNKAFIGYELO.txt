@@ -1,0 +1,1 @@
+A Rólunk oldalra bekerült a Munkafigyelő bemutatása: külső munkák, közbeszerzések, eredeti forrás link és értesítések. A service worker cache neve is frissült.

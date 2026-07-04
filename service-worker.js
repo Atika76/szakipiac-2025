@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-leadgyujto-ketoszlop-20260704-2';
+const CACHE_NAME = 'szakipiac-v20-munkafigyelo-about-20260704';
 
 const APP_SHELL_URLS = [
   '/',
