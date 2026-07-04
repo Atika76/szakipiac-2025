@@ -21,3 +21,8 @@ entrypoint = "./functions/send-quote-to-epitesnaplo/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/munkafigyelo-push/index.ts"
+
+[functions.munkafigyelo-collector]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/munkafigyelo-collector/index.ts"
