@@ -1,0 +1,40 @@
+SzakiPiac Munkafigyelő - napi kétszeri automatikus frissítés
+
+Cél:
+A Munkafigyelő ne csak akkor frissüljön, amikor kézzel felviszel adatot, hanem naponta kétszer automatikusan hívja meg a munkafigyelo-collector Edge Functiont.
+
+Sorrend:
+
+1. Supabase SQL Editorban futtasd le egyszer:
+   MUNKAFIGYELO_SQL_FUTTASD_EGYSZER.sql
+
+2. Supabase Edge Functions részen deployold:
+   supabase/functions/munkafigyelo-collector/index.ts
+   supabase/functions/munkafigyelo-push/index.ts
+
+3. Supabase Edge Function Secrets részen add meg:
+   MUNKAFIGYELO_COLLECTOR_SECRET = saját hosszú titkos szöveg
+   MUNKAFIGYELO_SOURCES_JSON = a forráslista JSON-ban
+
+   Push értesítéshez később még kellhet:
+   VAPID_PUBLIC_KEY
+   VAPID_PRIVATE_KEY
+   VAPID_SUBJECT
+   SZAKIPIAC_ADMIN_EMAIL
+
+4. Supabase SQL Editorban futtasd:
+   MUNKAFIGYELO_CRON_NAPI_2X.sql
+
+   Előtte ebben a fájlban cseréld ki:
+   IDE_IRD_BE_A_TITKOS_SZOVEGET
+   arra az értékre, amit a MUNKAFIGYELO_COLLECTOR_SECRET secretbe írtál.
+
+5. Ellenőrzés:
+   select jobid, jobname, schedule, active
+   from cron.job
+   where jobname = 'munkafigyelo-collector-napi-2x';
+
+6. A weboldalon a Munkafigyelő lista már most is created_at szerint csökkenő sorrendben kér le, vagyis az újabbak vannak elöl.
+
+Fontos:
+A cron csak a collector functiont hívja. Ahhoz, hogy tényleg legyen mit begyűjteni, a MUNKAFIGYELO_SOURCES_JSON secretben meg kell adni a forrásokat.

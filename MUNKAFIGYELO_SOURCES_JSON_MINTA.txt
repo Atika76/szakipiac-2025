@@ -1,0 +1,40 @@
+Ez csak MINTA a Supabase Edge Function Secrets részhez.
+Secret neve:
+MUNKAFIGYELO_SOURCES_JSON
+
+Értéke például:
+
+[
+  {
+    "key": "pelda-rss",
+    "type": "rss",
+    "url": "https://pelda.hu/rss.xml",
+    "defaults": {
+      "szakma": "Egyéb szakember",
+      "megye": "Országos",
+      "telepules": "Országos",
+      "surgosseg": "normal"
+    }
+  },
+  {
+    "key": "pelda-partner-json",
+    "type": "partner_json",
+    "url": "https://partner-pelda.hu/api/munkak.json",
+    "itemPath": "items",
+    "mapping": {
+      "cim": "title",
+      "leiras": "description",
+      "forras_url": "url",
+      "created_at": "published_at"
+    },
+    "defaults": {
+      "szakma": "Generálkivitelező",
+      "megye": "Országos",
+      "telepules": "Országos",
+      "surgosseg": "normal"
+    }
+  }
+]
+
+A pelda.hu címeket valódi RSS/API forrásokra kell cserélni.
+Facebook/Jófogás automata kaparás ne legyen, csak engedélyezett nyilvános RSS/API/TED/partner forrás.
