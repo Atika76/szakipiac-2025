@@ -1,5 +1,6 @@
 // supabase/functions/generate-ad/index.ts
 // SzakiPiac – AI Hirdetésgeneráló (GYORS / PRÉMIUM mód) – Gemini
+// Tudja kezelni: szolgáltatást kínáló szakember hirdetése + megrendelői munkakeresés
 // Secret: GEMINI_API_KEY (Supabase → Project Settings → Secrets)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -24,6 +25,8 @@ serve(async (req) => {
     const keywords = (body?.keywords || body?.query || "").toString().trim();
     const lang = (body?.lang || "hu").toString();
     const mode = (body?.mode || "quick").toString(); // quick | premium
+    const purposeRaw = (body?.purpose || body?.adKind || body?.type || "kinalat").toString().toLowerCase();
+    const purpose = ["kereses", "request", "munka", "megrendelo"].includes(purposeRaw) ? "kereses" : "kinalat";
 
     if (!keywords) throw new Error("Adj meg kulcsszót (pl. szobafestés).");
 
@@ -34,27 +37,64 @@ serve(async (req) => {
       : `Reply in English. No emojis. Return valid JSON.`;
 
     const quickSpec = lang === "hu"
-      ? `Rövid, tömör, profi hirdetés. 80–120 szó. Legyen 1 rövid cím, 1 rövid leírás, 1 CTA.`
-      : `Short, concise, professional ad. 80–120 words. Provide title, description, CTA.`;
+      ? `Rövid, tömör, profi szöveg. 80–120 szó. Legyen 1 rövid cím, 1 rövid leírás, 1 CTA.`
+      : `Short, concise, professional text. 80–120 words. Provide title, description, CTA.`;
 
     const premiumSpec = lang === "hu"
-      ? `Prémium marketing hirdetés: 180–250 szó. Legyen figyelemfelkeltő nyitás, előnyök, felsorolás, bizalomépítés (garancia/pontosság/tapasztalat), és erős CTA.`
-      : `Premium marketing ad: 180–250 words. Hook, benefits, bullet list, trust signals, strong CTA.`;
+      ? `Prémium marketing szöveg: 180–250 szó. Legyen figyelemfelkeltő nyitás, előnyök, felsorolás, bizalomépítés, és erős CTA.`
+      : `Premium marketing text: 180–250 words. Hook, benefits, bullet list, trust signals, strong CTA.`;
+
+    const offerSpec = lang === "hu"
+      ? `
+SZÖVEGTÍPUS: SZOLGÁLTATÁST KÍNÁLÓ SZAKEMBER / VÁLLALKOZÓ HIRDETÉSE.
+A szöveg úgy szóljon, mintha a szakember kínálná a munkáját.
+Használj ilyen irányt: vállalok, készítek, javítok, kivitelezünk, kérj ajánlatot.
+A cím legyen kínálati jellegű, például: "Megbízható szobafestés gyors határidővel".
+A leírás emelje ki a szakértelmet, pontosságot, tiszta munkát, korrekt kommunikációt, ajánlatkérést.
+TILOS úgy fogalmazni, mintha a feladó szakembert keresne. Ne írd: "keresek szakembert", "szükségem van".
+`
+      : `
+TEXT TYPE: SERVICE OFFER FROM A TRADESPERSON / BUSINESS.
+Write as if the professional is offering their work. Use wording like: I provide, we undertake, ask for a quote.
+Do not write as if the user is looking for a contractor.
+`;
+
+    const requestSpec = lang === "hu"
+      ? `
+SZÖVEGTÍPUS: MEGRENDELŐI MUNKAFELADÁS, AHOL A FELADÓ SZAKEMBERT KERES.
+A szöveg úgy szóljon, mintha egy megrendelő szeretne egy munkát elvégeztetni.
+Használj ilyen irányt: keresek, szeretnék, szükségem lenne, ajánlatot kérek, helyszíni felmérés érdekel.
+A cím legyen keresési jellegű, például: "Burkolót keresek fürdőszoba felújításhoz".
+A leírás tartalmazza: milyen munkára keres szakembert, helyszín/település, határidő vagy rugalmasság, ajánlatkérés, kapcsolatfelvétel.
+Legyen udvarias, konkrét, bizalomkeltő, de ne reklámozza a feladót szakemberként.
+TILOS úgy fogalmazni, mintha a feladó vállalna munkát. Ne írd: "vállalok", "kivitelezünk", "szolgáltatásaim".
+`
+      : `
+TEXT TYPE: CUSTOMER JOB REQUEST, WHERE THE USER IS LOOKING FOR A TRADESPERSON.
+Write as if a customer wants to have a job done. Use wording like: looking for, need, request a quote, site visit.
+Do not write as if the user offers services.
+`;
 
     const spec = (mode === "premium") ? premiumSpec : quickSpec;
+    const purposeSpec = purpose === "kereses" ? requestSpec : offerSpec;
 
     const prompt = `
-Te egy profi marketing szövegíró vagy. ${rules}
+Te egy profi magyar hirdetésszövegíró vagy. ${rules}
 
-Kulcsszavak / szolgáltatás: ${keywords}
+Kulcsszavak / téma: ${keywords}
 
-Feladat: készíts hirdetést a következő szabályok szerint:
+${purposeSpec}
+
+Feladat: készíts szöveget a következő szabályok szerint:
 - ${spec}
+- A cím maximum 10 szó legyen.
+- A leírás legyen természetes, magyaros, ne legyen túlzásba vitt reklámszagú.
+- A CTA illeszkedjen a szövegtípushoz.
 
-KIZÁRÓLAG ilyen JSON-t adj vissza (extra szöveg nélkül):
+KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
 {
-  "title": "Rövid, ütős cím (max. 10 szó)",
-  "description": "A teljes leírás (szöveg)",
+  "title": "Rövid, pontos cím",
+  "description": "A teljes leírás",
   "cta": "Rövid cselekvésre ösztönző sor"
 }
 `;
@@ -86,12 +126,11 @@ KIZÁRÓLAG ilyen JSON-t adj vissza (extra szöveg nélkül):
     }
 
     const out = JSON.parse(jsonMatch[0]);
-    // Back-compat: ha véletlenül cim/leiras jön, fordítsuk át
     const title = out.title || out.cim || "";
     const description = out.description || out.leiras || "";
     const cta = out.cta || "";
 
-    return new Response(JSON.stringify({ title, description, cta }), {
+    return new Response(JSON.stringify({ title, description, cta, purpose }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
