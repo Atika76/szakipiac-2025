@@ -463,3 +463,250 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
   return { showPage, renderAdmin };
 }
+
+/* =========================
+   SzakiPiac oldaljavító patch
+   - Hirdetés feladása: szolgáltatás kínálat / szakember keresés
+   - AI szövegíró mindkét módhoz
+   - Partner reklámkártyák rendezése
+========================= */
+(function initSzakiPiacFeltoltesEsReklamPatch() {
+  const PATCH_FLAG = "spFeltoltesKeresesPatchV1";
+  const PARTNER_FLAG = "spPartnerCardsV1";
+
+  function toast(message, type = "success") {
+    const el = document.getElementById("toast-notification");
+    if (!el) return console.log(message);
+    const bg = type === "error" ? "bg-red-600" : (type === "info" ? "bg-blue-600" : "bg-green-600");
+    el.textContent = message;
+    el.className = `fixed top-5 right-5 text-white py-3 px-6 rounded-lg shadow-xl transform transition-transform duration-300 z-[110] ${bg}`;
+    el.classList.remove("translate-x-[120%]");
+    setTimeout(() => el.classList.add("translate-x-[120%]"), 4200);
+  }
+
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function selectedAdKind() {
+    return document.querySelector('input[name="adKind"]:checked')?.value || "kinalat";
+  }
+
+  function updateAdKindUI() {
+    const isRequest = selectedAdKind() === "kereses";
+    const info = document.getElementById("ad-kind-info");
+    const packageSection = document.getElementById("package-section");
+    const imageSection = document.getElementById("image-section");
+    const videoWrapper = document.getElementById("video-wrapper");
+    const aiInput = document.getElementById("ai-keywords");
+    const cim = document.getElementById("cim");
+    const leiras = document.getElementById("leiras");
+    const ar = document.getElementById("ar");
+    const weboldal = document.getElementById("weboldal");
+    const submitButton = document.querySelector('#submit-area button[type="submit"]');
+    const packageInfo = document.getElementById("package-info");
+    const paypal = document.getElementById("paypal-container");
+
+    if (info) {
+      info.className = isRequest
+        ? "mt-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900"
+        : "mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900";
+      info.textContent = isRequest
+        ? "A munkafeladás a Munkafigyelő / Megrendelői munkák alatt jelenik meg. Szakemberek innen tudnak érdeklődni."
+        : "A hirdetés a főoldali szakember listában fog megjelenni.";
+    }
+    packageSection?.classList.toggle("hidden", isRequest);
+    imageSection?.classList.toggle("hidden", isRequest);
+    videoWrapper?.classList.toggle("hidden", isRequest);
+    if (paypal && isRequest) paypal.style.display = "none";
+    if (packageInfo && isRequest) packageInfo.textContent = "Megrendelői munkafeladás – ingyenes, a Munkafigyelőben jelenik meg.";
+    if (aiInput) aiInput.placeholder = isRequest ? "Pl: fürdőszoba felújítás burkoló" : "Pl: szobafestés";
+    if (cim) cim.placeholder = isRequest ? "Pl: Fürdőszoba felújításhoz burkolót keresek" : "Cím";
+    if (leiras) leiras.placeholder = isRequest ? "Írd le röviden a munkát, helyszínt, határidőt és fontos részleteket..." : "Leírás";
+    if (ar) {
+      ar.placeholder = isRequest ? "Tervezett keret (Ft)" : "Ár (Ft)";
+      ar.setAttribute("aria-label", isRequest ? "Tervezett keret forintban" : "Ár forintban");
+    }
+    if (weboldal) weboldal.placeholder = isRequest ? "Weboldal (nem kötelező)" : "Weboldal";
+    if (submitButton) submitButton.textContent = isRequest ? "Munka feladása" : "Beküldés";
+  }
+
+  function addAdKindChooser() {
+    const form = document.getElementById("ad-form");
+    const aiBox = document.getElementById("ai-keywords")?.closest(".bg-indigo-50");
+    if (!form || !aiBox || document.getElementById("ad-kind-box")) return;
+
+    const box = document.createElement("div");
+    box.id = "ad-kind-box";
+    box.className = "bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm";
+    box.innerHTML = `
+      <h2 class="font-black text-slate-900 mb-3">Mit szeretnél feladni?</h2>
+      <div class="grid md:grid-cols-2 gap-3">
+        <label class="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex gap-3 items-start hover:bg-emerald-100">
+          <input type="radio" name="adKind" value="kinalat" checked class="mt-1">
+          <span><span class="block font-black text-emerald-900">Szolgáltatást / vállalkozást hirdetek</span><span class="block text-sm text-emerald-800 mt-1">Szakemberként vagy vállalkozóként munkát szeretnék kapni.</span></span>
+        </label>
+        <label class="cursor-pointer rounded-xl border border-blue-200 bg-blue-50 p-4 flex gap-3 items-start hover:bg-blue-100">
+          <input type="radio" name="adKind" value="kereses" class="mt-1">
+          <span><span class="block font-black text-blue-900">Munkára keresek szakembert</span><span class="block text-sm text-blue-800 mt-1">Megrendelőként felújításhoz, javításhoz vagy építéshez keresek szakembert.</span></span>
+        </label>
+      </div>
+      <div id="ad-kind-info" class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">A hirdetés a főoldali szakember listában fog megjelenni.</div>`;
+    aiBox.parentNode.insertBefore(box, aiBox);
+    box.querySelectorAll('input[name="adKind"]').forEach(input => input.addEventListener("change", updateAdKindUI));
+
+    const title = aiBox.querySelector("h3");
+    if (title) title.textContent = "✨ AI Szövegíró – kínálathoz és kereséshez";
+    const modeWrap = aiBox.querySelector(".mt-3");
+    if (modeWrap && !aiBox.querySelector("[data-ai-purpose-note]")) {
+      const note = document.createElement("div");
+      note.dataset.aiPurposeNote = "true";
+      note.className = "text-xs text-indigo-700 mt-2";
+      note.textContent = "Az AI automatikusan figyeli, hogy szolgáltatást kínálsz vagy szakembert keresel.";
+      modeWrap.appendChild(note);
+    }
+  }
+
+  function wrapAiWriter() {
+    if (window.__spOriginalGenerateAI || typeof window.generateAI !== "function") return;
+    window.__spOriginalGenerateAI = window.generateAI;
+    window.generateAI = async function patchedGenerateAI() {
+      const k = (document.getElementById("ai-keywords")?.value || "").trim();
+      if (!k) return toast("Írj be kulcsszót!", "error");
+      const mode = document.querySelector('input[name="aiMode"]:checked')?.value || "quick";
+      const adKind = selectedAdKind();
+      const purpose = adKind === "kereses"
+        ? "Szakembert kereső megrendelői munkafeladás"
+        : "Szolgáltatást kínáló szakember hirdetése";
+      const btn = document.getElementById("ai-btn");
+      if (btn) { btn.textContent = mode === "premium" ? "Prémium generálás..." : "Generálás..."; btn.disabled = true; }
+      try {
+        const res = await fetch("https://bxtpnotswnwrbycvfypz.supabase.co/functions/v1/generate-ad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: `${purpose}: ${k}`, mode, purpose: adKind })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
+        const title = data?.title || data?.cim || "";
+        const desc = data?.description || data?.leiras || "";
+        const cta = data?.cta ? ("\n\n" + data.cta) : "";
+        if (title) document.getElementById("cim").value = title;
+        if (desc) document.getElementById("leiras").value = desc + cta;
+        toast(adKind === "kereses" ? "Megrendelői munkaszöveg generálva!" : "Hirdetés generálva!", "success");
+      } catch (err) {
+        console.error(err);
+        toast("Nem sikerült generálni: " + (err?.message || "ismeretlen hiba"), "error");
+      } finally {
+        if (btn) { btn.textContent = "Írd meg!"; btn.disabled = false; }
+      }
+    };
+  }
+
+  async function saveRequestJob(event) {
+    if (selectedAdKind() !== "kereses") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const client = window.supaClient;
+    if (!client) return toast("Supabase kapcsolat nem elérhető.", "error");
+    const { data: { session } } = await client.auth.getSession();
+    if (!session?.user?.id) return toast("Munkafeladáshoz előbb jelentkezz be!", "error");
+
+    const cim = (document.getElementById("cim")?.value || "").trim();
+    const leiras = (document.getElementById("leiras")?.value || "").trim();
+    const category = document.getElementById("kategoria")?.value || "Egyéb szakember";
+    const city = (document.getElementById("varos")?.value || "").trim();
+    if (!cim || !leiras || !category || !city) return toast("Cím, leírás, kategória és város kötelező.", "error");
+
+    const arRaw = document.getElementById("ar")?.value;
+    const arValue = arRaw ? parseInt(arRaw, 10) : null;
+    const lejarat = new Date();
+    lejarat.setDate(lejarat.getDate() + 30);
+
+    toast("Munka mentése...", "info");
+    const { data: insertedJob, error } = await client
+      .from("munkafigyelo_hirdetesek")
+      .insert({
+        owner_id: session.user.id,
+        cim,
+        leiras,
+        szakma: category,
+        megye: "Országos",
+        telepules: city,
+        iranyitoszam: document.getElementById("iranyitoszam")?.value || "",
+        surgosseg: "normal",
+        koltseg_min: null,
+        koltseg_max: Number.isFinite(arValue) ? arValue : null,
+        allapot: "aktiv",
+        forras_tipus: "megrendelo",
+        forras_url: null,
+        lejar_at: lejarat.toISOString()
+      })
+      .select("id,cim")
+      .single();
+    if (error) return toast("Nem sikerült menteni: " + error.message, "error");
+    client.functions.invoke("munkafigyelo-push", { body: { hirdetesId: insertedJob?.id } }).catch(() => {});
+    toast("Megrendelői munka feladva a Munkafigyelőbe!", "success");
+    window.location.hash = "#munkafigyelo";
+  }
+
+  function patchFeltoltesPage() {
+    const form = document.getElementById("ad-form");
+    if (!form || form.dataset[PATCH_FLAG] === "true") return;
+    form.dataset[PATCH_FLAG] = "true";
+    addAdKindChooser();
+    wrapAiWriter();
+    form.addEventListener("submit", saveRequestJob, true);
+    updateAdKindUI();
+  }
+
+  function patchPartnerCards() {
+    const slider = document.getElementById("reklam-slider");
+    if (!slider || slider.dataset[PARTNER_FLAG] === "true") return;
+    slider.dataset[PARTNER_FLAG] = "true";
+    const ads = [
+      { title: "SzakiPiac-2025.hu", sub: "Hirdess, találj, dolgozz!", url: "#feltoltes", img: "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png", bg: "from-yellow-300 to-orange-400", text: "text-slate-950" },
+      { title: "Lidl", sub: "Akciók és ajánlatok", url: "https://www.lidl.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png", bg: "from-blue-700 to-yellow-300", text: "text-white" },
+      { title: "PENNY", sub: "Heti ajánlatok", url: "https://www.penny.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Penny_logo.svg/1200px-Penny_logo.svg.png", bg: "from-red-600 to-yellow-300", text: "text-white" },
+      { title: "ALDI", sub: "Aktuális ajánlatok", url: "https://www.aldi.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png", bg: "from-blue-900 to-orange-400", text: "text-white" },
+      { title: "eMAG", sub: "Online ajánlatok", url: "https://www.emag.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/a/af/Logo_eMAG_%282019%29.svg", bg: "from-red-500 to-blue-600", text: "text-white" },
+      { title: "Alza", sub: "Elektronika és eszközök", url: "https://www.alza.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/1/1f/Alza.cz_logo.svg", bg: "from-lime-500 to-emerald-700", text: "text-white" }
+    ];
+    let i = 0;
+    function render() {
+      const ad = ads[i];
+      slider.innerHTML = `
+        <a href="${esc(ad.url)}" target="${ad.url.startsWith("#") ? "_self" : "_blank"}" rel="noopener" class="block h-full w-full flex flex-col items-center justify-center bg-gradient-to-br ${ad.bg} ${ad.text}">
+          <div class="h-full w-full flex flex-col items-center justify-center p-5 text-center">
+            <div class="bg-white/90 rounded-2xl shadow-sm border border-white/60 w-full h-36 flex items-center justify-center p-4">
+              <img src="${esc(ad.img)}" class="max-h-full max-w-full object-contain" alt="${esc(ad.title)} partner ajánlat" loading="lazy" decoding="async" onerror="this.style.display='none'; this.closest('div').innerHTML='<div class=\\'text-3xl font-black text-slate-900\\'>${esc(ad.title)}</div>'">
+            </div>
+            <div class="mt-4 text-xl font-black drop-shadow-sm">${esc(ad.title)}</div>
+            <div class="text-sm font-bold opacity-95">${esc(ad.sub)}</div>
+          </div>
+        </a>
+        <button type="button" data-sp-partner-prev aria-label="Előző partner ajánlat" class="absolute top-1/2 left-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">❮</button>
+        <button type="button" data-sp-partner-next aria-label="Következő partner ajánlat" class="absolute top-1/2 right-2 -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 z-10">❯</button>`;
+      slider.querySelector("[data-sp-partner-prev]")?.addEventListener("click", () => { i = (i - 1 + ads.length) % ads.length; render(); });
+      slider.querySelector("[data-sp-partner-next]")?.addEventListener("click", () => { i = (i + 1) % ads.length; render(); });
+    }
+    render();
+    setInterval(() => { i = (i + 1) % ads.length; render(); }, 5000);
+  }
+
+  function runPatch() {
+    patchPartnerCards();
+    patchFeltoltesPage();
+  }
+
+  const observer = new MutationObserver(runPatch);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", runPatch);
+  else runPatch();
+})();
