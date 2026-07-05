@@ -249,11 +249,13 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
         <div>
           <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
-            <div class="flex flex-wrap gap-2 mb-4">
-              <button type="button" data-mf-type="all">Friss munkák</button>
-              <button type="button" data-mf-type="megrendelo">Megrendelői munkák</button>
-              <button type="button" data-mf-type="nyilvanos_forras">Nyilvános források</button>
-              <button type="button" data-mf-type="kozbeszerzes">Közbeszerzések</button>
+            <div class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
+              <div class="mb-2 text-xs font-black uppercase tracking-wide text-emerald-800">Szűrés forrás szerint</div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" data-mf-type="all">Összes</button>
+                <button type="button" data-mf-type="megrendelo">Megrendelői munkák</button>
+                <button type="button" data-mf-type="kozbeszerzes">Közbeszerzések</button>
+              </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
               <input data-mf-search placeholder="Keresés: burkoló, tető, felújítás..." class="md:col-span-2 rounded-xl border border-slate-300 p-3">
