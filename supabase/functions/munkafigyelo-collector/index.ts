@@ -62,6 +62,15 @@ function text(value: unknown): string {
   return String(value).trim();
 }
 
+function deepText(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map(deepText).filter(Boolean).join(" ");
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).map(deepText).filter(Boolean).join(" ");
+  }
+  return String(value).trim();
+}
+
 function validUrl(value: unknown): string {
   try {
     const url = new URL(text(value));
@@ -75,6 +84,40 @@ function stripHtml(value: unknown): string {
   return text(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function hasAny(value: string, words: string[]): boolean {
+  return words.some(word => value.includes(word));
+}
+
+function classifySzakma(item: Record<string, unknown>, cim: string, leiras: string, fallback: string): string {
+  const cpvText = deepText(
+    getPath(item, "classification-cpv") ??
+    getPath(item, "main-classification-proc") ??
+    getPath(item, "BT-262-Procedure") ??
+    getPath(item, "BT-262-Lot") ??
+    getPath(item, "main-classification-type-lot")
+  );
+  const cpvDigits = cpvText.match(/\b\d{8}\b/g) || [];
+  const combined = `${cim} ${leiras} ${cpvText}`.toLowerCase();
+
+  if (cpvDigits.some(code => code.startsWith("4531")) || hasAny(combined, ["villamos", "villany", "elektromos", "electrical", "erősáram", "gyengeáram"])) return "Villanyszerelő";
+  if (cpvDigits.some(code => code.startsWith("4533")) || hasAny(combined, ["vízvezeték", "gázvezeték", "fűtés", "kazán", "plumbing", "heating", "natural gas", "gáz"])) return "Víz- és gázszerelő";
+  if (cpvDigits.some(code => code.startsWith("453312") || code.startsWith("4251") || code.startsWith("5073")) || hasAny(combined, ["klíma", "légkondicion", "hűtés", "szellőzés", "hvac", "air-conditioning"])) return "Klímaszerelő";
+  if (cpvDigits.some(code => code.startsWith("4543")) || hasAny(combined, ["burkol", "padló", "csempe", "tile", "flooring", "wall-covering"])) return "Burkoló";
+  if (cpvDigits.some(code => code.startsWith("4544")) || hasAny(combined, ["festés", "mázol", "painting", "paintwork"])) return "Festő-mázoló";
+  if (cpvDigits.some(code => code.startsWith("4526")) || hasAny(combined, ["tető", "fedés", "roof", "roofing"])) return "Tetőfedő";
+  if (cpvDigits.some(code => code.startsWith("4542")) || hasAny(combined, ["asztalos", "bútor", "nyílászáró", "furniture", "joinery", "carpentry"])) return "Asztalos";
+  if (cpvDigits.some(code => code.startsWith("45262")) || hasAny(combined, ["falaz", "kőműves", "masonry", "bricklaying", "vakolás", "betonozás"])) return "Kőműves";
+  if (cpvDigits.some(code => code.startsWith("4532")) || hasAny(combined, ["szigetel", "hőszigetel", "insulation", "waterproofing"])) return "Szigetelő";
+  if (cpvDigits.some(code => code.startsWith("442") || code.startsWith("445") || code.startsWith("45223")) || hasAny(combined, ["lakatos", "acél", "fémszerkezet", "metal", "steel structure"])) return "Lakatos";
+  if (cpvDigits.some(code => code.startsWith("773") || code.startsWith("451127")) || hasAny(combined, ["kert", "parkosítás", "landscaping", "garden", "zöldterület"])) return "Kertépítő";
+  if (cpvDigits.some(code => code.startsWith("909")) || hasAny(combined, ["takarítás", "tisztítás", "cleaning", "fertőtlenítés"])) return "Takarító";
+  if (cpvDigits.some(code => code.startsWith("72") || code.startsWith("302") || code.startsWith("480")) || hasAny(combined, ["informatika", "szoftver", "számítógép", "computer", "software", "it services", "tárolóegység", "storage"])) return "Számítástechnika";
+  if (cpvDigits.some(code => code.startsWith("50") || code.startsWith("42") || code.startsWith("4535")) || hasAny(combined, ["gépész", "berendezés", "javítás", "karbantartás", "machinery", "equipment", "maintenance"])) return "Épületgépész";
+  if (cpvDigits.some(code => code.startsWith("45")) || hasAny(combined, ["építési munka", "építés", "construction work", "felújítás", "renovation"])) return "Generálkivitelező";
+
+  return fallback || "Egyéb szakember";
+}
+
 function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | null {
   const mapping = source.mapping || {};
   const pick = (name: string, fallbacks: string[]) => {
@@ -82,23 +125,28 @@ function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | nu
     if (configured) return getPath(item, configured);
     for (const path of fallbacks) {
       const value = getPath(item, path);
-      if (value != null && text(value)) return value;
+      if (value != null && (text(value) || deepText(value))) return value;
     }
     return undefined;
   };
   const defaults = source.defaults || {};
   const cim = stripHtml(pick("cim", ["title", "name", "notice-title", "BT-21-Procedure"]));
-  const leiras = stripHtml(pick("leiras", ["description", "summary", "content", "notice-description"])) || cim;
-  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links.html"]));
+  const pickedLeiras = stripHtml(pick("leiras", ["description", "summary", "content", "notice-description"]));
+  const leiras = pickedLeiras && pickedLeiras.length >= 30
+    ? pickedLeiras
+    : `${cim} - TED közbeszerzési hirdetmény. Részletek és dokumentumok a megadott TED hivatkozáson érhetők el.`;
+  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links.html", "links.htmlDirect.HUN", "links.htmlDirect.ENG"]));
   if (!cim || !forrasUrl) return null;
   const type = source.type === "ted" ? "kozbeszerzes" : "nyilvanos_forras";
   const urgency = text(pick("surgosseg", ["surgosseg"])) || text(defaults.surgosseg) || "normal";
   const deadline = text(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"]));
   const published = text(pick("created_at", ["pubDate", "published", "publication-date", "created_at"]));
+  const fallbackSzakma = text(pick("szakma", ["szakma", "category"])) || text(defaults.szakma) || "Egyéb szakember";
+  const szakma = source.type === "ted" ? classifySzakma(item, cim, leiras, fallbackSzakma) : fallbackSzakma;
   return {
     cim: cim.slice(0, 240),
     leiras: leiras.slice(0, 8000),
-    szakma: text(pick("szakma", ["szakma", "category"])) || text(defaults.szakma) || "Egyéb szakember",
+    szakma,
     megye: text(pick("megye", ["megye", "county"])) || text(defaults.megye) || "Országos",
     telepules: text(pick("telepules", ["telepules", "city"])) || text(defaults.telepules),
     surgosseg: ["normal", "hamarosan", "surgos"].includes(urgency) ? urgency as Lead["surgosseg"] : "normal",
@@ -173,7 +221,7 @@ serve(async (req) => {
       const { data: inserted, error } = fresh.length
         ? await supabase.from("munkafigyelo_hirdetesek").upsert(fresh, { onConflict: "forras_url", ignoreDuplicates: true }).select("id,forras_url")
         : { data: [], error: null };
-      if (error) throw error;
+      if (error) throw new Error(JSON.stringify(error));
 
       for (const row of inserted || []) {
         await fetch(`${supabaseUrl}/functions/v1/munkafigyelo-push`, {
@@ -184,7 +232,7 @@ serve(async (req) => {
       }
       results.push({ source: source.key, received: rawItems.length, valid: leads.length, inserted: inserted?.length || 0 });
     } catch (error) {
-      results.push({ source: source.key, error: error instanceof Error ? error.message : String(error) });
+      results.push({ source: source.key, error: error instanceof Error ? error.message : JSON.stringify(error) });
     }
   }
 
