@@ -55,7 +55,7 @@ function typeLabel(type) {
   return ({
     megrendelo: "Megrendelői munka",
     nyilvanos_forras: "Nyilvános forrás",
-    kozbeszerzes: "Közbeszerzés"
+    kozbeszerzes: "TED közbeszerzés"
   })[type] || "Külső munka";
 }
 
@@ -163,39 +163,43 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
   function card(lead) {
     const saved = savedIds().has(lead.id);
+    const isTed = lead.forras_tipus === "kozbeszerzes";
     const canContact = lead.forras_tipus === "megrendelo" && lead.kapcsolat_elerheto;
+    const location = [lead.iranyitoszam, lead.telepules, lead.megye].filter(Boolean).join(" ") || "Országos";
+    const openLabel = isTed ? "TED hirdetmény megnyitása" : "Eredeti hirdetés megnyitása";
+    const sourceText = isTed ? "TED EU közbeszerzés" : typeLabel(lead.forras_tipus);
     return `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 hover:shadow-md transition" data-lead-id="${esc(lead.id)}">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
           <div class="flex flex-wrap gap-2 mb-2">
-            <span class="inline-flex border rounded-full px-3 py-1 text-xs font-black ${typeBadge(lead.forras_tipus)}">${typeLabel(lead.forras_tipus)}</span>
+            <span class="inline-flex border rounded-full px-3 py-1 text-xs font-black ${typeBadge(lead.forras_tipus)}">${isTed ? "🏛️ " : ""}${typeLabel(lead.forras_tipus)}</span>
             <span class="inline-flex bg-slate-100 text-slate-700 rounded-full px-3 py-1 text-xs font-black">${esc(lead.szakma)}</span>
             <span class="inline-flex bg-orange-50 text-orange-700 rounded-full px-3 py-1 text-xs font-black">${urgencyLabel(lead.surgosseg)}</span>
           </div>
           <h3 class="text-xl font-black text-slate-900 leading-tight">${esc(lead.cim)}</h3>
-          <p class="text-sm text-slate-500 mt-1">📍 ${esc([lead.iranyitoszam, lead.telepules, lead.megye].filter(Boolean).join(" "))} · ${formatDate(lead.created_at)}</p>
+          <p class="text-sm text-slate-500 mt-1">📍 ${esc(location)} · ${formatDate(lead.created_at)}</p>
         </div>
         <button type="button" data-save-lead="${esc(lead.id)}" class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-black hover:bg-slate-50">${saved ? "★ Mentve" : "☆ Mentés"}</button>
       </div>
       <p class="text-slate-700 mt-4 whitespace-pre-line line-clamp-4">${esc(lead.leiras)}</p>
       <div class="grid grid-cols-1 2xl:grid-cols-3 gap-3 mt-4 text-sm">
         <div class="rounded-xl bg-slate-50 p-3"><b>Keret:</b><br>${esc(budgetText(lead))}</div>
-        <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés:</b><br>${esc(formatDate(lead.kezdes_datum))}</div>
-        <div class="rounded-xl bg-slate-50 p-3"><b>Forrás:</b><br>${esc(typeLabel(lead.forras_tipus))}</div>
+        <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés / határidő:</b><br>${esc(formatDate(lead.kezdes_datum || lead.lejar_at))}</div>
+        <div class="rounded-xl bg-slate-50 p-3"><b>Forrás:</b><br>${esc(sourceText)}</div>
       </div>
       <div class="flex flex-wrap gap-3 mt-5">
-        ${lead.forras_url ? `<a href="${esc(lead.forras_url)}" target="_blank" rel="noopener noreferrer" class="bg-emerald-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-emerald-800">Eredeti hirdetés megnyitása</a>` : ""}
+        ${lead.forras_url ? `<a href="${esc(lead.forras_url)}" target="_blank" rel="noopener noreferrer" class="bg-emerald-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-emerald-800">${openLabel}</a>` : ""}
         ${canContact ? `<button type="button" data-contact-lead="${esc(lead.id)}" class="bg-blue-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-blue-800">Kapcsolatfelvétel</button>` : ""}
         <button type="button" data-details-lead="${esc(lead.id)}" class="border border-slate-300 rounded-xl px-4 py-2.5 font-black hover:bg-slate-50">Részletek</button>
       </div>
     </article>`;
   }
 
-  function renderList() {
+  function renderList(customLeads = null, customLabel = null) {
     const list = root?.querySelector("[data-mf-list]");
-    const leads = filteredLeads();
+    const leads = customLeads || filteredLeads();
     if (!list) return;
-    root.querySelector("[data-mf-count]").textContent = `${leads.length} találat`;
+    root.querySelector("[data-mf-count]").textContent = customLabel || `${leads.length} találat`;
     list.innerHTML = leads.length
       ? leads.map(card).join("")
       : `<div class="md:col-span-2 bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Most nincs találat ezekkel a szűrőkkel.</div>`;
@@ -211,18 +215,44 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     renderList();
   }
 
+  function togglePanel(name) {
+    const pushPanel = root.querySelector("[data-push-panel]");
+    const savedPanel = root.querySelector("[data-saved-panel]");
+    if (pushPanel) pushPanel.classList.toggle("hidden", name !== "push" || !pushPanel.classList.contains("hidden"));
+    if (savedPanel) savedPanel.classList.toggle("hidden", name !== "saved" || !savedPanel.classList.contains("hidden"));
+  }
+
+  function renderSavedPanel() {
+    const box = root.querySelector("[data-saved-panel]");
+    if (!box) return;
+    const saved = allLeads.filter(item => savedIds().has(item.id));
+    box.innerHTML = `<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">★ Mentett munkák</h2>
+          <p class="text-sm text-slate-600">${saved.length ? `${saved.length} mentett találat ezen az eszközön.` : "Még nincs mentett munka ezen az eszközön."}</p>
+        </div>
+        ${saved.length ? `<button type="button" data-show-saved-list class="bg-emerald-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-emerald-800">Mentettek listázása</button>` : ""}
+      </div>
+    </div>`;
+    box.querySelector("[data-show-saved-list]")?.addEventListener("click", () => {
+      renderList(saved, `${saved.length} mentett találat`);
+    });
+  }
+
   function wireListButtons() {
     root.querySelectorAll("[data-save-lead]").forEach(button => button.addEventListener("click", () => {
       const ids = savedIds();
       const id = button.dataset.saveLead;
       if (ids.has(id)) ids.delete(id); else ids.add(id);
       saveIds(ids);
+      renderSavedPanel();
       renderList();
     }));
 
     root.querySelectorAll("[data-details-lead]").forEach(button => button.addEventListener("click", () => {
       const lead = allLeads.find(item => item.id === button.dataset.detailsLead);
-      if (lead) alert(`${lead.cim}\n\n${lead.leiras}\n\nHely: ${lead.telepules} ${lead.megye}\nForrás: ${typeLabel(lead.forras_tipus)}`);
+      if (lead) alert(`${lead.cim}\n\n${lead.leiras}\n\nHely: ${lead.telepules} ${lead.megye}\nForrás: ${lead.forras_tipus === "kozbeszerzes" ? "TED EU közbeszerzés" : typeLabel(lead.forras_tipus)}`);
     }));
 
     root.querySelectorAll("[data-contact-lead]").forEach(button => button.addEventListener("click", async () => {
@@ -246,50 +276,48 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
       ${lastLoadError ? `<div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 mb-5 text-sm font-bold">A munkák most nem tölthetők be. Kérjük, próbáld újra később.</div>` : ""}
 
-      <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
-        <div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
-            <div class="flex flex-wrap gap-2 mb-4">
-              <button type="button" data-mf-type="all">Összes</button>
-              <button type="button" data-mf-type="megrendelo">Megrendelői munkák</button>
-              <button type="button" data-mf-type="kozbeszerzes">Közbeszerzések</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <input data-mf-search placeholder="Keresés: burkoló, tető, felújítás..." class="md:col-span-2 rounded-xl border border-slate-300 p-3">
-              <select data-mf-szakma class="rounded-xl border border-slate-300 p-3">${optionList(SZAKMAK, "Minden szakma")}</select>
-              <select data-mf-megye class="rounded-xl border border-slate-300 p-3">${optionList(MEGYEK, "Minden megye")}</select>
-            </div>
-            <div class="mt-3 text-sm font-black text-slate-600" data-mf-count></div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-mf-list></div>
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button type="button" data-mf-type="all">Összes</button>
+          <button type="button" data-mf-type="megrendelo">Megrendelői munkák</button>
+          <button type="button" data-mf-type="kozbeszerzes">Közbeszerzések</button>
         </div>
-
-        <aside class="space-y-4">
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-            <h2 class="text-xl font-black mb-2">Értesítéseim</h2>
-            <p class="text-sm text-slate-600 mb-4">Kérj értesítést a neked megfelelő új külső munkákról és közbeszerzésekről.</p>
-            <label class="block text-sm font-bold mb-1" for="mf-push-szakma">Szakma</label>
-            <select id="mf-push-szakma" data-push-szakma class="w-full rounded-xl border border-slate-300 p-3 mb-3">${optionList(SZAKMAK, "Minden szakma")}</select>
-            <label class="block text-sm font-bold mb-1" for="mf-push-megye">Megye</label>
-            <select id="mf-push-megye" data-push-megye class="w-full rounded-xl border border-slate-300 p-3 mb-3">${optionList(MEGYEK, "Minden megye")}</select>
-            <label class="block text-sm font-bold mb-1" for="mf-push-surgosseg">Sürgősség</label>
-            <select id="mf-push-surgosseg" data-push-surgosseg class="w-full rounded-xl border border-slate-300 p-3 mb-4">${urgencyOptions()}</select>
-            <button type="button" data-enable-push class="w-full bg-emerald-700 text-white rounded-xl px-4 py-3 font-black hover:bg-emerald-800">Értesítést kérek</button>
-            <button type="button" data-disable-push class="w-full mt-2 border border-slate-300 rounded-xl px-4 py-3 font-black hover:bg-slate-50">Értesítés kikapcsolása</button>
-            <div data-push-status class="hidden mt-3 rounded-xl border p-3 text-sm font-bold"></div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input data-mf-search placeholder="Keresés: burkoló, tető, felújítás..." class="md:col-span-2 rounded-xl border border-slate-300 p-3">
+          <select data-mf-szakma class="rounded-xl border border-slate-300 p-3">${optionList(SZAKMAK, "Minden szakma")}</select>
+          <select data-mf-megye class="rounded-xl border border-slate-300 p-3">${optionList(MEGYEK, "Minden megye")}</select>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm font-black text-slate-600" data-mf-count></div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-toggle-push class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-800 hover:bg-emerald-100">🔔 Értesítés beállítása</button>
+            <button type="button" data-toggle-saved class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">★ Mentett munkák</button>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-            <h2 class="text-xl font-black mb-2">Mentett munkák</h2>
-            <p class="text-sm text-slate-600 mb-3">A csillaggal mentett találatok ezen az eszközön maradnak.</p>
-            <button type="button" data-show-saved class="w-full border border-slate-300 rounded-xl px-4 py-3 font-black hover:bg-slate-50">Mentettek mutatása</button>
+        </div>
+        <div data-push-panel class="hidden mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+          <h2 class="text-lg font-black text-slate-900 mb-1">Értesítéseim</h2>
+          <p class="text-sm text-slate-600 mb-4">Kérj értesítést a neked megfelelő új munkákról és közbeszerzésekről.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select data-push-szakma class="rounded-xl border border-slate-300 p-3">${optionList(SZAKMAK, "Minden szakma")}</select>
+            <select data-push-megye class="rounded-xl border border-slate-300 p-3">${optionList(MEGYEK, "Minden megye")}</select>
+            <select data-push-surgosseg class="rounded-xl border border-slate-300 p-3">${urgencyOptions()}</select>
           </div>
-        </aside>
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button type="button" data-enable-push class="bg-emerald-700 text-white rounded-xl px-4 py-3 font-black hover:bg-emerald-800">Értesítést kérek</button>
+            <button type="button" data-disable-push class="border border-slate-300 bg-white rounded-xl px-4 py-3 font-black hover:bg-slate-50">Értesítés kikapcsolása</button>
+          </div>
+          <div data-push-status class="hidden mt-3 rounded-xl border p-3 text-sm font-bold"></div>
+        </div>
+        <div data-saved-panel class="hidden mt-4"></div>
       </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-mf-list></div>
     </section>`;
   }
 
   function pushStatus(message, isError = false) {
     const box = root.querySelector("[data-push-status]");
+    if (!box) return;
     box.className = `mt-3 rounded-xl border p-3 text-sm font-bold ${isError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`;
     box.textContent = message;
   }
@@ -368,18 +396,15 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     allLeads = await loadLeads();
     root.innerHTML = shellHtml();
     root.querySelectorAll("[data-mf-type]").forEach(button => button.addEventListener("click", () => setType(button.dataset.mfType)));
-    root.querySelector("[data-mf-search]")?.addEventListener("input", renderList);
-    root.querySelector("[data-mf-szakma]")?.addEventListener("change", renderList);
-    root.querySelector("[data-mf-megye]")?.addEventListener("change", renderList);
-    root.querySelector("[data-show-saved]")?.addEventListener("click", () => {
-      const saved = allLeads.filter(item => savedIds().has(item.id));
-      root.querySelector("[data-mf-list]").innerHTML = saved.length ? saved.map(card).join("") : `<div class="md:col-span-2 bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 font-bold">Még nincs mentett munka.</div>`;
-      root.querySelector("[data-mf-count]").textContent = `${saved.length} mentett találat`;
-      wireListButtons();
-    });
+    root.querySelector("[data-mf-search]")?.addEventListener("input", () => renderList());
+    root.querySelector("[data-mf-szakma]")?.addEventListener("change", () => renderList());
+    root.querySelector("[data-mf-megye]")?.addEventListener("change", () => renderList());
+    root.querySelector("[data-toggle-push]")?.addEventListener("click", () => togglePanel("push"));
+    root.querySelector("[data-toggle-saved]")?.addEventListener("click", () => { renderSavedPanel(); togglePanel("saved"); });
     root.querySelector("[data-enable-push]")?.addEventListener("click", enablePush);
     root.querySelector("[data-disable-push]")?.addEventListener("click", disablePush);
     setType("all");
+    renderSavedPanel();
     await loadPushPreferences().catch(() => {});
     trackEvent("munkafigyelo_view", { count: allLeads.length });
   }
