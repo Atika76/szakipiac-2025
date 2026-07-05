@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v20-munkafigyelo-about-20260704';
+const CACHE_NAME = 'szakipiac-v21-feltoltes-kereses-partner-20260705';
 
 const APP_SHELL_URLS = [
   '/',
