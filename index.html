@@ -486,15 +486,21 @@
     }
 
     async function handleRouteChange() {
-      const hash = window.location.hash || "#home";
-      document.querySelectorAll(".page-content").forEach(p => p.style.display = "none");
+      const requestedHash = window.location.hash || "#home";
+      const hash = router[requestedHash] ? requestedHash : "#home";
       const loader = document.getElementById("main-loader");
+      const activePage = document.getElementById(hash.substring(1) + "-page");
+
+      document.querySelectorAll(".page-content").forEach(p => p.style.display = "none");
+
+      // Fontos: az aktív oldalt már a betöltés ELEJÉN megmutatjuk.
+      // Így frissítéskor nem marad üres a bal oldal, ha a hirdetések/Supabase lassabban tölt be.
+      if (activePage) activePage.style.display = "block";
       if (loader) loader.style.display = "flex";
 
       try {
         const handler = router[hash] || router['#home'];
         await handler();
-        const activePage = document.getElementById(hash.substring(1) + "-page");
         if (activePage) activePage.style.display = "block";
 
         // ✅ route váltás mérése is
@@ -503,7 +509,18 @@
           path: window.location.pathname,
           user_agent: navigator.userAgent
         });
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+        if (activePage) {
+          activePage.innerHTML = `
+            <div class="bg-white rounded-3xl border border-red-100 shadow-sm p-6 text-center">
+              <h2 class="text-xl font-black text-red-700">Az oldal betöltése közben hiba történt.</h2>
+              <p class="text-slate-600 mt-2">Próbáld meg újra, vagy menj vissza a főoldalra.</p>
+              <button type="button" onclick="window.location.hash='#home'; setTimeout(()=>window.location.reload(),50)" class="mt-4 rounded-xl bg-emerald-600 text-white px-5 py-3 font-black hover:bg-emerald-700">Főoldal újratöltése</button>
+            </div>`;
+          activePage.style.display = "block";
+        }
+      }
 
       if (loader) loader.style.display = "none";
       document.getElementById("mobile-menu")?.classList.add("hidden");

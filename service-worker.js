@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v21-feltoltes-kereses-partner-20260705';
+const CACHE_NAME = 'szakipiac-v22-frissites-ures-oldal-fix-20260706';
 
 const APP_SHELL_URLS = [
   '/',
