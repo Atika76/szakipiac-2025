@@ -701,15 +701,7 @@
         btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
       });
 
-      // Frissítéskor a főoldal ne várjon a hirdetések/Supabase betöltésére.
-      // Előbb kirajzoljuk az oldalt, a hirdetéslista pedig külön töltődik.
-      loadAds().catch((e) => {
-        console.error("Hirdetések háttérbetöltési hiba:", e);
-        const listEl = document.getElementById("hirdetes-lista");
-        if (listEl) {
-          listEl.innerHTML = `<div class="text-center text-red-600">Hiba a hirdetések betöltésekor.</div><div class="mt-3 text-center"><button onclick="window.location.reload()" class="px-4 py-2 rounded-lg bg-slate-900 text-white">Újratöltés</button></div>`;
-        }
-      });
+      await loadAds();
     }
 
     /* --- RÓLUNK OLDAL --- */
