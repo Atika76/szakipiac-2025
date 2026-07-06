@@ -35,7 +35,28 @@ const headers = {
   "Access-Control-Allow-Headers": "authorization, content-type, x-collector-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
+
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", textNodeName: "#text" });
+
+const DEFAULT_SOURCES: SourceConfig[] = [{
+  key: "ted-hu-kozbeszerzesek",
+  type: "ted",
+  url: "https://api.ted.europa.eu/v3/notices/search",
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: {
+    query: "buyer-country = HUN",
+    fields: ["publication-number", "notice-title", "publication-date", "buyer-name", "business-country", "classification-cpv", "links"],
+    limit: 20
+  },
+  itemPath: "notices",
+  defaults: {
+    megye: "Országos",
+    telepules: "Magyarország",
+    szakma: "Egyéb szakember",
+    surgosseg: "normal"
+  }
+}];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers });
@@ -65,9 +86,7 @@ function text(value: unknown): string {
 function deepText(value: unknown): string {
   if (value == null) return "";
   if (Array.isArray(value)) return value.map(deepText).filter(Boolean).join(" ");
-  if (typeof value === "object") {
-    return Object.values(value as Record<string, unknown>).map(deepText).filter(Boolean).join(" ");
-  }
+  if (typeof value === "object") return Object.values(value as Record<string, unknown>).map(deepText).filter(Boolean).join(" ");
   return String(value).trim();
 }
 
@@ -148,7 +167,7 @@ function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | nu
     leiras: leiras.slice(0, 8000),
     szakma,
     megye: text(pick("megye", ["megye", "county"])) || text(defaults.megye) || "Országos",
-    telepules: text(pick("telepules", ["telepules", "city"])) || text(defaults.telepules),
+    telepules: text(pick("telepules", ["telepules", "city"])) || text(defaults.telepules) || "Magyarország",
     surgosseg: ["normal", "hamarosan", "surgos"].includes(urgency) ? urgency as Lead["surgosseg"] : "normal",
     forras_tipus: type,
     forras_url: forrasUrl,
@@ -175,9 +194,21 @@ async function fetchSource(source: SourceConfig): Promise<Record<string, unknown
     headers: source.headers,
     body: source.body ? JSON.stringify(source.body) : undefined
   });
-  if (!response.ok) throw new Error(`${source.key}: HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`${source.key}: HTTP ${response.status} - ${await response.text()}`);
   if (source.type === "rss") return rssItems(await response.text());
   return jsonItems(await response.json(), source);
+}
+
+function loadSources(): SourceConfig[] {
+  const raw = Deno.env.get("MUNKAFIGYELO_SOURCES_JSON") || "";
+  if (!raw.trim()) return DEFAULT_SOURCES;
+  try {
+    const parsed = JSON.parse(raw);
+    const list = Array.isArray(parsed) ? parsed : [];
+    return list.length ? list : DEFAULT_SOURCES;
+  } catch {
+    return DEFAULT_SOURCES;
+  }
 }
 
 serve(async (req) => {
@@ -193,16 +224,10 @@ serve(async (req) => {
   const suppliedSecret = req.headers.get("x-collector-secret") || "";
   if (bearer !== serviceKey && (!collectorSecret || suppliedSecret !== collectorSecret)) return json({ error: "forbidden" }, 403);
 
-  let sources: SourceConfig[];
-  try {
-    sources = JSON.parse(Deno.env.get("MUNKAFIGYELO_SOURCES_JSON") || "[]");
-  } catch {
-    return json({ error: "invalid_MUNKAFIGYELO_SOURCES_JSON" }, 500);
-  }
-
+  const sources = loadSources();
   const body = await req.json().catch(() => ({}));
   const selected = body.sourceKey ? sources.filter(source => source.key === body.sourceKey) : sources;
-  if (!selected.length) return json({ error: "source_not_configured" }, 400);
+  if (!selected.length) return json({ error: "source_not_configured", available: sources.map(source => source.key) }, 400);
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const results: Array<Record<string, unknown>> = [];
