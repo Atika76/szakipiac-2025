@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v24-azonnali-fooldal-betoltes-20260706';
+const CACHE_NAME = 'szakipiac-v23-stabil-fooldal-20260706';
 
 const APP_SHELL_URLS = [
   '/',
@@ -66,7 +66,7 @@ self.addEventListener('fetch', event => {
     url.pathname.endsWith('/service-worker.js');
 
   if (networkFirst) {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('/index.html')));
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
     return;
   }
 

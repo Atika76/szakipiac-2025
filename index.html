@@ -490,8 +490,8 @@
       const resolvedHash = router[requestedHash] ? requestedHash : "#home";
       const loader = document.getElementById("main-loader");
 
-      // Minden oldalt elrejtünk, de az aktív oldalt AZONNAL megmutatjuk.
-      // Így frissítéskor nem marad üres a bal oldal, amíg a hirdetések/Supabase tölt.
+      // Fontos: frissítéskor az aktív oldal azonnal látszódjon,
+      // ne várjon Supabase / hirdetés / belépési állapot válaszra.
       document.querySelectorAll(".page-content").forEach(p => p.style.display = "none");
       if (loader) loader.style.display = "none";
 
@@ -512,7 +512,7 @@
       } catch (e) {
         console.error("Oldal betöltési hiba:", e);
         if (activePage && !activePage.innerHTML.trim()) {
-          activePage.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 font-bold">Az oldal betöltése közben hiba történt. Próbáld frissíteni az oldalt.</div>`;
+          activePage.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 font-bold">Az oldal betöltése közben hiba történt. Frissítsd az oldalt, vagy próbáld újra pár másodperc múlva.</div>`;
         }
       }
 
@@ -711,8 +711,7 @@
         btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
       });
 
-      // A főoldal ne várjon a hirdetések/Supabase betöltésére.
-      // Előbb kirajzoljuk az oldalt, a hirdetések pedig háttérben töltődnek.
+      // A főoldal legyen azonnal látható; a hirdetések háttérben töltődjenek.
       loadAds().catch((e) => console.error("Hirdetések háttérbetöltési hiba:", e));
     }
 
@@ -2092,10 +2091,10 @@
       const navAuth = document.getElementById("nav-auth-section");
       const mobileNavAuth = document.getElementById("mobile-nav-auth-section");
       const loggedOutHTML = `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
+
       if (navAuth && !navAuth.innerHTML.trim()) navAuth.innerHTML = loggedOutHTML;
       if (mobileNavAuth && !mobileNavAuth.innerHTML.trim()) mobileNavAuth.innerHTML = loggedOutHTML;
 
-      // Az eseménykezelők és az első oldalrajzolás nem várhat Supabase válaszra.
       window.addEventListener("hashchange", handleRouteChange);
       document.querySelectorAll(".nav-link, .nav-link-logo").forEach(l => {
         l.addEventListener("click", e => {
@@ -2129,7 +2128,7 @@
         });
       }
 
-      // Első route AZONNAL: ez javítja a frissítés utáni üres bal oldalt.
+      // Első oldalrajzolás azonnal, minden lassú művelet előtt.
       handleRouteChange();
       renderReklam();
       resetReklamTimer();
@@ -2140,7 +2139,7 @@
         user_agent: navigator.userAgent
       });
 
-      // Minden lassabb Supabase/auth művelet háttérben fusson, ne tartsa vissza a főoldalt.
+      // A Supabase/auth/admin állapot háttérben töltődjön, ne üresítse ki a főoldalt.
       (async () => {
         try {
           const now = new Date().toISOString();
@@ -2155,7 +2154,12 @@
             ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>'
             : '';
 
-          unreadMessageCount = session ? await getUnreadMessageCount() : 0;
+          unreadMessageCount = session
+            ? await Promise.race([
+                getUnreadMessageCount(),
+                new Promise(resolve => setTimeout(() => resolve(0), 2500))
+              ])
+            : 0;
 
           const inboxLink = session
             ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline inline-flex items-center gap-2">Üzeneteim ${makeUnreadBadge(unreadMessageCount)}</a>`
