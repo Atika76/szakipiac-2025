@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v22-frissites-ures-oldal-fix-20260706';
+const CACHE_NAME = 'szakipiac-v23-azonnali-fooldal-render-20260706';
 
 const APP_SHELL_URLS = [
   '/',
