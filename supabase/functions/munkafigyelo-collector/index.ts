@@ -132,6 +132,12 @@ function stripHtml(value: unknown): string {
   return (text(value) || deepText(value)).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function safeLimit(value: string, max = 100): string {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= max) return cleaned;
+  return cleaned.slice(0, max - 1).trimEnd() + "…";
+}
+
 function hasAny(value: string, words: string[]): boolean {
   return words.some(word => value.includes(word));
 }
@@ -203,7 +209,7 @@ function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | nu
   const fallbackSzakma = text(pick("szakma", ["szakma", "category"])) || text(defaults.szakma) || "Egyéb szakember";
   const szakma = source.type === "ted" ? classifySzakma(item, cim, leiras, fallbackSzakma) : fallbackSzakma;
   return {
-    cim: cim.slice(0, 240),
+    cim: safeLimit(cim, 100),
     leiras: leiras.slice(0, 8000),
     szakma,
     megye: text(pick("megye", ["megye", "county"])) || text(defaults.megye) || "Országos",
