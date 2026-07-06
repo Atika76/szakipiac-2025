@@ -78,7 +78,8 @@ function text(value: unknown): string {
   if (value == null) return "";
   if (typeof value === "object") {
     const object = value as Record<string, unknown>;
-    return text(object["#text"] ?? object.href ?? object["@_href"] ?? "");
+    const direct = object["#text"] ?? object.href ?? object.url ?? object.link ?? object["@_href"] ?? object["@_url"];
+    return direct == null ? "" : text(direct);
   }
   return String(value).trim();
 }
@@ -90,21 +91,60 @@ function deepText(value: unknown): string {
   return String(value).trim();
 }
 
-function validUrl(value: unknown): string {
-  try {
-    const url = new URL(text(value));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
-  } catch {
+function findFirstUrl(value: unknown): string {
+  const direct = text(value);
+  const directMatch = direct.match(/https?:\/\/[^\s"'<>]+/i);
+  if (directMatch) return directMatch[0];
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findFirstUrl(item);
+      if (found) return found;
+    }
     return "";
   }
+  if (typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      const found = findFirstUrl(item);
+      if (found) return found;
+    }
+    return "";
+  }
+  const match = String(value).match(/https?:\/\/[^\s"'<>]+/i);
+  return match ? match[0] : "";
+}
+
+function validUrl(value: unknown): string {
+  const candidates = [text(value), findFirstUrl(value)];
+  for (const candidate of candidates) {
+    try {
+      if (!candidate) continue;
+      const url = new URL(candidate);
+      if (["http:", "https:"].includes(url.protocol)) return url.href;
+    } catch {
+      // try next candidate
+    }
+  }
+  return "";
 }
 
 function stripHtml(value: unknown): string {
-  return text(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return (text(value) || deepText(value)).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function hasAny(value: string, words: string[]): boolean {
   return words.some(word => value.includes(word));
+}
+
+function publicationNumber(item: Record<string, unknown>): string {
+  const value = text(getPath(item, "publication-number")) || deepText(getPath(item, "publication-number"));
+  const match = value.match(/\b\d{6,8}-\d{4}\b/);
+  return match ? match[0] : "";
+}
+
+function tedDetailUrl(item: Record<string, unknown>): string {
+  const number = publicationNumber(item);
+  return number ? `https://ted.europa.eu/hu/notice/-/detail/${number}` : "";
 }
 
 function classifySzakma(item: Record<string, unknown>, cim: string, leiras: string, fallback: string): string {
@@ -144,22 +184,22 @@ function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | nu
     if (configured) return getPath(item, configured);
     for (const path of fallbacks) {
       const value = getPath(item, path);
-      if (value != null && (text(value) || deepText(value))) return value;
+      if (value != null && (text(value) || deepText(value) || findFirstUrl(value))) return value;
     }
     return undefined;
   };
   const defaults = source.defaults || {};
-  const cim = stripHtml(pick("cim", ["title", "name", "notice-title", "BT-21-Procedure"]));
+  const cim = stripHtml(pick("cim", ["title", "name", "notice-title", "BT-21-Procedure"])) || publicationNumber(item) || "TED közbeszerzési hirdetmény";
   const pickedLeiras = stripHtml(pick("leiras", ["description", "summary", "content", "notice-description"]));
   const leiras = pickedLeiras && pickedLeiras.length >= 30
     ? pickedLeiras
     : `${cim} - TED közbeszerzési hirdetmény. Részletek és dokumentumok a megadott TED hivatkozáson érhetők el.`;
-  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links.html", "links.htmlDirect.HUN", "links.htmlDirect.ENG"]));
+  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links", "links.html", "links.htmlDirect", "links.htmlDirect.HUN", "links.htmlDirect.ENG"])) || (source.type === "ted" ? tedDetailUrl(item) : "");
   if (!cim || !forrasUrl) return null;
   const type = source.type === "ted" ? "kozbeszerzes" : "nyilvanos_forras";
   const urgency = text(pick("surgosseg", ["surgosseg"])) || text(defaults.surgosseg) || "normal";
-  const deadline = text(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"]));
-  const published = text(pick("created_at", ["pubDate", "published", "publication-date", "created_at"]));
+  const deadline = text(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"])) || deepText(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"]));
+  const published = text(pick("created_at", ["pubDate", "published", "publication-date", "created_at"])) || deepText(pick("created_at", ["pubDate", "published", "publication-date", "created_at"]));
   const fallbackSzakma = text(pick("szakma", ["szakma", "category"])) || text(defaults.szakma) || "Egyéb szakember";
   const szakma = source.type === "ted" ? classifySzakma(item, cim, leiras, fallbackSzakma) : fallbackSzakma;
   return {
