@@ -486,26 +486,36 @@
     }
 
     async function handleRouteChange() {
-      const hash = window.location.hash || "#home";
-      document.querySelectorAll(".page-content").forEach(p => p.style.display = "none");
+      const requestedHash = window.location.hash || "#home";
+      const resolvedHash = router[requestedHash] ? requestedHash : "#home";
       const loader = document.getElementById("main-loader");
-      if (loader) loader.style.display = "flex";
+
+      // Minden oldalt elrejtünk, de az aktív oldalt AZONNAL megmutatjuk.
+      // Így frissítéskor nem marad üres a bal oldal, amíg a hirdetések/Supabase tölt.
+      document.querySelectorAll(".page-content").forEach(p => p.style.display = "none");
+      if (loader) loader.style.display = "none";
+
+      const activePage = document.getElementById(resolvedHash.substring(1) + "-page");
+      if (activePage) activePage.style.display = "block";
 
       try {
-        const handler = router[hash] || router['#home'];
+        const handler = router[resolvedHash] || router['#home'];
         await handler();
-        const activePage = document.getElementById(hash.substring(1) + "-page");
         if (activePage) activePage.style.display = "block";
 
         // ✅ route váltás mérése is
         trackEvent("page_view", {
-          page: hash,
+          page: resolvedHash,
           path: window.location.pathname,
           user_agent: navigator.userAgent
         });
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error("Oldal betöltési hiba:", e);
+        if (activePage && !activePage.innerHTML.trim()) {
+          activePage.innerHTML = `<div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 font-bold">Az oldal betöltése közben hiba történt. Próbáld frissíteni az oldalt.</div>`;
+        }
+      }
 
-      if (loader) loader.style.display = "none";
       document.getElementById("mobile-menu")?.classList.add("hidden");
     }
 
@@ -701,7 +711,9 @@
         btn.addEventListener("click", () => window.applyQuickFilter(btn.dataset.quickFilter || ""));
       });
 
-      await loadAds();
+      // A főoldal ne várjon a hirdetések/Supabase betöltésére.
+      // Előbb kirajzoljuk az oldalt, a hirdetések pedig háttérben töltődnek.
+      loadAds().catch((e) => console.error("Hirdetések háttérbetöltési hiba:", e));
     }
 
     /* --- RÓLUNK OLDAL --- */
@@ -2077,87 +2089,102 @@
        9) INDÍTÁS
     ========================= */
     async function init() {
-      // Lejárt hirdetések törlése
-      try {
-        const now = new Date().toISOString();
-        await supaClient.from('hirdetesek').delete().lt('lejárati_datum', now);
-      } catch (e) {
-        console.error("Hiba az automatikus törlésnél:", e);
-      }
-
-      const { data: { session } } = await supaClient.auth.getSession();
       const navAuth = document.getElementById("nav-auth-section");
       const mobileNavAuth = document.getElementById("mobile-nav-auth-section");
+      const loggedOutHTML = `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
+      if (navAuth && !navAuth.innerHTML.trim()) navAuth.innerHTML = loggedOutHTML;
+      if (mobileNavAuth && !mobileNavAuth.innerHTML.trim()) mobileNavAuth.innerHTML = loggedOutHTML;
 
-      const adminLink = (session && session.user.email === ADMIN_EMAIL)
-        ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>'
-        : '';
-
-      unreadMessageCount = session ? await getUnreadMessageCount() : 0;
-
-      const inboxLink = session
-        ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline inline-flex items-center gap-2">Üzeneteim ${makeUnreadBadge(unreadMessageCount)}</a>`
-        : "";
-
-      const profileLink = session
-        ? `<a href="profilom.html" class="text-sm font-bold text-indigo-700 hover:underline">Profilom</a>`
-        : "";
-
-      const authHTML = session
-        ? `<div class="flex items-center gap-2 justify-center flex-wrap">
-             <span class="text-sm font-bold truncate max-w-[145px]">${session.user.email}</span>
-             ${profileLink}
-             ${inboxLink}
-             ${adminLink}
-             <button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline">Kilépés</button>
-           </div>`
-        : `<a href="#auth" class="text-green-600 font-bold hover:underline">Belépés</a>`;
-
-      navAuth.innerHTML = authHTML;
-      if (mobileNavAuth) mobileNavAuth.innerHTML = authHTML;
-
-      window.doLogout = async () => { await supaClient.auth.signOut(); window.location.reload(); };
-
+      // Az eseménykezelők és az első oldalrajzolás nem várhat Supabase válaszra.
       window.addEventListener("hashchange", handleRouteChange);
       document.querySelectorAll(".nav-link, .nav-link-logo").forEach(l => {
         l.addEventListener("click", e => {
           if (l.getAttribute('href') === 'kalkulator.html') return;
+          const href = l.getAttribute('href') || '';
+          if (!href.startsWith('#')) return;
           e.preventDefault();
-          window.location.hash = new URL(l.href).hash;
+          window.location.hash = href;
         });
       });
 
-      document.getElementById("mobile-menu-button").addEventListener("click", () => {
-        document.getElementById("mobile-menu").classList.toggle("hidden");
+      document.getElementById("mobile-menu-button")?.addEventListener("click", () => {
+        document.getElementById("mobile-menu")?.classList.toggle("hidden");
       });
 
-      document.getElementById("btn-next").addEventListener("click", nextReklam);
-      document.getElementById("btn-prev").addEventListener("click", prevReklam);
+      document.getElementById("btn-next")?.addEventListener("click", nextReklam);
+      document.getElementById("btn-prev")?.addEventListener("click", prevReklam);
 
       const lightbox = document.getElementById("lightbox");
-      const closeLightbox = () => {
-        lightbox.classList.add("opacity-0");
-        setTimeout(() => lightbox.classList.add("hidden"), 250);
-      };
-      document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
-      lightbox.addEventListener("click", (e) => {
-        if (e.target === lightbox) closeLightbox();
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && !lightbox.classList.contains("hidden")) closeLightbox();
-      });
+      if (lightbox) {
+        const closeLightbox = () => {
+          lightbox.classList.add("opacity-0");
+          setTimeout(() => lightbox.classList.add("hidden"), 250);
+        };
+        document.getElementById("lightbox-close")?.addEventListener("click", closeLightbox);
+        lightbox.addEventListener("click", (e) => {
+          if (e.target === lightbox) closeLightbox();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !lightbox.classList.contains("hidden")) closeLightbox();
+        });
+      }
 
-      // első route + reklám
+      // Első route AZONNAL: ez javítja a frissítés utáni üres bal oldalt.
       handleRouteChange();
       renderReklam();
       resetReklamTimer();
 
-      // ✅ első pageview
       trackEvent("page_view", {
         page: window.location.hash || "#home",
         path: window.location.pathname,
         user_agent: navigator.userAgent
       });
+
+      // Minden lassabb Supabase/auth művelet háttérben fusson, ne tartsa vissza a főoldalt.
+      (async () => {
+        try {
+          const now = new Date().toISOString();
+          await supaClient.from('hirdetesek').delete().lt('lejárati_datum', now);
+        } catch (e) {
+          console.error("Hiba az automatikus törlésnél:", e);
+        }
+
+        try {
+          const { data: { session } } = await supaClient.auth.getSession();
+          const adminLink = (session && session.user.email === ADMIN_EMAIL)
+            ? '<a href="#admin" class="text-yellow-600 font-bold text-sm ml-2">ADMIN</a>'
+            : '';
+
+          unreadMessageCount = session ? await getUnreadMessageCount() : 0;
+
+          const inboxLink = session
+            ? `<a href="uzenetek.html" class="text-sm font-bold text-emerald-700 hover:underline inline-flex items-center gap-2">Üzeneteim ${makeUnreadBadge(unreadMessageCount)}</a>`
+            : "";
+
+          const profileLink = session
+            ? `<a href="profilom.html" class="text-sm font-bold text-indigo-700 hover:underline">Profilom</a>`
+            : "";
+
+          const authHTML = session
+            ? `<div class="flex items-center gap-2 justify-center flex-wrap">
+                 <span class="text-sm font-bold truncate max-w-[145px]">${session.user.email}</span>
+                 ${profileLink}
+                 ${inboxLink}
+                 ${adminLink}
+                 <button onclick="window.doLogout()" class="text-sm text-red-600 hover:underline">Kilépés</button>
+               </div>`
+            : loggedOutHTML;
+
+          if (navAuth) navAuth.innerHTML = authHTML;
+          if (mobileNavAuth) mobileNavAuth.innerHTML = authHTML;
+
+          window.doLogout = async () => { await supaClient.auth.signOut(); window.location.reload(); };
+        } catch (e) {
+          console.error("Belépési állapot betöltési hiba:", e);
+          if (navAuth) navAuth.innerHTML = loggedOutHTML;
+          if (mobileNavAuth) mobileNavAuth.innerHTML = loggedOutHTML;
+        }
+      })();
     }
 
     window.openLightbox = (u) => {
