@@ -991,29 +991,24 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
     toast("Munka mentése...", "info");
     const { data: insertedJob, error } = await client
-      .from("munkafigyelo_hirdetesek")
-      .insert({
-        owner_id: session.user.id,
-        cim,
-        leiras: fullDescription,
-        szakma: category,
-        megye,
-        telepules: city,
-        iranyitoszam: zipCode,
-        surgosseg,
-        koltseg_min: minBudget,
-        koltseg_max: maxBudget,
-        munka_tipus: munkaTipus || null,
-        ingatlan_tipus: ingatlanTipus || null,
-        kapcsolat_mod: kapcsolatMod || null,
-        kapcsolat_telefon: kapcsolatTelefon || null,
-        kapcsolat_email: kapcsolatEmail || null,
-        kep_url_tomb: imageUrls,
-        allapot: "aktiv",
-        forras_tipus: "megrendelo",
-        forras_url: null,
-        kezdes_datum: startDate || null,
-        lejar_at: lejarat.toISOString()
+      .rpc("munkafigyelo_megrendelo_feladasa", {
+        p_cim: cim,
+        p_leiras: fullDescription,
+        p_szakma: category,
+        p_megye: megye,
+        p_telepules: city,
+        p_iranyitoszam: zipCode,
+        p_surgosseg: surgosseg,
+        p_koltseg_min: minBudget,
+        p_koltseg_max: maxBudget,
+        p_kezdes_datum: startDate || null,
+        p_lejar_at: lejarat.toISOString(),
+        p_munka_tipus: munkaTipus || null,
+        p_ingatlan_tipus: ingatlanTipus || null,
+        p_kapcsolat_mod: kapcsolatMod || null,
+        p_kapcsolat_telefon: kapcsolatTelefon || null,
+        p_kapcsolat_email: kapcsolatEmail || null,
+        p_kep_url_tomb: imageUrls
       })
       .select("id,cim")
       .single();
