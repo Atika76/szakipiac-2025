@@ -32,6 +32,12 @@ create table if not exists public.munkafigyelo_hirdetesek (
   koltseg_min bigint,
   koltseg_max bigint,
   kezdes_datum date,
+  munka_tipus text,
+  ingatlan_tipus text,
+  kapcsolat_mod text,
+  kapcsolat_telefon text,
+  kapcsolat_email text,
+  kep_url_tomb text[] not null default array[]::text[],
   allapot text not null default 'aktiv',
   forras_tipus text not null default 'nyilvanos_forras',
   forras_url text,
@@ -52,6 +58,12 @@ alter table public.munkafigyelo_hirdetesek add column if not exists surgosseg te
 alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_min bigint;
 alter table public.munkafigyelo_hirdetesek add column if not exists koltseg_max bigint;
 alter table public.munkafigyelo_hirdetesek add column if not exists kezdes_datum date;
+alter table public.munkafigyelo_hirdetesek add column if not exists munka_tipus text;
+alter table public.munkafigyelo_hirdetesek add column if not exists ingatlan_tipus text;
+alter table public.munkafigyelo_hirdetesek add column if not exists kapcsolat_mod text;
+alter table public.munkafigyelo_hirdetesek add column if not exists kapcsolat_telefon text;
+alter table public.munkafigyelo_hirdetesek add column if not exists kapcsolat_email text;
+alter table public.munkafigyelo_hirdetesek add column if not exists kep_url_tomb text[] not null default array[]::text[];
 alter table public.munkafigyelo_hirdetesek add column if not exists allapot text not null default 'aktiv';
 alter table public.munkafigyelo_hirdetesek add column if not exists forras_tipus text not null default 'nyilvanos_forras';
 alter table public.munkafigyelo_hirdetesek add column if not exists forras_url text;
@@ -140,6 +152,7 @@ as
 select
   id, cim, leiras, szakma, megye, telepules, iranyitoszam,
   surgosseg, koltseg_min, koltseg_max, kezdes_datum,
+  munka_tipus, ingatlan_tipus, kapcsolat_mod, kapcsolat_telefon, kapcsolat_email, kep_url_tomb,
   forras_tipus, forras_url, lejar_at, created_at, updated_at,
   (owner_id is not null and forras_tipus = 'megrendelo') as kapcsolat_elerheto
 from public.munkafigyelo_hirdetesek

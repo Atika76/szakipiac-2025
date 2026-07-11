@@ -37,6 +37,7 @@ as
 select
   id, cim, leiras, szakma, megye, telepules, iranyitoszam,
   surgosseg, koltseg_min, koltseg_max, kezdes_datum,
+  munka_tipus, ingatlan_tipus, kapcsolat_mod, kapcsolat_telefon, kapcsolat_email, kep_url_tomb,
   forras_tipus, forras_url, lejar_at, created_at, updated_at,
   (owner_id is not null and forras_tipus = 'megrendelo') as kapcsolat_elerheto,
   (
