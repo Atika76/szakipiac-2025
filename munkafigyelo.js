@@ -214,6 +214,9 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
       ? `<button type="button" data-close-own-lead="${esc(lead.id)}" class="border border-amber-300 text-amber-800 rounded-xl px-4 py-2.5 font-black hover:bg-amber-50">Lezárás</button>
          <button type="button" data-delete-own-lead="${esc(lead.id)}" class="border border-red-300 text-red-700 rounded-xl px-4 py-2.5 font-black hover:bg-red-50">Törlés</button>`
       : "";
+    const saveButton = lead.torolheto
+      ? ""
+      : `<button type="button" data-save-lead="${esc(lead.id)}" class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-black hover:bg-slate-50">${saved ? "★ Mentve" : "☆ Mentés"}</button>`;
     return `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 hover:shadow-md transition" data-lead-id="${esc(lead.id)}">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
@@ -226,7 +229,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
           <h3 class="text-xl font-black text-slate-900 leading-tight">${esc(lead.cim)}</h3>
           <p class="text-sm text-slate-500 mt-1">📍 ${esc(location)} · ${formatDate(lead.created_at)}</p>
         </div>
-        <button type="button" data-save-lead="${esc(lead.id)}" class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-black hover:bg-slate-50">${saved ? "★ Mentve" : "☆ Mentés"}</button>
+        ${saveButton}
       </div>
       <p class="text-slate-700 mt-4 whitespace-pre-line line-clamp-4">${esc(lead.leiras)}</p>
       ${images}
