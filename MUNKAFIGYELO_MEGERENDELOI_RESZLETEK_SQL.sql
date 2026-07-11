@@ -20,7 +20,11 @@ select
   surgosseg, koltseg_min, koltseg_max, kezdes_datum,
   munka_tipus, ingatlan_tipus, kapcsolat_mod, kapcsolat_telefon, kapcsolat_email, kep_url_tomb,
   forras_tipus, forras_url, lejar_at, created_at, updated_at,
-  (owner_id is not null and forras_tipus = 'megrendelo') as kapcsolat_elerheto
+  (owner_id is not null and forras_tipus = 'megrendelo') as kapcsolat_elerheto,
+  (
+    public.is_szakipiac_admin()
+    or (auth.uid() is not null and owner_id = auth.uid() and forras_tipus = 'megrendelo')
+  ) as torolheto
 from public.munkafigyelo_hirdetesek
 where allapot = 'aktiv'
   and lejar_at > now()

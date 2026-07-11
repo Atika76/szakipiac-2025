@@ -126,6 +126,7 @@ function normalizeLead(row) {
     kapcsolat_telefon: String(row.kapcsolat_telefon || ""),
     kapcsolat_email: String(row.kapcsolat_email || ""),
     kep_url_tomb: Array.isArray(row.kep_url_tomb) ? row.kep_url_tomb.map(safeUrl).filter(Boolean).slice(0, 5) : [],
+    torolheto: Boolean(row.torolheto),
     forras_tipus: ["megrendelo", "nyilvanos_forras", "kozbeszerzes"].includes(row.forras_tipus) ? row.forras_tipus : "nyilvanos_forras",
     forras_url: safeUrl(row.forras_url),
     kapcsolat_elerheto: Boolean(row.kapcsolat_elerheto)
@@ -209,6 +210,10 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
           `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="block shrink-0"><img src="${esc(url)}" alt="Munka fotója" loading="lazy" decoding="async" class="h-20 w-20 rounded-xl border border-slate-200 object-cover"></a>`
         ).join("")}</div>`
       : "";
+    const ownerActions = lead.torolheto
+      ? `<button type="button" data-close-own-lead="${esc(lead.id)}" class="border border-amber-300 text-amber-800 rounded-xl px-4 py-2.5 font-black hover:bg-amber-50">Lezárás</button>
+         <button type="button" data-delete-own-lead="${esc(lead.id)}" class="border border-red-300 text-red-700 rounded-xl px-4 py-2.5 font-black hover:bg-red-50">Törlés</button>`
+      : "";
     return `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 hover:shadow-md transition" data-lead-id="${esc(lead.id)}">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
@@ -235,6 +240,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
         ${lead.forras_url ? `<a href="${esc(lead.forras_url)}" target="_blank" rel="noopener noreferrer" class="bg-emerald-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-emerald-800">${openLabel}</a>` : ""}
         ${canContact ? `<button type="button" data-contact-lead="${esc(lead.id)}" class="bg-blue-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-blue-800">Kapcsolatfelvétel</button>` : ""}
         <button type="button" data-details-lead="${esc(lead.id)}" class="border border-slate-300 rounded-xl px-4 py-2.5 font-black hover:bg-slate-50">Részletek</button>
+        ${ownerActions}
       </div>
     </article>`;
   }
@@ -264,6 +270,42 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     const savedPanel = root.querySelector("[data-saved-panel]");
     if (pushPanel) pushPanel.classList.toggle("hidden", name !== "push" || !pushPanel.classList.contains("hidden"));
     if (savedPanel) savedPanel.classList.toggle("hidden", name !== "saved" || !savedPanel.classList.contains("hidden"));
+  }
+
+  function showLeadDetails(lead) {
+    const existing = document.getElementById("mf-details-modal");
+    if (existing) existing.remove();
+    const images = lead.kep_url_tomb.length
+      ? `<div class="mt-4 flex gap-3 overflow-x-auto">${lead.kep_url_tomb.map(url =>
+          `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="Munka fotója" class="h-24 w-24 rounded-xl border border-slate-200 object-cover"></a>`
+        ).join("")}</div>`
+      : "";
+    const modal = document.createElement("div");
+    modal.id = "mf-details-modal";
+    modal.className = "fixed inset-0 z-[200] bg-slate-950/60 p-4 flex items-center justify-center";
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+        <div class="p-5 border-b border-slate-200 flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">${esc(lead.cim)}</h2>
+            <p class="text-sm text-slate-500 mt-1">${esc([lead.telepules, lead.megye].filter(Boolean).join(", ") || "Országos")} · ${esc(typeLabel(lead.forras_tipus))}</p>
+          </div>
+          <button type="button" data-mf-close-details class="rounded-xl border border-slate-300 px-3 py-2 font-black hover:bg-slate-50">Bezárás</button>
+        </div>
+        <div class="p-5 overflow-y-auto">
+          <div class="whitespace-pre-line text-slate-800 leading-relaxed">${esc(lead.leiras)}</div>
+          ${images}
+          <div class="grid md:grid-cols-2 gap-3 mt-5 text-sm">
+            <div class="rounded-xl bg-slate-50 p-3"><b>Kategória:</b><br>${esc(lead.szakma)}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Sürgősség:</b><br>${esc(urgencyLabel(lead.surgosseg))}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Keret:</b><br>${esc(budgetText(lead))}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Kapcsolat módja:</b><br>${esc(lead.kapcsolat_mod || "Nincs megadva")}</div>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector("[data-mf-close-details]")?.addEventListener("click", () => modal.remove());
+    modal.addEventListener("click", event => { if (event.target === modal) modal.remove(); });
   }
 
   function renderSavedPanel() {
@@ -296,7 +338,29 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
     root.querySelectorAll("[data-details-lead]").forEach(button => button.addEventListener("click", () => {
       const lead = allLeads.find(item => item.id === button.dataset.detailsLead);
-      if (lead) alert(`${lead.cim}\n\n${lead.leiras}\n\nHely: ${lead.telepules} ${lead.megye}\nForrás: ${lead.forras_tipus === "kozbeszerzes" ? "TED EU közbeszerzés" : typeLabel(lead.forras_tipus)}`);
+      if (lead) showLeadDetails(lead);
+    }));
+
+    root.querySelectorAll("[data-close-own-lead]").forEach(button => button.addEventListener("click", async () => {
+      if (!confirm("Biztosan lezárod ezt a munkát? Lezárás után nem jelenik meg a nyilvános listában.")) return;
+      const session = await refreshSession();
+      if (!session?.user) return showToast("Lezáráshoz jelentkezz be.", "error");
+      const result = await client.rpc("munkafigyelo_lezaras", { p_hirdetes_id: button.dataset.closeOwnLead });
+      if (result.error) return showToast(`Nem sikerült lezárni: ${result.error.message}`, "error");
+      showToast("Munka lezárva.");
+      allLeads = allLeads.filter(item => item.id !== button.dataset.closeOwnLead);
+      renderList();
+    }));
+
+    root.querySelectorAll("[data-delete-own-lead]").forEach(button => button.addEventListener("click", async () => {
+      if (!confirm("Biztosan törlöd ezt a munkát? Ez nem vonható vissza.")) return;
+      const session = await refreshSession();
+      if (!session?.user) return showToast("Törléshez jelentkezz be.", "error");
+      const result = await client.from("munkafigyelo_hirdetesek").delete().eq("id", button.dataset.deleteOwnLead);
+      if (result.error) return showToast(`Nem sikerült törölni: ${result.error.message}`, "error");
+      showToast("Munka törölve.");
+      allLeads = allLeads.filter(item => item.id !== button.dataset.deleteOwnLead);
+      renderList();
     }));
 
     root.querySelectorAll("[data-contact-lead]").forEach(button => button.addEventListener("click", async () => {
@@ -603,8 +667,13 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     const cim = document.getElementById("cim");
     const leiras = document.getElementById("leiras");
     const city = document.getElementById("varos");
+    const zip = document.getElementById("iranyitoszam");
+    const category = document.getElementById("kategoria");
+    const phone = document.getElementById("telefonszam");
     const ar = document.getElementById("ar");
     const weboldal = document.getElementById("weboldal");
+    const locationRow = city?.closest(".grid");
+    const categoryRow = category?.closest(".grid");
     const mediaRow = weboldal?.closest(".grid");
     const submitButton = document.querySelector('#submit-area button[type="submit"]');
     const packageInfo = document.getElementById("package-info");
@@ -621,8 +690,16 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     packageSection?.classList.toggle("hidden", isRequest);
     imageSection?.classList.toggle("hidden", isRequest);
     videoWrapper?.classList.toggle("hidden", isRequest);
+    locationRow?.classList.toggle("hidden", isRequest);
+    categoryRow?.classList.toggle("hidden", isRequest);
     mediaRow?.classList.toggle("hidden", isRequest);
     requestDetails?.classList.toggle("hidden", !isRequest);
+    [city, zip, category, phone].forEach(field => {
+      if (!field) return;
+      field.disabled = isRequest;
+      if (isRequest) field.removeAttribute("required");
+      else if (field === city || field === category) field.setAttribute("required", "required");
+    });
     if (paypal && isRequest) paypal.style.display = "none";
     if (packageInfo && isRequest) packageInfo.textContent = "Megrendelői munkafeladás – ingyenes, a Munkafigyelőben jelenik meg.";
     if (aiInput) aiInput.placeholder = isRequest ? "Pl: fürdőszoba felújítás burkoló" : "Pl: szobafestés";
@@ -673,6 +750,16 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
             </select>
           </label>
           <label class="text-sm font-bold text-blue-950">
+            Település
+            <input id="mf-telepules" type="text" placeholder="Pl: Pécs" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+          <label class="text-sm font-bold text-blue-950">
+            Szakma / kategória
+            <select id="mf-kategoria" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+              ${optionList(SZAKMAK, "Válassz kategóriát")}
+            </select>
+          </label>
+          <label class="text-sm font-bold text-blue-950">
             Munka típusa
             <select id="mf-munka-tipus" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
               ${optionList(MUNKA_TIPUSOK, "Válassz munka típust")}
@@ -705,6 +792,10 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
           <label class="text-sm font-bold text-blue-950">
             Keret maximum (Ft)
             <input id="mf-koltseg-max" type="number" min="0" step="1000" placeholder="Pl: 250000" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+          <label class="text-sm font-bold text-blue-950">
+            Telefonszám
+            <input id="mf-telefonszam" type="tel" placeholder="Csak ha nyilvánosan megadható" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
           </label>
           <label class="text-sm font-bold text-blue-950">
             E-mail ajánlatkéréshez
@@ -751,6 +842,39 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     }
   }
 
+  function requestPromptContext() {
+    const megye = document.getElementById("mf-megye")?.value || "";
+    const telepules = (document.getElementById("mf-telepules")?.value || "").trim();
+    const kategoria = document.getElementById("mf-kategoria")?.value || "";
+    const munkaTipus = document.getElementById("mf-munka-tipus")?.value || "";
+    const ingatlanTipus = document.getElementById("mf-ingatlan-tipus")?.value || "";
+    const surgosseg = document.getElementById("mf-surgosseg")?.value || "";
+    return [
+      megye ? `Megye: ${megye}` : "",
+      telepules ? `Település: ${telepules}` : "Település: nincs megadva",
+      kategoria ? `Szakma: ${kategoria}` : "",
+      munkaTipus ? `Munka típusa: ${munkaTipus}` : "",
+      ingatlanTipus ? `Ingatlan típusa: ${ingatlanTipus}` : "",
+      surgosseg ? `Sürgősség: ${urgencyLabel(surgosseg)}` : "",
+      "Fontos: ne találj ki várost, kerületet vagy pontos címet. Csak a fenti megye/település szerepelhet a szövegben."
+    ].filter(Boolean).join("; ");
+  }
+
+  function cleanGeneratedRequestText(text) {
+    let result = String(text || "");
+    const megye = document.getElementById("mf-megye")?.value || "";
+    const telepules = (document.getElementById("mf-telepules")?.value || "").trim();
+    if (megye !== "Budapest" && telepules.toLowerCase() !== "budapest") {
+      result = result
+        .replace(/(?:A\s+)?(?:felújítandó\s+)?ingatlan[^.!?\n]*(?:Budapest|kerület)[^.!?\n]*[.!?]\s*/gi, "")
+        .replace(/A munkavégzés hely(?:e|színe)[^.!?\n]*(?:Budapest|kerület)[^.!?\n]*[.!?]\s*/gi, "");
+    }
+    if (!telepules) {
+      result = result.replace(/A munkavégzés hely(?:e|színe)[^.!?\n]*[.!?]\s*/gi, "");
+    }
+    return result.trim();
+  }
+
   function wrapAiWriter() {
     if (window.__spOriginalGenerateAI || typeof window.generateAI !== "function") return;
     window.__spOriginalGenerateAI = window.generateAI;
@@ -762,18 +886,19 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
       const purpose = adKind === "kereses"
         ? "Szakembert kereső megrendelői munkafeladás"
         : "Szolgáltatást kínáló szakember hirdetése";
+      const context = adKind === "kereses" ? requestPromptContext() : "";
       const btn = document.getElementById("ai-btn");
       if (btn) { btn.textContent = mode === "premium" ? "Prémium generálás..." : "Generálás..."; btn.disabled = true; }
       try {
         const res = await fetch("https://bxtpnotswnwrbycvfypz.supabase.co/functions/v1/generate-ad", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: `${purpose}: ${k}`, mode, purpose: adKind })
+          body: JSON.stringify({ query: `${purpose}: ${k}${context ? `. Adatok: ${context}` : ""}`, mode, purpose: adKind })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "AI hiba történt.");
         const title = data?.title || data?.cim || "";
-        const desc = data?.description || data?.leiras || "";
+        const desc = adKind === "kereses" ? cleanGeneratedRequestText(data?.description || data?.leiras || "") : (data?.description || data?.leiras || "");
         const cta = data?.cta ? ("\n\n" + data.cta) : "";
         if (title) document.getElementById("cim").value = title;
         if (desc) document.getElementById("leiras").value = desc + cta;
@@ -799,13 +924,14 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
 
     const cim = (document.getElementById("cim")?.value || "").trim();
     const leiras = (document.getElementById("leiras")?.value || "").trim();
-    const category = document.getElementById("kategoria")?.value || "Egyéb szakember";
-    const city = (document.getElementById("varos")?.value || "").trim();
+    const category = document.getElementById("mf-kategoria")?.value || "";
+    const city = (document.getElementById("mf-telepules")?.value || "").trim();
+    const zipCode = (document.getElementById("iranyitoszam")?.value || "").trim();
     const megye = document.getElementById("mf-megye")?.value || "";
     const munkaTipus = document.getElementById("mf-munka-tipus")?.value || "";
     const ingatlanTipus = document.getElementById("mf-ingatlan-tipus")?.value || "";
     const surgosseg = document.getElementById("mf-surgosseg")?.value || "normal";
-    const kapcsolatTelefon = (document.getElementById("telefonszam")?.value || "").trim();
+    const kapcsolatTelefon = (document.getElementById("mf-telefonszam")?.value || "").trim();
     const kapcsolatEmail = (document.getElementById("mf-kapcsolat-email")?.value || "").trim();
     const kapcsolatMod = document.getElementById("mf-kapcsolat-mod")?.value || "";
     if (!cim || !leiras || !category || !megye || !city) return toast("Cím, leírás, kategória, megye és település kötelező.", "error");
@@ -873,7 +999,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
         szakma: category,
         megye,
         telepules: city,
-        iranyitoszam: document.getElementById("iranyitoszam")?.value || "",
+        iranyitoszam: zipCode,
         surgosseg,
         koltseg_min: minBudget,
         koltseg_max: maxBudget,
