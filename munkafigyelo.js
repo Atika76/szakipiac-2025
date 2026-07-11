@@ -168,6 +168,8 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     const location = [lead.iranyitoszam, lead.telepules, lead.megye].filter(Boolean).join(" ") || "Országos";
     const openLabel = isTed ? "TED hirdetmény megnyitása" : "Eredeti hirdetés megnyitása";
     const sourceText = isTed ? "TED EU közbeszerzés" : typeLabel(lead.forras_tipus);
+    const startText = lead.kezdes_datum ? formatDate(lead.kezdes_datum) : "Nincs megadva";
+    const deadlineText = lead.lejar_at ? formatDate(lead.lejar_at) : "Nincs megadva";
     return `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 hover:shadow-md transition" data-lead-id="${esc(lead.id)}">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
@@ -182,9 +184,10 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
         <button type="button" data-save-lead="${esc(lead.id)}" class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-black hover:bg-slate-50">${saved ? "★ Mentve" : "☆ Mentés"}</button>
       </div>
       <p class="text-slate-700 mt-4 whitespace-pre-line line-clamp-4">${esc(lead.leiras)}</p>
-      <div class="grid grid-cols-1 2xl:grid-cols-3 gap-3 mt-4 text-sm">
+      <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-3 mt-4 text-sm">
         <div class="rounded-xl bg-slate-50 p-3"><b>Keret:</b><br>${esc(budgetText(lead))}</div>
-        <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés / határidő:</b><br>${esc(formatDate(lead.kezdes_datum || lead.lejar_at))}</div>
+        <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés:</b><br>${esc(startText)}</div>
+        <div class="rounded-xl bg-slate-50 p-3"><b>Határidő / befejezés:</b><br>${esc(deadlineText)}</div>
         <div class="rounded-xl bg-slate-50 p-3"><b>Forrás:</b><br>${esc(sourceText)}</div>
       </div>
       <div class="flex flex-wrap gap-3 mt-5">
@@ -503,6 +506,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     const packageSection = document.getElementById("package-section");
     const imageSection = document.getElementById("image-section");
     const videoWrapper = document.getElementById("video-wrapper");
+    const requestDetails = document.getElementById("request-job-details");
     const aiInput = document.getElementById("ai-keywords");
     const cim = document.getElementById("cim");
     const leiras = document.getElementById("leiras");
@@ -523,12 +527,14 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     packageSection?.classList.toggle("hidden", isRequest);
     imageSection?.classList.toggle("hidden", isRequest);
     videoWrapper?.classList.toggle("hidden", isRequest);
+    requestDetails?.classList.toggle("hidden", !isRequest);
     if (paypal && isRequest) paypal.style.display = "none";
     if (packageInfo && isRequest) packageInfo.textContent = "Megrendelői munkafeladás – ingyenes, a Munkafigyelőben jelenik meg.";
     if (aiInput) aiInput.placeholder = isRequest ? "Pl: fürdőszoba felújítás burkoló" : "Pl: szobafestés";
     if (cim) cim.placeholder = isRequest ? "Pl: Fürdőszoba felújításhoz burkolót keresek" : "Cím";
-    if (leiras) leiras.placeholder = isRequest ? "Írd le röviden a munkát, helyszínt, határidőt és fontos részleteket..." : "Leírás";
+    if (leiras) leiras.placeholder = isRequest ? "Írd le részletesen: pontos munka, méret, állapot, anyag van-e, helyszín, mikorra kell elkészülnie..." : "Leírás";
     if (ar) {
+      ar.classList.toggle("hidden", isRequest);
       ar.placeholder = isRequest ? "Tervezett keret (Ft)" : "Ár (Ft)";
       ar.setAttribute("aria-label", isRequest ? "Tervezett keret forintban" : "Ár forintban");
     }
@@ -556,7 +562,32 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
           <span><span class="block font-black text-blue-900">Munkára keresek szakembert</span><span class="block text-sm text-blue-800 mt-1">Megrendelőként felújításhoz, javításhoz vagy építéshez keresek szakembert.</span></span>
         </label>
       </div>
-      <div id="ad-kind-info" class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">A hirdetés a főoldali szakember listában fog megjelenni.</div>`;
+      <div id="ad-kind-info" class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">A hirdetés a főoldali szakember listában fog megjelenni.</div>
+      <div id="request-job-details" class="hidden mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <h3 class="font-black text-blue-950 mb-1">Részletek a vállalkozóknak</h3>
+        <p class="text-sm text-blue-900 mb-3">Ezek segítenek, hogy pontosabb ajánlatot kapj, és kevesebb kérdés legyen utólag.</p>
+        <div class="grid md:grid-cols-2 gap-3">
+          <label class="text-sm font-bold text-blue-950">
+            Kezdés dátuma
+            <input id="mf-kezdes-datum" type="date" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+          <label class="text-sm font-bold text-blue-950">
+            Határidő / befejezés
+            <input id="mf-hatarido-datum" type="date" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+          <label class="text-sm font-bold text-blue-950">
+            Keret minimum (Ft)
+            <input id="mf-koltseg-min" type="number" min="0" step="1000" placeholder="Pl: 100000" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+          <label class="text-sm font-bold text-blue-950">
+            Keret maximum (Ft)
+            <input id="mf-koltseg-max" type="number" min="0" step="1000" placeholder="Pl: 250000" class="mt-1 w-full border border-blue-200 bg-white p-2 rounded-lg font-normal">
+          </label>
+        </div>
+        <div class="mt-3 rounded-lg bg-white/80 border border-blue-100 px-3 py-2 text-xs font-bold text-blue-900">
+          Jó leírás: pontos helyszín, mit kell megcsinálni, méret vagy mennyiség, jelenlegi állapot, anyag van-e, fotó vagy link, kezdés és határidő.
+        </div>
+      </div>`;
     aiBox.parentNode.insertBefore(box, aiBox);
     box.querySelectorAll('input[name="adKind"]').forEach(input => input.addEventListener("change", updateAdKindUI));
 
@@ -624,10 +655,42 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     const city = (document.getElementById("varos")?.value || "").trim();
     if (!cim || !leiras || !category || !city) return toast("Cím, leírás, kategória és város kötelező.", "error");
 
-    const arRaw = document.getElementById("ar")?.value;
-    const arValue = arRaw ? parseInt(arRaw, 10) : null;
-    const lejarat = new Date();
-    lejarat.setDate(lejarat.getDate() + 30);
+    const parseMoney = (id) => {
+      const value = String(document.getElementById(id)?.value || "").replace(/[^\d]/g, "");
+      if (!value) return null;
+      const parsed = parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    const startDate = document.getElementById("mf-kezdes-datum")?.value || "";
+    const deadlineDate = document.getElementById("mf-hatarido-datum")?.value || "";
+    const minBudget = parseMoney("mf-koltseg-min");
+    const maxBudget = parseMoney("mf-koltseg-max") ?? parseMoney("ar");
+    if (minBudget !== null && maxBudget !== null && minBudget > maxBudget) {
+      return toast("A minimum keret nem lehet nagyobb, mint a maximum keret.", "error");
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate && new Date(`${startDate}T00:00:00`) < today) {
+      return toast("A kezdés dátuma nem lehet múltbeli.", "error");
+    }
+    if (deadlineDate && new Date(`${deadlineDate}T23:59:59`) < today) {
+      return toast("A határidő / befejezés dátuma nem lehet múltbeli.", "error");
+    }
+    if (startDate && deadlineDate && new Date(`${deadlineDate}T23:59:59`) < new Date(`${startDate}T00:00:00`)) {
+      return toast("A határidő nem lehet korábbi, mint a kezdés dátuma.", "error");
+    }
+
+    const lejarat = deadlineDate ? new Date(`${deadlineDate}T23:59:59`) : new Date();
+    if (!deadlineDate) lejarat.setDate(lejarat.getDate() + 30);
+    const detailLines = [];
+    if (startDate) detailLines.push(`Kezdés: ${formatDate(startDate)}`);
+    if (deadlineDate) detailLines.push(`Határidő / befejezés: ${formatDate(deadlineDate)}`);
+    const budgetLine = budgetText({ koltseg_min: minBudget, koltseg_max: maxBudget });
+    if (budgetLine !== "Nincs megadva") detailLines.push(`Tervezett keret: ${budgetLine}`);
+    const fullDescription = detailLines.length
+      ? `${leiras}\n\nRészletek:\n- ${detailLines.join("\n- ")}`
+      : leiras;
 
     toast("Munka mentése...", "info");
     const { data: insertedJob, error } = await client
@@ -635,17 +698,18 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
       .insert({
         owner_id: session.user.id,
         cim,
-        leiras,
+        leiras: fullDescription,
         szakma: category,
         megye: "Országos",
         telepules: city,
         iranyitoszam: document.getElementById("iranyitoszam")?.value || "",
         surgosseg: "normal",
-        koltseg_min: null,
-        koltseg_max: Number.isFinite(arValue) ? arValue : null,
+        koltseg_min: minBudget,
+        koltseg_max: maxBudget,
         allapot: "aktiv",
         forras_tipus: "megrendelo",
         forras_url: null,
+        kezdes_datum: startDate || null,
         lejar_at: lejarat.toISOString()
       })
       .select("id,cim")
