@@ -30,7 +30,11 @@ serve(async (req) => {
 
     if (!keywords) throw new Error("Adj meg kulcsszót (pl. szobafestés).");
 
-    const modelName = "gemini-1.5-flash";
+    const modelNames = [
+      Deno.env.get("GEMINI_MODEL"),
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+    ].filter(Boolean) as string[];
 
     const rules = lang === "hu"
       ? `Magyarul válaszolj. Ne használj emojikat. A válasz legyen érvényes JSON.`
@@ -99,24 +103,40 @@ KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
 }
 `;
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      },
-    );
+    let geminiData: any = null;
+    let usedModel = "";
+    const modelErrors: string[] = [];
 
-    if (!geminiResponse.ok) {
+    for (const modelName of modelNames) {
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+            },
+          }),
+        },
+      );
+
+      if (geminiResponse.ok) {
+        geminiData = await geminiResponse.json();
+        usedModel = modelName;
+        break;
+      }
+
       const errorBody = await geminiResponse.text();
-      console.error("Gemini API hiba:", errorBody);
-      throw new Error("Gemini API hiba: " + errorBody);
+      modelErrors.push(`${modelName}: ${errorBody}`);
+      console.error("Gemini API hiba:", modelName, errorBody);
     }
 
-    const geminiData = await geminiResponse.json();
+    if (!geminiData) {
+      throw new Error("Gemini API hiba: " + modelErrors.join(" | "));
+    }
+
     const generatedText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
@@ -130,7 +150,7 @@ KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
     const description = out.description || out.leiras || "";
     const cta = out.cta || "";
 
-    return new Response(JSON.stringify({ title, description, cta, purpose }), {
+    return new Response(JSON.stringify({ title, description, cta, purpose, model: usedModel }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

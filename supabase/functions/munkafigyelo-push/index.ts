@@ -19,8 +19,8 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
-  const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
+  const vapidPublic = Deno.env.get("MUNKAFIGYELO_VAPID_PUBLIC_KEY") || Deno.env.get("VAPID_PUBLIC_KEY");
+  const vapidPrivate = Deno.env.get("MUNKAFIGYELO_VAPID_PRIVATE_KEY") || Deno.env.get("VAPID_PRIVATE_KEY");
   const adminEmail = (Deno.env.get("SZAKIPIAC_ADMIN_EMAIL") || "atika.76@windowslive.com").toLowerCase();
   if (!supabaseUrl || !serviceKey || !vapidPublic || !vapidPrivate) return json({ error: "missing_server_configuration" }, 500);
 
@@ -40,7 +40,7 @@ serve(async (req) => {
   if (!hirdetesId) return json({ error: "missing_hirdetesId" }, 400);
 
   webpush.setVapidDetails(
-    Deno.env.get("VAPID_SUBJECT") || "mailto:info@szakipiac-2025.hu",
+    Deno.env.get("MUNKAFIGYELO_VAPID_SUBJECT") || Deno.env.get("VAPID_SUBJECT") || "mailto:info@szakipiac-2025.hu",
     vapidPublic,
     vapidPrivate
   );

@@ -1476,7 +1476,7 @@
 
               <input id="ar" type="number" aria-label="Ár forintban" placeholder="Ár (Ft)" class="w-full border p-2 rounded" ${disabledAttr}>
 
-              <div class="border p-4 rounded bg-gray-50">
+              <div id="package-section" class="border p-4 rounded bg-gray-50">
                 <label class="font-bold mb-2 block">Csomag:</label>
                 <select id="csomag" aria-label="Hirdetési csomag kiválasztása" class="w-full border p-2 rounded mb-2" onchange="updatePackageInfo()" ${disabledAttr}>
                   <option value="alap">Alap (Ingyen, 2 kép)</option>
@@ -1497,7 +1497,7 @@
                 </div>
               </div>
 
-              <div class="border-dashed border-2 border-gray-300 p-6 text-center rounded">
+              <div id="image-section" class="border-dashed border-2 border-gray-300 p-6 text-center rounded">
                 <label class="cursor-pointer block">
                   <span class="text-green-600 font-bold">Képek</span> (Max <span id="max-img">2</span>)
                   <input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(this)" ${disabledAttr}>
