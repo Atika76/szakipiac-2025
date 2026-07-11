@@ -196,7 +196,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
   function card(lead) {
     const saved = savedIds().has(lead.id);
     const isTed = lead.forras_tipus === "kozbeszerzes";
-    const canContact = lead.forras_tipus === "megrendelo" && lead.kapcsolat_elerheto;
+    const canContact = lead.forras_tipus === "megrendelo" && lead.kapcsolat_elerheto && !lead.torolheto;
     const location = [lead.iranyitoszam, lead.telepules, lead.megye].filter(Boolean).join(" ") || "Országos";
     const openLabel = isTed ? "TED hirdetmény megnyitása" : "Eredeti hirdetés megnyitása";
     const sourceText = isTed ? "TED EU közbeszerzés" : typeLabel(lead.forras_tipus);
