@@ -387,6 +387,11 @@
 
   $("rateForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const { data: { session } } = await supaClient.auth.getSession();
+    if (!session) {
+      showAlert("Az értékeléshez regisztráció vagy bejelentkezés szükséges.", "error");
+      return;
+    }
     const stars = Number($("stars").value || 5);
     const comment = ($("comment").value || "").trim();
     try{

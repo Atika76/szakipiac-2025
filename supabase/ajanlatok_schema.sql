@@ -1,4 +1,4 @@
--- SzakiPiac AI Árkalkulátor ajánlat mentés + Építési Napló import alap tábla
+-- SzakiPiac Árajánlat-készítő PRO+ ajánlat mentés + Építési Napló import alap tábla
 -- Futtasd a SzakiPiac Supabase SQL Editorában.
 
 create table if not exists public.ajanlatok (

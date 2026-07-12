@@ -181,8 +181,8 @@ serve(async (req) => {
           totals: {
             ...totals,
             grossTotal: totals.gross || projectRow.total_gross || 0,
-            materialTotal: items.reduce((sum, item) => sum + num(item.material_total), 0),
-            laborTotal: items.reduce((sum, item) => sum + num(item.labor_total), 0),
+            materialTotal: items.reduce((sum: number, item: any) => sum + num(item.material_total), 0),
+            laborTotal: items.reduce((sum: number, item: any) => sum + num(item.labor_total), 0),
             vatAmount: totals.vat || 0,
           },
           items,

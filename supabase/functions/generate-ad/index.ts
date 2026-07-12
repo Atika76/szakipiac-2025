@@ -4,6 +4,7 @@
 // Secret: GEMINI_API_KEY (Supabase → Project Settings → Secrets)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,29 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Az AI szövegíró használatához regisztráció vagy bejelentkezés szükséges." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    if (!supabaseUrl || !anonKey) throw new Error("Hiányzó Supabase hitelesítési beállítás.");
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await authClient.auth.getUser();
+    if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Érvénytelen vagy lejárt bejelentkezés." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("Hiányzó GEMINI_API_KEY secret a Supabase-ben.");
 
@@ -155,9 +179,10 @@ KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
       status: 200,
     });
 
-  } catch (error) {
-    console.error("Hiba a Function-ben:", error?.message || error);
-    return new Response(JSON.stringify({ error: error?.message || "Ismeretlen hiba" }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error || "Ismeretlen hiba");
+    console.error("Hiba a Function-ben:", message);
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

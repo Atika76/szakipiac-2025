@@ -48,7 +48,7 @@
 
         <div class="hidden lg:flex items-center gap-2 text-sm font-semibold">
           <a href="index.html#home" class="px-3 py-2 rounded-lg hover:bg-white">Főoldal</a>
-          <a href="kalkulator.html" class="px-3 py-2 rounded-lg hover:bg-white">AI Kalkulátor</a>
+          <a href="kalkulator.html" class="px-3 py-2 rounded-lg hover:bg-white">Árajánlat-készítő PRO+</a>
           <a href="#projekt" class="px-3 py-2 rounded-lg hover:bg-white">Projekt</a>
           <a href="#utemezes" class="px-3 py-2 rounded-lg hover:bg-white">Ütemezés</a>
           <a href="#koltsegek" class="px-3 py-2 rounded-lg hover:bg-white">Költségek</a>
@@ -64,6 +64,11 @@
   </header>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div id="usageGate" class="hidden mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 shadow-sm no-print">
+      <div class="font-extrabold">🔒 A funkció használatához regisztráció vagy bejelentkezés szükséges.</div>
+      <p class="mt-1 text-sm">Az oldal bejelentkezés nélkül is megtekinthető, de projektet szerkeszteni, menteni, exportálni, PDF-et készíteni vagy az Építési Naplóba küldeni csak belépés után lehet.</p>
+      <a href="index.html#auth" class="mt-3 inline-flex rounded-xl bg-amber-600 px-4 py-2 font-extrabold text-white hover:bg-amber-700">Regisztráció / Belépés</a>
+    </div>
     <section class="relative overflow-hidden rounded-[2rem] soft-shadow bg-gradient-to-br from-slate-950 via-slate-900 to-orange-800 text-white mb-8">
       <div class="absolute inset-0 opacity-25" style="background-image: radial-gradient(circle at 20% 20%, white 0, transparent 22%), radial-gradient(circle at 80% 15%, #f97316 0, transparent 28%), radial-gradient(circle at 70% 90%, #22c55e 0, transparent 24%);"></div>
       <div class="relative p-5 sm:p-6 lg:p-10 grid sm:grid-cols-[1.35fr_.65fr] gap-5 lg:gap-8 items-center">
@@ -1016,6 +1021,24 @@ async function refreshSession() {
   return data?.session || null;
 }
 
+async function applyUsageGate() {
+  const session = await refreshSession();
+  $("usageGate")?.classList.toggle("hidden", !!session);
+  if (!session) {
+    document.querySelectorAll("main input, main select, main textarea, main button").forEach(el => {
+      el.dataset.authLocked = "1";
+      el.disabled = true;
+      el.title = "A használathoz regisztráció vagy bejelentkezés szükséges.";
+    });
+    return;
+  }
+  document.querySelectorAll('[data-auth-locked="1"]').forEach(el => {
+    el.disabled = false;
+    el.removeAttribute("data-auth-locked");
+    el.removeAttribute("title");
+  });
+}
+
 function normalizeProjectStateForSave() {
   readProjectForm();
   const t = totals();
@@ -1251,10 +1274,14 @@ function bindEvents() {
   $("photoInput").addEventListener("change", e => handlePhotos(e.target.files));
 }
 
-bindEvents();
-applyTemplate("completeFlat");
-renderLocalSaveStatus();
-loadSavedProjects();
+async function bootPage() {
+  bindEvents();
+  applyTemplate("completeFlat");
+  renderLocalSaveStatus();
+  await loadSavedProjects();
+  await applyUsageGate();
+}
+bootPage();
 </script>
 </body>
 </html>

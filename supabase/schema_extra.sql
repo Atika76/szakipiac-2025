@@ -82,8 +82,10 @@ drop policy if exists "ratings_public_insert" on public.szakember_ratings;
 create policy "ratings_public_insert"
 on public.szakember_ratings
 for insert
-to anon, authenticated
+to authenticated
 with check (
+  auth.uid() is not null
+  and
   visitor_id is not null
   and length(visitor_id) > 5
   and user_id is not null

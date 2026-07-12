@@ -330,7 +330,9 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
   }
 
   function wireListButtons() {
-    root.querySelectorAll("[data-save-lead]").forEach(button => button.addEventListener("click", () => {
+    root.querySelectorAll("[data-save-lead]").forEach(button => button.addEventListener("click", async () => {
+      const session = await refreshSession();
+      if (!session?.user) return showToast("A mentéshez regisztráció vagy bejelentkezés szükséges.", "error");
       const ids = savedIds();
       const id = button.dataset.saveLead;
       if (ids.has(id)) ids.delete(id); else ids.add(id);
@@ -367,10 +369,10 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     }));
 
     root.querySelectorAll("[data-contact-lead]").forEach(button => button.addEventListener("click", async () => {
+      const session = await refreshSession();
+      if (!session?.user) return showToast("A kapcsolatfelvételhez regisztráció vagy bejelentkezés szükséges.", "error");
       const message = prompt("Írd meg röviden, miben tudsz segíteni a megrendelőnek:");
       if (!message) return;
-      const session = await refreshSession();
-      if (!session?.user) return showToast("Kapcsolatfelvételhez jelentkezz be.", "error");
       const result = await client.rpc("munkafigyelo_kapcsolat_kuldese", { p_hirdetes_id: button.dataset.contactLead, p_uzenet: message });
       if (result.error) return showToast(`Nem sikerült elküldeni: ${result.error.message}`, "error");
       showToast("Üzenet elküldve a megrendelőnek.");

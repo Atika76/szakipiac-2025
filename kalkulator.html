@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SzakiPiac – AI Árkalkulátor PRO+ (Privát mód)</title>
+  <title>SzakiPiac – Árajánlat-készítő PRO+ (Privát mód)</title>
 
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -39,7 +39,7 @@
   <link rel="canonical" href="https://szakipiac-2025.hu/kalkulator.html" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SzakiPiac" />
-  <meta property="og:title" content="SzakiPiac – AI Árkalkulátor PRO+ (Privát mód)" />
+  <meta property="og:title" content="SzakiPiac – Árajánlat-készítő PRO+ (Privát mód)" />
   <meta property="og:description" content="Friss tippek, kalkulátorok és árbecslések a SzakiPiac oldalán." />
   <meta property="og:url" content="https://szakipiac-2025.hu/kalkulator.html" />
   <meta property="og:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
@@ -47,7 +47,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="hu_HU" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SzakiPiac – AI Árkalkulátor PRO+ (Privát mód)" />
+  <meta name="twitter:title" content="SzakiPiac – Árajánlat-készítő PRO+ (Privát mód)" />
   <meta name="twitter:description" content="Friss tippek, kalkulátorok és árbecslések a SzakiPiac oldalán." />
   <meta name="twitter:image" content="https://szakipiac-2025.hu/og-szakipiac-2025.jpg" />
   <meta name="robots" content="index,follow,max-image-preview:large" />
@@ -80,6 +80,11 @@
   <div id="toast" class="fixed top-5 right-5 z-[200] text-white py-3 px-5 rounded-lg shadow-xl transform translate-x-[120%] transition-transform duration-300 no-print"></div>
 
   <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div id="usageGate" class="hidden mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 shadow-sm no-print">
+      <div class="font-extrabold">🔒 A funkció használatához regisztráció vagy bejelentkezés szükséges.</div>
+      <p class="mt-1 text-sm">Az oldal bejelentkezés nélkül is megtekinthető, de adatot megadni, számolni, menteni vagy PDF-et készíteni csak belépés után lehet.</p>
+      <a href="index.html#auth" class="mt-3 inline-flex rounded-xl bg-amber-600 px-4 py-2 font-extrabold text-white hover:bg-amber-700">Regisztráció / Belépés</a>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
       <!-- LEFT -->
@@ -90,7 +95,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                🧮 AI Árkalkulátor <span class="text-indigo-700">PRO+</span> <span class="text-gray-500 text-base font-bold">• Privát mód</span>
+                🧮 Árajánlat-készítő <span class="text-indigo-700">PRO+</span> <span class="text-gray-500 text-base font-bold">• Privát mód</span>
               </h1>
               <p class="text-gray-600 mt-1">
                 Tételes lista + rezsióra + haszon + ÁFA + anyag árrés + gyors csomagok + mentés + PDF.
@@ -918,6 +923,24 @@ async function refreshSession() {
   return res.data.session;
 }
 
+function applyUsageGate(session) {
+  $("usageGate")?.classList.toggle("hidden", !!session);
+  if (!session) {
+    document.querySelectorAll("main input, main select, main textarea, main button").forEach(el => {
+      if (el.closest("#authBox")) return;
+      el.dataset.authLocked = "1";
+      el.disabled = true;
+      el.title = "A használathoz regisztráció vagy bejelentkezés szükséges.";
+    });
+    return;
+  }
+  document.querySelectorAll('[data-auth-locked="1"]').forEach(el => {
+    el.disabled = false;
+    el.removeAttribute("data-auth-locked");
+    el.removeAttribute("title");
+  });
+}
+
 function renderAuthNav(session) {
   const nav = $("nav-auth");
   if (!nav) return;
@@ -1340,6 +1363,7 @@ async function boot() {
   });
 
   await loadSaved();
+  applyUsageGate(session);
 }
 
 boot();
