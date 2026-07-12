@@ -97,7 +97,7 @@ with check (
 -- on public.szakember_ratings (user_id, visitor_id, (date_trunc('day', created_at)));
 
 -- =========================
--- 3) Üzenetek (anon küldhet, csak a címzett olvashatja)
+-- 3) Üzenetek (csak bejelentkezett felhasználó küldhet, csak a címzett olvashatja)
 -- =========================
 create table if not exists public.szakember_messages (
   id uuid primary key default gen_random_uuid(),
@@ -125,9 +125,10 @@ drop policy if exists "messages_public_insert" on public.szakember_messages;
 create policy "messages_public_insert"
 on public.szakember_messages
 for insert
-to anon, authenticated
+to authenticated
 with check (
-  to_user_id is not null
+  auth.uid() is not null
+  and to_user_id is not null
   and from_visitor_id is not null
   and length(from_visitor_id) > 5
   and message is not null
