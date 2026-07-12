@@ -11,12 +11,23 @@ create table if not exists public.epitoipari_arak (
   munka_min numeric not null default 0,
   munka_atlag numeric not null default 0,
   munka_max numeric not null default 0,
+  norma_ora_min numeric not null default 0,
+  norma_ora_atlag numeric not null default 0,
+  norma_ora_max numeric not null default 0,
+  munkatartalom text,
   alap_mennyiseg numeric not null default 1,
   forras text,
   frissitve date not null default current_date,
   aktiv boolean not null default true,
   updated_at timestamptz not null default now()
 );
+
+-- Meglévő telepítés biztonságos bővítése. A forrás belső adminadat, a látogatói
+-- kalkulátorban nem jelenik meg és nem viszi el a felhasználót más weboldalra.
+alter table public.epitoipari_arak add column if not exists norma_ora_min numeric not null default 0;
+alter table public.epitoipari_arak add column if not exists norma_ora_atlag numeric not null default 0;
+alter table public.epitoipari_arak add column if not exists norma_ora_max numeric not null default 0;
+alter table public.epitoipari_arak add column if not exists munkatartalom text;
 
 alter table public.epitoipari_arak enable row level security;
 grant select on public.epitoipari_arak to anon, authenticated;
@@ -66,3 +77,12 @@ values
 ('jarulekos-hulladek','jarulekos','Építési hulladék elszállítása','egyeb','m³',0,0,0,10000,18000,30000,1,'SzakiPiac 2026 referencia','2026-07-12'),
 ('jarulekos-gep','jarulekos','Gép- és eszközhasználat','egyeb','nap',0,0,0,8000,15000,30000,1,'SzakiPiac 2026 referencia','2026-07-12')
 on conflict (id) do nothing;
+
+-- Kezdő normaidők: a jelenlegi ellenőrzött átlagos munkadíjakból, a 6 764 Ft/óra
+-- referencia-rezsióradíjból visszaszámított, admin által tovább finomítható értékek.
+update public.epitoipari_arak
+set norma_ora_atlag = round((munka_atlag / 6764.0)::numeric, 3),
+    norma_ora_min = round((munka_min / 6764.0)::numeric, 3),
+    norma_ora_max = round((munka_max / 6764.0)::numeric, 3),
+    munkatartalom = coalesce(munkatartalom, megnevezes || ' – normál, előkészített munkakörülmények között')
+where norma_ora_atlag = 0 and munka_atlag > 0 and egyseg <> 'alkalom';

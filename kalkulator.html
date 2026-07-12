@@ -27,6 +27,11 @@
 
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    @media (max-width: 640px) {
+      .calc-nav-links > a { display: none; }
+      #toast { left: 1rem; right: 1rem; width: auto; }
+    }
   </style>
 
   <script>
@@ -66,7 +71,7 @@
           </a>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="calc-nav-links flex items-center gap-2">
           <a href="index.html#home" class="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-100">🏠 Főoldal</a>
           <a href="index.html#feltoltes" class="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-100">📢 Hirdetés</a>
           <a href="kivitelezes-pro.html" class="px-3 py-2 rounded-md text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">🏗️ KivitelezésPRO</a>
@@ -403,7 +408,7 @@
             <div class="text-gray-600 text-sm">Betöltés...</div>
           </div>
           <div class="mt-4 text-xs text-gray-500">
-            Számolni belépés nélkül is tudsz, de menteni csak belépve lehet.
+            Az oldal szabadon megtekinthető, a kalkulátor használatához regisztráció vagy belépés szükséges.
           </div>
         </div>
 
