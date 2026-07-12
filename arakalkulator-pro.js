@@ -26,6 +26,13 @@
   }
   function effectiveMat(item) { return bandValue(item, "mat") * qualityFactor() * regionFactor() * materialMarginFactor(); }
   function effectiveLab(item) { return bandValue(item, "lab") * regionFactor(); }
+  function syncSelectedBand() {
+    items.forEach(item => {
+      if (!item.ranges) return;
+      item.mat_unit_price = bandValue(item, "mat");
+      item.lab_unit_price = bandValue(item, "lab");
+    });
+  }
 
   function injectPricingControls() {
     const settingsCard = document.querySelector("#overhead_rate")?.closest(".bg-white");
@@ -45,7 +52,7 @@
       </div>
       <p class="mt-3 text-xs text-emerald-900">A területi szorzó az anyag- és munkadíjra, a minőségi szorzó csak az anyagra vonatkozik. A szakember a végső ajánlat előtt minden tételt jóváhagy.</p>`;
     settingsCard.insertBefore(box, settingsCard.children[1]);
-    ["price_band","price_region","material_quality"].forEach(id => document.getElementById(id).addEventListener("change", () => { renderItems(); calcAndRender(); }));
+    ["price_band","price_region","material_quality"].forEach(id => document.getElementById(id).addEventListener("change", () => { if (id === "price_band") syncSelectedBand(); renderItems(); calcAndRender(); }));
 
     const globalUnit = document.getElementById("global_unit")?.closest("div");
     if (globalUnit) globalUnit.classList.add("hidden");
@@ -144,7 +151,14 @@
     if(!changed)return toast("Nincs kijelölt sor.","info"); renderItems();calcAndRender();toast(`Mennyiség beállítva ${changed} tételnél; a saját mértékegységek megmaradtak ✅`);
   };
   const oldPayloadNow=payloadNow;
-  window.payloadNow=function(){const p=oldPayloadNow();p.settings={...p.settings,...pricingSettings(),region_factor:regionFactor(),quality_factor:qualityFactor()};p.price_catalog_updated=document.getElementById("pricesUpdated")?.textContent||"";return p;};
+  window.payloadNow=function(){
+    const p=oldPayloadNow();
+    p.settings={...p.settings,...pricingSettings(),region_factor:regionFactor(),quality_factor:qualityFactor()};
+    p.items=items.map(item=>({...item,reference_mat_unit_price:safeNum(item.mat_unit_price),reference_lab_unit_price:safeNum(item.lab_unit_price),mat_unit_price:effectiveMat(item),lab_unit_price:effectiveLab(item),applied_region_factor:regionFactor(),applied_quality_factor:qualityFactor()}));
+    p.price_catalog_updated=document.getElementById("pricesUpdated")?.textContent||"";
+    p.estimate_status="elozetes_becsles_szakemberi_jovahagyasra_var";
+    return p;
+  };
   const oldApplyPayload=applyPayload;
   window.applyPayload=function(p){oldApplyPayload(p); if(p?.settings?.band)$("price_band").value=p.settings.band;if(p?.settings?.quality)$("material_quality").value=p.settings.quality;if(p?.settings?.region)$("price_region").value=p.settings.region;renderItems();calcAndRender();};
 
