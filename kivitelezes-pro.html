@@ -185,6 +185,23 @@
             <button id="btnAddItem" class="no-print rounded-xl bg-orange-600 text-white px-4 py-2 font-bold">+ Tétel</button>
           </div>
 
+          <details id="pricingConditions" class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <summary class="cursor-pointer font-black text-emerald-950">SzakiPiac referenciaárak és munkakörülmények <span id="catalogStatus" class="ml-2 text-xs font-normal text-emerald-800">Betöltés…</span></summary>
+            <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <label class="text-xs font-bold">Ársáv<select id="priceBand" class="mt-1 w-full rounded-lg border p-2"><option value="min">Minimum</option><option value="atlag" selected>Átlag</option><option value="max">Maximum</option></select></label>
+              <label class="text-xs font-bold">Anyagminőség<select id="materialQuality" class="mt-1 w-full rounded-lg border p-2"><option value="alap">Alap</option><option value="kozep" selected>Közép</option><option value="premium">Prémium</option></select></label>
+              <label class="text-xs font-bold">Terület<select id="priceRegion" class="mt-1 w-full rounded-lg border p-2"><option value="1">Országos átlag</option><option value="1.18">Budapest</option><option value="1.10">Pest</option><option value="1.05">Nyugat-Magyarország</option><option value="0.96">Kedvezőbb árszintű térség</option></select></label>
+              <label class="text-xs font-bold">Rezsióradíj<input id="overheadRate" type="number" min="0" value="6764" class="mt-1 w-full rounded-lg border p-2"></label>
+              <label class="text-xs font-bold">Emelet<input id="conditionFloor" type="number" min="0" value="0" class="mt-1 w-full rounded-lg border p-2"></label>
+              <label class="text-xs font-bold">Lift<select id="conditionLift" class="mt-1 w-full rounded-lg border p-2"><option value="igen">Van / földszint</option><option value="korlatozott">Korlátozott</option><option value="nem">Nincs</option></select></label>
+              <label class="text-xs font-bold">Parkolási távolság<input id="conditionParking" type="number" min="0" value="0" placeholder="méter" class="mt-1 w-full rounded-lg border p-2"></label>
+              <label class="flex items-center gap-2 rounded-lg border bg-white p-2 text-xs font-bold"><input id="conditionOccupied" type="checkbox"> Lakott ingatlan</label>
+              <label class="text-xs font-bold">Megközelítés<select id="conditionAccess" class="mt-1 w-full rounded-lg border p-2"><option value="jo">Könnyű</option><option value="nehez">Nehéz / szűk</option></select></label>
+              <label class="text-xs font-bold">Sitt mennyisége<select id="conditionWaste" class="mt-1 w-full rounded-lg border p-2"><option value="nincs">Nincs</option><option value="keves">Kevés</option><option value="sok">Sok</option></select></label>
+            </div>
+            <div id="conditionCostInfo" class="mt-3 text-xs text-emerald-900">Alaphelyzet: nincs járulékos többletköltség.</div>
+          </details>
+
           <div class="overflow-x-auto rounded-2xl border border-slate-200">
             <table class="min-w-[950px] w-full text-sm">
               <thead class="bg-slate-50 text-slate-600">
@@ -306,6 +323,8 @@ const SUPABASE_KEY = "sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8";
 const ADMIN_EMAIL = "atika.76@windowslive.com";
 const LOCAL_KEY = "szakipiac_kivitelezes_pro_v1";
 const supa = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const QUALITY_FACTORS = { alap: .88, kozep: 1, premium: 1.32 };
+let priceCatalog = [];
 
 const TRADE_DATA = {
   bontas: {
@@ -545,6 +564,14 @@ const PROJECT_TEMPLATES = {
   }
 };
 
+const TEMPLATE_CATALOG = {
+  completeFlat: [["jarulekos-bontas",24,"bontas"],["vakolas-javito",20,"komuves"],["viz-kiallas",8,"viz"],["villany-kiallas",20,"villany"],["burkolo-padlo",35,"burkolas"],["festo-elokeszites",120,"festes"],["festo-festes",120,"festes"]],
+  bathroom: [["jarulekos-bontas",16,"bontas"],["viz-kiallas",6,"viz"],["villany-kiallas",5,"villany"],["aljzat-kiegyenlites",6,"komuves"],["burkolo-fal",22,"burkolas"],["burkolo-padlo",6,"burkolas"]],
+  familyHouse: [["szerkezet-gepi-asas",35,"komuves"],["szerkezet-savalap",24,"komuves"],["szerkezet-fofal",140,"komuves"],["acs-tetoszerkezet",120,"acs"],["acs-cserep",120,"acs"],["acs-eresz",45,"badog"],["villany-kiallas",60,"villany"],["viz-kiallas",20,"viz"],["vakolas-gepi",350,"komuves"],["aljzat-estrich",100,"komuves"]],
+  roof: [["jarulekos-bontas",24,"bontas"],["acs-tetoszerkezet",120,"acs"],["acs-folia-lec",120,"acs"],["acs-cserep",120,"acs"],["acs-eresz",45,"badog"]],
+  facade: [["homlokzat-eps",160,"homlokzat"],["jarulekos-gep",10,"bontas"],["jarulekos-hulladek",4,"bontas"]]
+};
+
 let state = {
   project: {},
   phases: [],
@@ -599,7 +626,17 @@ function readProjectForm() {
     reservePercent: Number($("reservePercent").value || 0),
     vatPercent: Number($("vatPercent").value || 0),
     discountAmount: Number($("discountAmount").value || 0),
-    priceNote: $("priceNote").value.trim()
+    priceNote: $("priceNote").value.trim(),
+    priceBand: $("priceBand")?.value || "atlag",
+    materialQuality: $("materialQuality")?.value || "kozep",
+    priceRegion: $("priceRegion")?.value || "1",
+    overheadRate: Number($("overheadRate")?.value || 6764),
+    conditionFloor: Number($("conditionFloor")?.value || 0),
+    conditionLift: $("conditionLift")?.value || "igen",
+    conditionParking: Number($("conditionParking")?.value || 0),
+    conditionOccupied: $("conditionOccupied")?.checked || false,
+    conditionAccess: $("conditionAccess")?.value || "jo",
+    conditionWaste: $("conditionWaste")?.value || "nincs"
   };
 }
 
@@ -615,6 +652,65 @@ function writeProjectForm() {
   $("vatPercent").value = state.project.vatPercent ?? 27;
   $("discountAmount").value = state.project.discountAmount ?? 0;
   $("priceNote").value = state.project.priceNote || "";
+  if($("priceBand")) $("priceBand").value=state.project.priceBand||"atlag";
+  if($("materialQuality")) $("materialQuality").value=state.project.materialQuality||"kozep";
+  if($("priceRegion")) $("priceRegion").value=state.project.priceRegion||"1";
+  if($("overheadRate")) $("overheadRate").value=state.project.overheadRate||6764;
+  if($("conditionFloor")) $("conditionFloor").value=state.project.conditionFloor||0;
+  if($("conditionLift")) $("conditionLift").value=state.project.conditionLift||"igen";
+  if($("conditionParking")) $("conditionParking").value=state.project.conditionParking||0;
+  if($("conditionOccupied")) $("conditionOccupied").checked=!!state.project.conditionOccupied;
+  if($("conditionAccess")) $("conditionAccess").value=state.project.conditionAccess||"jo";
+  if($("conditionWaste")) $("conditionWaste").value=state.project.conditionWaste||"nincs";
+}
+
+function catalogItem(priceId, qty, trade) {
+  const row = priceCatalog.find(x => x.id === priceId);
+  return row ? { id:uid(), priceId, trade, name:row.megnevezes, qty, unit:row.egyseg, material:0, labor:0, normHours:0, referenceUpdated:row.frissitve } : null;
+}
+
+function pricingSelection() {
+  return { band:$("priceBand")?.value || "atlag", quality:QUALITY_FACTORS[$("materialQuality")?.value] || 1, region:Number($("priceRegion")?.value || 1), rate:Number($("overheadRate")?.value || 6764) };
+}
+
+function refreshCatalogPrices() {
+  const s=pricingSelection();
+  state.items.forEach(item=>{
+    if(!item.priceId) return;
+    const row=priceCatalog.find(x=>x.id===item.priceId); if(!row) return;
+    item.name=row.megnevezes; item.unit=row.egyseg;
+    item.material=Math.round(Number(row[`anyag_${s.band}`]||0)*s.quality*s.region);
+    const norm=Number(row[`norma_ora_${s.band}`]||0);
+    item.normHours=norm*Number(item.qty||0);
+    item.labor=Math.round((norm>0 ? norm*s.rate : Number(row[`munka_${s.band}`]||0))*s.region);
+    item.referenceUpdated=row.frissitve;
+  });
+}
+
+async function loadPriceCatalog() {
+  if(!supa) return;
+  const {data,error}=await supa.from("epitoipari_arak").select("*").eq("aktiv",true);
+  if(error||!data?.length){ $("catalogStatus").textContent="Az online katalógus nem elérhető"; return; }
+  priceCatalog=data;
+  const dates=data.map(x=>x.frissitve).filter(Boolean).sort();
+  $("catalogStatus").textContent=`Árak frissítve: ${dates[dates.length-1]} • ${data.length} aktív tétel`;
+}
+
+function ancillaryCosts() {
+  const floor=Math.max(0,Number($("conditionFloor")?.value||0)), lift=$("conditionLift")?.value||"igen", parking=Math.max(0,Number($("conditionParking")?.value||0));
+  const baseHours=state.items.reduce((s,i)=>s+Number(i.normHours||0),0), rate=pricingSelection().rate*pricingSelection().region, details=[];
+  let hours=0;
+  if(floor>0&&lift==="nem") hours=baseHours*Math.min(.05*floor,.30)+.35*floor;
+  else if(floor>0&&lift==="korlatozott") hours=baseHours*Math.min(.02*floor,.12)+.15*floor;
+  if(hours>0) details.push([`Anyagmozgatás (${floor}. emelet)`,hours*rate]);
+  const parkingHours=parking>=100?3:parking>=50?1.5:parking>=20?.75:0;
+  if(parkingHours) details.push([`Rakodás és mozgatás (${parking} m)`,parkingHours*rate]);
+  const base=state.items.reduce((s,i)=>s+Number(i.qty||0)*Number(i.labor||0),0);
+  if($("conditionOccupied")?.checked) details.push(["Lakott ingatlan miatti többletmunka",base*.10]);
+  if($("conditionAccess")?.value==="nehez") details.push(["Nehezen megközelíthető munkaterület",base*.08]);
+  const waste=$("conditionWaste")?.value||"nincs";
+  if(waste!=="nincs") details.push([waste==="sok"?"Nagy mennyiségű sitt kezelése":"Sitt összegyűjtése és mozgatása",rate*(waste==="sok"?6:2)]);
+  return {details,total:details.reduce((s,x)=>s+x[1],0)};
 }
 
 function applyTemplate(key) {
@@ -625,7 +721,9 @@ function applyTemplate(key) {
   state.project.vatPercent = 27;
   state.project.discountAmount = 0;
   state.phases = tpl.phases.map(([name, trade, days], index) => ({ id: uid(), name, trade, days, status: index === 0 ? "progress" : "todo", note: "" }));
-  state.items = tpl.items.map(([trade, name, qty, unit, material, labor]) => ({ id: uid(), trade, name, qty, unit, material, labor }));
+  const linked=(TEMPLATE_CATALOG[key]||[]).map(([priceId,qty,trade])=>catalogItem(priceId,qty,trade)).filter(Boolean);
+  state.items = linked.length ? linked : tpl.items.map(([trade, name, qty, unit, material, labor]) => ({ id: uid(), trade, name, qty, unit, material, labor }));
+  refreshCatalogPrices();
   state.subs = [];
   state.checks = {};
   rebuildChecklist(false);
@@ -654,13 +752,14 @@ function phaseCost(trade) {
 }
 
 function totals() {
-  const net = state.items.reduce((sum, i) => sum + Number(i.qty || 0) * (Number(i.material || 0) + Number(i.labor || 0)), 0);
+  const ancillary = ancillaryCosts();
+  const net = state.items.reduce((sum, i) => sum + Number(i.qty || 0) * (Number(i.material || 0) + Number(i.labor || 0)), 0) + ancillary.total;
   const reserve = net * (Number($("reservePercent").value || state.project.reservePercent || 0) / 100);
   const discount = Number($("discountAmount").value || state.project.discountAmount || 0);
   const vatBase = Math.max(0, net + reserve - discount);
   const vat = vatBase * (Number($("vatPercent").value || state.project.vatPercent || 0) / 100);
   const gross = vatBase + vat;
-  return { net, reserve, discount, vatBase, vat, gross };
+  return { net, reserve, discount, vatBase, vat, gross, ancillary };
 }
 
 function renderPhases() {
@@ -751,6 +850,7 @@ function renderChecklist() {
 }
 
 function renderItems() {
+  refreshCatalogPrices();
   const body = $("itemsBody");
   if (!state.items.length) {
     body.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500">Még nincs költségtétel.</td></tr>`;
@@ -794,6 +894,7 @@ function updateItemFromInput(e) {
   if (cls.includes("item-unit")) item.unit = e.target.value;
   if (cls.includes("item-material")) item.material = Number(e.target.value || 0);
   if (cls.includes("item-labor")) item.labor = Number(e.target.value || 0);
+  if (item.priceId && (cls.includes("item-material") || cls.includes("item-labor") || cls.includes("item-name") || cls.includes("item-unit"))) item.priceId = null;
   rebuildChecklist(false);
   renderAll();
 }
@@ -893,6 +994,7 @@ function renderSummary() {
         </div>
       `).join("") : `<div class="text-slate-500">Nincs még költségtétel.</div>`}
     </div>
+    ${t.ancillary.details.length ? `<details class="rounded-2xl bg-emerald-50 border border-emerald-200 p-4"><summary class="font-black cursor-pointer">Járulékos költségek: ${fmt(t.ancillary.total)}</summary>${t.ancillary.details.map(x=>`<div class="flex justify-between mt-2"><span>${escapeHtml(x[0])}</span><b>${fmt(x[1])}</b></div>`).join("")}</details>` : ""}
     <div class="rounded-2xl bg-orange-50 border border-orange-200 p-4 text-orange-950">
       <b>Fontos megjegyzés:</b> Ez tervezési és ajánlatkészítési segédlet. Végleges árat helyszíni felmérés, pontos műszaki tartalom és szakági egyeztetés után érdemes adni.
     </div>
@@ -1290,10 +1392,12 @@ function bindEvents() {
 
   $("jsonImport").addEventListener("change", e => e.target.files[0] && importJson(e.target.files[0]));
   $("photoInput").addEventListener("change", e => handlePhotos(e.target.files));
+  ["priceBand","materialQuality","priceRegion","overheadRate","conditionFloor","conditionLift","conditionParking","conditionOccupied","conditionAccess","conditionWaste"].forEach(id=>$(id)?.addEventListener("change",()=>{refreshCatalogPrices();renderAll();const a=ancillaryCosts();$("conditionCostInfo").textContent=a.total?`Becsült járulékos költség: ${fmt(a.total)}`:"Alaphelyzet: nincs járulékos többletköltség.";}));
 }
 
 async function bootPage() {
   bindEvents();
+  await loadPriceCatalog();
   applyTemplate("completeFlat");
   renderLocalSaveStatus();
   await loadSavedProjects();
