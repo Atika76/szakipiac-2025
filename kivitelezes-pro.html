@@ -17,7 +17,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    html, body { max-width: 100%; overflow-x: hidden; }
     body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif; }
+    main, nav, section, #pdfArea, #phaseList { min-width: 0; }
+    .phase-row > input, .phase-row > select, .phase-row > button { min-width: 0; width: 100%; }
+    .phase-row { display: grid; grid-template-columns: 40px minmax(0,1fr) 44px; gap: .75rem; align-items: center; }
+    .phase-row .phase-name, .phase-row .phase-trade, .phase-row .phase-status,
+    .phase-row .phase-days, .phase-row .phase-note { grid-column: 1 / -1; }
+    .phase-row .delete-phase { grid-column: 3; grid-row: 1; }
+    @media (min-width: 768px) {
+      .phase-row { grid-template-columns: 40px minmax(150px,1.25fr) minmax(140px,1fr) minmax(125px,.85fr) 80px 44px; }
+      .phase-row .phase-name, .phase-row .phase-trade, .phase-row .phase-status, .phase-row .phase-days { grid-column: auto; }
+      .phase-row .phase-note { grid-column: 2 / 6; }
+      .phase-row .delete-phase { grid-column: 6; grid-row: 1; }
+    }
+    @media (min-width: 1440px) {
+      .phase-row { grid-template-columns: 40px minmax(150px,1.2fr) minmax(150px,1fr) minmax(125px,.8fr) 80px minmax(130px,1fr) 44px; }
+      .phase-row .phase-note { grid-column: auto; }
+      .phase-row .delete-phase { grid-column: auto; grid-row: auto; }
+    }
     .glass { background: rgba(255,255,255,.82); backdrop-filter: blur(14px); }
     .soft-shadow { box-shadow: 0 18px 60px rgba(15,23,42,.10); }
     .print-only { display: none; }
@@ -36,7 +54,7 @@
   <div id="toast" class="fixed top-5 right-5 z-[200] translate-x-[120%] transition-transform duration-300 text-white py-3 px-5 rounded-xl shadow-xl no-print"></div>
 
   <header class="sticky top-0 z-50 border-b border-slate-200 glass no-print">
-    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
       <div class="flex items-center justify-between gap-3">
         <a href="index.html#home" class="flex items-center gap-3 min-w-0">
           <img class="h-10 w-auto rounded-lg" src="https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-logo-promo.png" alt="SzakiPiac logo">
@@ -63,7 +81,7 @@
     </nav>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div id="usageGate" class="hidden mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 shadow-sm no-print">
       <div class="font-extrabold">🔒 A funkció használatához regisztráció vagy bejelentkezés szükséges.</div>
       <p class="mt-1 text-sm">Az oldal bejelentkezés nélkül is megtekinthető, de projektet szerkeszteni, menteni, exportálni, PDF-et készíteni vagy az Építési Naplóba küldeni csak belépés után lehet.</p>
@@ -105,8 +123,8 @@
       </div>
     </section>
 
-    <div class="grid xl:grid-cols-[1fr_360px] gap-8">
-      <div id="pdfArea" class="space-y-8">
+    <div class="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+      <div id="pdfArea" class="space-y-8 min-w-0">
         <section id="projekt" class="bg-white rounded-3xl soft-shadow border border-slate-200 p-5 sm:p-6">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
             <div>
@@ -655,7 +673,7 @@ function renderPhases() {
     const trade = TRADE_DATA[p.trade] || TRADE_DATA.komuves;
     return `
       <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div class="grid lg:grid-cols-[40px_1.2fr_210px_160px_120px_1fr_44px] gap-3 items-center">
+        <div class="phase-row">
           <div class="h-10 w-10 rounded-full bg-white border border-slate-200 flex items-center justify-center font-black">${idx + 1}</div>
           <input class="phase-name rounded-xl border border-slate-300 px-3 py-2 font-bold bg-white" data-id="${p.id}" value="${escapeAttr(p.name)}">
           <select class="phase-trade rounded-xl border border-slate-300 px-3 py-2 bg-white font-semibold" data-id="${p.id}">${tradeOptions(p.trade)}</select>
