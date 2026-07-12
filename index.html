@@ -1858,7 +1858,7 @@
       }
 
       const statsHtml = stats ? `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div class="text-sm text-gray-500">Összes oldalmegtekintés</div>
             <div class="text-2xl font-bold text-gray-900">${(stats.total_pageviews ?? 0).toLocaleString("hu-HU")}</div>
@@ -1871,6 +1871,9 @@
             <div class="text-sm text-gray-500">Mai oldalmegtekintés</div>
             <div class="text-2xl font-bold text-gray-900">${(stats.today_pageviews ?? 0).toLocaleString("hu-HU")}</div>
           </div>
+        </div>
+        <div class="flex justify-end mt-3 mb-6">
+          <button type="button" onclick="window.resetVisitorStats()" class="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-100">🗑️ Megtekintések törlése</button>
         </div>
       ` : `
         <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded mb-6">
@@ -2047,6 +2050,18 @@
       trackEvent("ad_deleted", { id });
       showAdminPage();
       showToast("Törölve", "success");
+    };
+
+    window.resetVisitorStats = async () => {
+      const { data: { session } } = await supaClient.auth.getSession();
+      if (!session || session.user.email !== ADMIN_EMAIL) return showToast("Nincs admin jogosultságod.", "error");
+      if (!confirm("Biztosan törlöd az összes oldalmegtekintési statisztikát? Az összes, az egyedi és a mai megtekintésszám is nullázódik. Ez nem vonható vissza.")) return;
+
+      const { data: deletedCount, error } = await supaClient.rpc("admin_reset_pageview_stats");
+      if (error) return showToast("A megtekintések törlése nem sikerült: " + error.message, "error");
+
+      showToast(`${Number(deletedCount || 0).toLocaleString("hu-HU")} megtekintési rekord törölve.`, "success");
+      await showAdminPage();
     };
 
     window.saveUserPackage = async (userId) => {

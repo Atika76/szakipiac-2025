@@ -8,6 +8,7 @@ on:
       - 'supabase/functions/generate-ad/**'
       - 'supabase/authenticated_features.sql'
       - 'supabase/price_catalog.sql'
+      - 'supabase/admin_analytics.sql'
       - 'supabase/config.toml'
       - '.github/workflows/deploy-szakipiac-import-function.yml'
 
@@ -45,3 +46,4 @@ jobs:
           supabase link --project-ref bxtpnotswnwrbycvfypz
           supabase db query --linked --file supabase/authenticated_features.sql
           supabase db query --linked --file supabase/price_catalog.sql
+          supabase db query --linked --file supabase/admin_analytics.sql
