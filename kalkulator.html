@@ -192,15 +192,15 @@
           </div>
 
           <!-- Global apply -->
-          <div class="mt-6 rounded-2xl border bg-gray-50 p-4">
-            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-                <div>
-                  <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Globál mennyiség</label>
+          <div class="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                  <label class="block text-sm font-extrabold text-gray-800">Globál mennyiség</label>
                   <input id="global_qty" type="number" min="0" step="0.01" value="50" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off" />
                 </div>
-                <div>
-                  <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Egység</label>
+                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                  <label class="block text-sm font-extrabold text-gray-800">Mértékegység</label>
                   <select id="global_unit" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off">
                     <option value="m²" selected>m²</option>
                     <option value="m³">m³</option>
@@ -210,22 +210,22 @@
                     <option value="alkalom">alkalom</option>
                   </select>
                 </div>
-                <div>
-                  <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Anyag árrés (%)</label>
+                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                  <label class="block text-sm font-extrabold text-gray-800">Anyagárrés (%)</label>
                   <input id="material_margin" type="number" min="0" step="0.1" value="10" class="mt-1 w-full border rounded-xl px-3 py-2 font-bold" autocomplete="off" />
-                  <div class="text-xs text-gray-500 mt-1">Csak az “Anyag” típusú tételekre.</div>
+                  <div class="text-xs leading-5 text-gray-600 mt-1">Csak az „Anyag” típusú tételekre vonatkozik.</div>
                 </div>
-                <div>
-                  <label class="text-xs font-extrabold tracking-widest uppercase text-gray-500">Szorzó ráhúzás</label>
+                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                  <label class="block text-sm font-extrabold text-gray-800">Tételek kijelölése</label>
                   <div class="mt-1 flex gap-2">
-                    <button id="btnSelectAll" class="px-3 py-2 rounded-xl bg-white border font-bold hover:bg-gray-100 w-1/2">Mind ✓</button>
-                    <button id="btnSelectNone" class="px-3 py-2 rounded-xl bg-white border font-bold hover:bg-gray-100 w-1/2">Ürít</button>
+                    <button id="btnSelectAll" class="px-3 py-2 rounded-xl bg-gray-50 border font-bold hover:bg-gray-100 w-1/2">Mind ✓</button>
+                    <button id="btnSelectNone" class="px-3 py-2 rounded-xl bg-gray-50 border font-bold hover:bg-gray-100 w-1/2">Egyik sem</button>
                   </div>
                 </div>
               </div>
 
-              <div class="flex flex-wrap gap-2">
-                <button id="btnApplyGlobal" class="px-4 py-3 rounded-xl bg-indigo-600 text-white font-extrabold hover:bg-indigo-700">
+              <div>
+                <button id="btnApplyGlobal" class="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white font-extrabold hover:bg-indigo-700">
                   <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Ráteszem a kijelöltekre
                 </button>
               </div>
