@@ -4,7 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const products: Record<string, { amount: string; currency: string; description: string }> = {
   ad_premium: { amount: "990", currency: "HUF", description: "SzakiPiac 360 Prémium hirdetés" },
   ad_extra: { amount: "1990", currency: "HUF", description: "SzakiPiac 360 Extra hirdetés" },
-  plan_360_30d: { amount: "3990", currency: "HUF", description: "SzakiPiac 360 - 30 napos hozzáférés" },
+  plan_360_basic_30d: { amount: "1990", currency: "HUF", description: "SzakiPiac 360 Alap - 30 napos hozzáférés" },
+  plan_360_pro_30d: { amount: "4990", currency: "HUF", description: "SzakiPiac 360 PRO - 30 napos hozzáférés" },
+  plan_360_30d: { amount: "3990", currency: "HUF", description: "Korábbi SzakiPiac 360 - 30 napos hozzáférés" },
 };
 
 const corsHeaders = {
@@ -104,6 +106,15 @@ serve(async req => {
         .eq("user_id", userData.user.id)
         .maybeSingle();
       if (paymentError || !payment) return json({ ok: false, error: "A fizetés nem található." }, 404);
+      if (payment.product_code === "plan_360_basic_30d") {
+        const { data: currentPlan } = await admin
+          .from("szakipiac_360_entitlements")
+          .select("plan,expires_at")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        const currentProIsActive = currentPlan?.plan === "pro" && (!currentPlan.expires_at || new Date(currentPlan.expires_at).getTime() >= Date.now());
+        if (currentProIsActive) return json({ ok: false, error: "Aktív PRO csomag mellett Alap csomag nem vásárolható. A PRO csomagot hosszabbítsd meg." }, 409);
+      }
 
       const captureResponse = await fetch(`${apiBase}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
         method: "POST",
@@ -121,10 +132,15 @@ serve(async req => {
       }).eq("id", payment.id);
       if (!valid) return json({ ok: false, error: "A PayPal-fizetés ellenőrzése nem sikerült." }, 400);
       let accessExpiresAt: string | null = null;
-      if (payment.product_code === "plan_360_30d") {
+      const purchasedPlan = payment.product_code === "plan_360_basic_30d"
+        ? "basic"
+        : ["plan_360_pro_30d", "plan_360_30d"].includes(payment.product_code)
+          ? "pro"
+          : null;
+      if (purchasedPlan) {
         const { data: current } = await admin
           .from("szakipiac_360_entitlements")
-          .select("expires_at")
+          .select("plan,expires_at")
           .eq("user_id", userData.user.id)
           .maybeSingle();
         const currentMs = current?.expires_at ? new Date(current.expires_at).getTime() : 0;
@@ -132,7 +148,7 @@ serve(async req => {
         accessExpiresAt = new Date(baseMs + 30 * 24 * 60 * 60 * 1000).toISOString();
         const { error: accessError } = await admin.from("szakipiac_360_entitlements").upsert({
           user_id: userData.user.id,
-          plan: "360",
+          plan: purchasedPlan,
           expires_at: accessExpiresAt,
           source: "paypal",
           updated_at: new Date().toISOString(),

@@ -980,9 +980,10 @@ function lockGuestControls() {
   });
 }
 
-function applyUsageGate(session) {
-  $("usageGate")?.classList.toggle("hidden", !!session);
+async function applyUsageGate(session) {
+  const gate = $("usageGate");
   if (!session) {
+    gate?.classList.remove("hidden");
     lockGuestControls();
     guestGateObserver?.disconnect();
     guestGateObserver = new MutationObserver(lockGuestControls);
@@ -995,6 +996,22 @@ function applyUsageGate(session) {
     el.disabled = false;
     el.removeAttribute("data-auth-locked");
     el.removeAttribute("title");
+  });
+
+  let plan = session.user.email === ADMIN_EMAIL ? "admin" : "free";
+  if (plan !== "admin") {
+    const { data } = await supa.from("szakipiac_360_entitlements").select("plan,expires_at").eq("user_id", session.user.id).maybeSingle();
+    if (["basic", "pro"].includes(data?.plan) && (!data.expires_at || new Date(data.expires_at).getTime() >= Date.now())) plan = data.plan;
+  }
+  const canSaveAndPdf = ["basic", "pro", "admin"].includes(plan);
+  gate?.classList.toggle("hidden", canSaveAndPdf);
+  if (!canSaveAndPdf && gate) gate.innerHTML = `<div class="font-extrabold">ℹ️ Ingyenes kalkulátorhasználat</div><p class="mt-1 text-sm">Számolni és tájékozódni ingyenesen is lehet. Mentéshez és PDF-készítéshez 360 Alap vagy 360 PRO csomag szükséges.</p><a href="index.html#szakipiac360" class="mt-2 inline-block font-extrabold underline">Csomagok megtekintése</a>`;
+  ["btnPrint", "btnPdfPro", "btnSave"].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.disabled = !canSaveAndPdf;
+    el.classList.toggle("opacity-50", !canSaveAndPdf);
+    el.title = canSaveAndPdf ? "" : "Mentéshez és PDF-hez 360 Alap vagy 360 PRO csomag szükséges.";
   });
 }
 
@@ -1474,7 +1491,7 @@ async function boot() {
   });
 
   await loadSaved();
-  applyUsageGate(session);
+  await applyUsageGate(session);
 }
 
 boot();

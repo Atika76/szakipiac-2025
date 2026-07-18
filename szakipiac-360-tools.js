@@ -141,7 +141,13 @@
       paypalConfigured = paypalRes.data?.configured === true;
     }
 
-    const active360 = isAdmin || (entitlement?.plan === "360" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now()));
+    const entitlementActive = Boolean(entitlement) && ["basic", "pro"].includes(entitlement?.plan) && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now());
+    const activePlan = isAdmin ? "admin" : entitlementActive ? entitlement.plan : "free";
+    const active360 = activePlan !== "free";
+    const activePro = ["pro", "admin"].includes(activePlan);
+    const planLabel = activePlan === "admin" ? "Admin" : activePlan === "pro" ? "360 PRO" : activePlan === "basic" ? "360 Alap" : "Ingyenes";
+    const aiLimit = activePlan === "admin" ? "∞" : activePlan === "pro" ? 20 : activePlan === "basic" ? 10 : 3;
+    const saveLimit = activePlan === "admin" || activePlan === "pro" ? "korlátlan" : activePlan === "basic" ? 30 : 3;
     const daysLeft = entitlement?.expires_at ? Math.ceil((new Date(entitlement.expires_at).getTime() - Date.now()) / 86400000) : null;
     const countTable = async table => {
       if (!session) return 0;
@@ -159,17 +165,17 @@
       <section class="rounded-3xl border border-indigo-200 bg-white p-5 shadow-sm md:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div><h2 class="text-2xl font-black text-slate-950">Saját 360 irányítópult</h2><p class="mt-1 text-slate-600">Ugyanazokat az ajánlatokat, projekteket és hirdetéseket mutatja, amelyeket a meglévő SzakiPiac modulokban mentettél.</p></div>
-          <div class="rounded-2xl ${active360 ? "bg-emerald-100 text-emerald-950" : "bg-slate-100 text-slate-800"} px-5 py-3"><div class="text-xs font-black uppercase">Csomag</div><div class="text-xl font-black">${isAdmin ? "Admin" : active360 ? "SzakiPiac 360" : "Ingyenes"}</div><div class="text-xs">${entitlement?.expires_at ? `Lejárat: ${dateHu(entitlement.expires_at)}` : "Nincs fizetős hozzáférés"}</div></div>
+          <div class="rounded-2xl ${active360 ? "bg-emerald-100 text-emerald-950" : "bg-slate-100 text-slate-800"} px-5 py-3"><div class="text-xs font-black uppercase">Csomag</div><div class="text-xl font-black">${planLabel}</div><div class="text-xs">${isAdmin ? "Korlátlan adminisztrátori hozzáférés" : entitlement?.expires_at && entitlementActive ? `Lejárat: ${dateHu(entitlement.expires_at)}` : "Az ingyenes csomag nem jár le"}</div></div>
         </div>
         ${!session ? `<div class="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950"><b>Az irányítópult megtekinthető, használatához jelentkezz be.</b> <a class="font-black underline" href="#auth">Regisztráció / Belépés</a></div>` : ""}
-        ${welcomeGranted ? `<div class="mt-5 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950"><b>Ajándék 360 hozzáférés aktiválva!</b> Az első 15 felhasználó egyikeként 30 napot kaptál.</div>` : ""}
+        ${welcomeGranted ? `<div class="mt-5 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950"><b>Ajándék 360 PRO hozzáférés aktiválva!</b> Az első 15 felhasználó egyikeként 30 napot kaptál.</div>` : ""}
         ${active360 && daysLeft !== null && daysLeft <= 7 ? `<div class="mt-5 rounded-2xl border border-orange-300 bg-orange-50 p-4 text-orange-950"><b>A 360 hozzáférésed ${Math.max(daysLeft, 0)} napon belül lejár.</b> Hosszabbítsd meg, hogy a mentéseid és a magasabb AI-keret megmaradjon.</div>` : ""}
         ${!active360 && entitlement?.expires_at ? `<div class="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-900"><b>A 360 hozzáférésed lejárt.</b> A korábbi mentéseid megmaradtak és olvashatók; újraaktiválás után ismét korlátlanul menthetsz.</div>` : ""}
         <div class="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          ${[["Hirdetések",adCount],["Árajánlatok",quoteCount],["Projektek",projectCount],["Új érdeklődések",inquiryCount],["360 mentések",workspaceCount],["Gemini ma",`${usage}/${isAdmin ? "∞" : active360 ? 20 : 3}`]].map(([label,value])=>`<div class="rounded-2xl border bg-slate-50 p-4"><div class="text-xs font-bold text-slate-500">${label}</div><div class="mt-1 text-2xl font-black text-slate-950">${value}</div></div>`).join("")}
+          ${[["Hirdetések",adCount],["Árajánlatok",quoteCount],["Projektek",projectCount],["Új érdeklődések",inquiryCount],["360 mentések",`${workspaceCount}/${saveLimit}`],["Gemini ma",`${usage}/${aiLimit}`]].map(([label,value])=>`<div class="rounded-2xl border bg-slate-50 p-4"><div class="text-xs font-bold text-slate-500">${label}</div><div class="mt-1 text-2xl font-black text-slate-950">${value}</div></div>`).join("")}
         </div>
         <div class="mt-5 flex flex-wrap gap-2" role="tablist">
-          ${[["overview","Áttekintés"],["material","Anyagszámoló"],["profit","Profitkalkulátor"],["documents","Dokumentumok"]].map(([id,label],index)=>`<button type="button" data-sp360-tab="${id}" class="rounded-xl px-4 py-2 font-black ${index===0?"bg-indigo-700 text-white":"bg-slate-100 text-slate-700"}">${label}</button>`).join("")}
+          ${[["overview","Áttekintés"],["material","Anyagszámoló"],["profit",`${activePro ? "" : "🔒 "}Profitkalkulátor`],["documents",`${activePro ? "" : "🔒 "}Dokumentumok`]].map(([id,label],index)=>`<button type="button" data-sp360-tab="${id}" class="rounded-xl px-4 py-2 font-black ${index===0?"bg-indigo-700 text-white":"bg-slate-100 text-slate-700"}">${label}</button>`).join("")}
         </div>
         <div id="sp360-tab-content" class="mt-5"></div>
       </section>`;
@@ -194,28 +200,44 @@
     };
 
     const renderOverview = () => {
+      const paymentLabel = code => ({
+        plan_360_basic_30d: "360 Alap – 30 nap",
+        plan_360_pro_30d: "360 PRO – 30 nap",
+        plan_360_30d: "Korábbi 360 – 30 nap",
+        ad_premium: "Prémium hirdetés",
+        ad_extra: "Extra hirdetés"
+      }[code] || code);
       tabContent.innerHTML = `
         <div class="grid gap-4 lg:grid-cols-2">
           <div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Meglévő munkáid</h3><div class="mt-4 grid gap-2"><a href="kalkulator.html" class="rounded-xl bg-orange-50 p-3 font-bold text-orange-900">${quoteCount} mentett árajánlat megnyitása</a><a href="kivitelezes-pro.html" class="rounded-xl bg-emerald-50 p-3 font-bold text-emerald-900">${projectCount} KivitelezésPRO projekt megnyitása</a><a href="#feltoltes" class="rounded-xl bg-blue-50 p-3 font-bold text-blue-900">${adCount} hirdetés kezelése</a><a href="uzenetek.html" class="rounded-xl bg-violet-50 p-3 font-bold text-violet-900">${inquiryCount} új érdeklődés / üzenet megnyitása</a></div></div>
-          <div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">360 hozzáférés</h3><p class="mt-2 text-sm text-slate-600">30 napos hozzáférés: <b>3 990 Ft</b>. A Premium és Extra hirdetések egyszeri PayPal-fizetése ettől külön marad.</p>${active360 ? `<p class="mt-3 font-bold text-emerald-700">Aktív hozzáférés: ${dateHu(entitlement?.expires_at)}. Az új vásárlás ehhez ad további 30 napot.</p>` : ""}<div id="sp360-paypal" class="mt-4">${!session ? "Jelentkezz be az aktiváláshoz." : paypalConfigured ? `<div id="sp360-paypal-buttons"></div>` : `<div class="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Az automatikus 360-fizetés szerveres PayPal-beállításra vár. Az admin addig kézzel tud 360 hozzáférést adni. A meglévő hirdetésfizetés továbbra is működik.</div>`}</div></div>
+          <div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Jelenlegi hozzáférés</h3><p class="mt-2 text-sm text-slate-600"><b>${planLabel}</b>${isAdmin ? " – nincs lejárat és nincs fizetési kötelezettség." : active360 ? ` – aktív eddig: ${dateHu(entitlement?.expires_at)}.` : " – örök ingyenes csomag, nem jár le."}</p><div class="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700"><b>Egy közös fizetési felület:</b> PayPal és – jogosultságtól függően – bankkártya. A Prémium és Extra hirdetéskiemelés változatlanul megmarad.</div></div>
         </div>
-        <div class="mt-4 grid gap-4 lg:grid-cols-2"><div class="rounded-2xl border border-slate-200 p-5"><div class="flex items-center justify-between gap-3"><h3 class="text-lg font-black">Legutóbbi 360 mentések</h3><span class="text-xs text-slate-500">Ingyenes: 3 · 360: korlátlan</span></div><div class="mt-3 space-y-2">${workspace.length ? workspace.slice(0,8).map(item=>`<div class="flex items-center justify-between rounded-xl bg-slate-50 p-3"><div><b>${esc(item.title)}</b><div class="text-xs text-slate-500">${esc(item.item_type)} · ${new Date(item.created_at).toLocaleString("hu-HU")}</div></div><button type="button" data-delete-workspace="${item.id}" class="text-sm font-bold text-red-600">Törlés</button></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs külön 360 mentésed.</div>`}</div></div><div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Fizetési előzmények</h3><div class="mt-3 space-y-2">${payments.length ? payments.map(payment=>`<div class="rounded-xl bg-slate-50 p-3"><div class="flex justify-between gap-3"><b>${payment.product_code === "plan_360_30d" ? "360 – 30 nap" : payment.product_code}</b><span class="font-black">${num(payment.amount).toLocaleString("hu-HU")} ${esc(payment.currency)}</span></div><div class="mt-1 text-xs text-slate-500">${new Date(payment.created_at).toLocaleString("hu-HU")} · ${payment.status === "completed" ? "Sikeres" : payment.status === "pending" ? "Folyamatban" : "Sikertelen"}</div></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs 360 fizetési előzményed.</div>`}</div></div></div>`;
-      if (session && paypalConfigured && window.paypal) {
+        ${isAdmin ? "" : `<div class="mt-4 grid gap-4 lg:grid-cols-3">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5"><h3 class="text-xl font-black">Ingyenes</h3><div class="mt-2 text-3xl font-black">0 Ft</div><p class="mt-3 text-sm text-slate-600">Nem jár le · napi 3 Gemini · 3 mentés · alap anyagszámítás.</p></div>
+          <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><h3 class="text-xl font-black text-indigo-950">360 Alap</h3><div class="mt-2 text-3xl font-black text-indigo-950">1 990 Ft <span class="text-sm">/ 30 nap</span></div><p class="mt-3 text-sm text-indigo-900">Napi 10 Gemini · 30 mentés · anyagszámoló · árajánlat-mentés és PDF.</p><div id="sp360-basic-buttons" class="mt-4">${!session ? "Jelentkezz be a vásárláshoz." : !paypalConfigured ? "" : ""}</div></div>
+          <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5"><h3 class="text-xl font-black text-emerald-950">360 PRO</h3><div class="mt-2 text-3xl font-black text-emerald-950">4 990 Ft <span class="text-sm">/ 30 nap</span></div><p class="mt-3 text-sm text-emerald-900">Napi 20 Gemini · korlátlan mentés · profitkalkulátor · dokumentumok · teljes 360 eszköztár.</p><div id="sp360-pro-buttons" class="mt-4">${!session ? "Jelentkezz be a vásárláshoz." : ""}</div></div>
+        </div>`}
+        <div class="mt-4 grid gap-4 lg:grid-cols-2"><div class="rounded-2xl border border-slate-200 p-5"><div class="flex items-center justify-between gap-3"><h3 class="text-lg font-black">Legutóbbi 360 mentések</h3><span class="text-xs text-slate-500">A kereted: ${saveLimit}</span></div><div class="mt-3 space-y-2">${workspace.length ? workspace.slice(0,8).map(item=>`<div class="flex items-center justify-between rounded-xl bg-slate-50 p-3"><div><b>${esc(item.title)}</b><div class="text-xs text-slate-500">${esc(item.item_type)} · ${new Date(item.created_at).toLocaleString("hu-HU")}</div></div><button type="button" data-delete-workspace="${item.id}" class="text-sm font-bold text-red-600">Törlés</button></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs külön 360 mentésed.</div>`}</div></div><div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Fizetési előzmények</h3><div class="mt-3 space-y-2">${payments.length ? payments.map(payment=>`<div class="rounded-xl bg-slate-50 p-3"><div class="flex justify-between gap-3"><b>${esc(paymentLabel(payment.product_code))}</b><span class="font-black">${num(payment.amount).toLocaleString("hu-HU")} ${esc(payment.currency)}</span></div><div class="mt-1 text-xs text-slate-500">${new Date(payment.created_at).toLocaleString("hu-HU")} · ${payment.status === "completed" ? "Sikeres" : payment.status === "pending" ? "Folyamatban" : "Sikertelen"}</div></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs 360 fizetési előzményed.</div>`}</div></div></div>`;
+      const renderPaymentButton = (productCode, selector, successText) => {
+        if (!session || !paypalConfigured || !window.paypal || !document.querySelector(selector)) return;
         window.paypal.Buttons({
+          style: { layout: "vertical", shape: "rect", label: "pay" },
           createOrder: async () => {
-            const { data, error } = await client.functions.invoke("paypal-order", { body: { action: "create", product_code: "plan_360_30d" } });
+            const { data, error } = await client.functions.invoke("paypal-order", { body: { action: "create", product_code: productCode } });
             if (error || !data?.order_id) throw new Error(data?.error || error?.message || "A PayPal-rendelés nem indult el.");
             return data.order_id;
           },
           onApprove: async data => {
             const result = await client.functions.invoke("paypal-order", { body: { action: "capture", order_id: data.orderID } });
             if (result.error || !result.data?.verified) return toast(result.data?.error || result.error?.message || "A fizetés ellenőrzése nem sikerült.", "error");
-            toast("A 360 hozzáférés automatikusan aktiválva.", "success");
+            toast(successText, "success");
             await render(container, options);
           },
           onError: error => toast(error?.message || "PayPal-hiba történt.", "error")
-        }).render("#sp360-paypal-buttons");
-      }
+        }).render(selector);
+      };
+      if (activePlan !== "pro") renderPaymentButton("plan_360_basic_30d", "#sp360-basic-buttons", "A 360 Alap csomag automatikusan aktiválva.");
+      renderPaymentButton("plan_360_pro_30d", "#sp360-pro-buttons", "A 360 PRO csomag automatikusan aktiválva.");
       tabContent.querySelectorAll("[data-delete-workspace]").forEach(button => button.addEventListener("click", async () => {
         if (!confirm("Biztosan törlöd ezt a 360 mentést?")) return;
         const { error } = await client.from("szakipiac_360_workspace_items").delete().eq("id", button.dataset.deleteWorkspace);
@@ -244,6 +266,11 @@
     };
 
     const renderProfit = () => {
+      if (!activePro) {
+        tabContent.innerHTML = `<div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-950"><h3 class="text-xl font-black">Profitkalkulátor – 360 PRO</h3><p class="mt-2">Ez a funkció a 360 PRO csomag része. Az oldal bemutatója megtekinthető, számítást és mentést PRO hozzáféréssel lehet végezni.</p><button type="button" data-back-to-plans class="mt-4 rounded-xl bg-emerald-700 px-5 py-3 font-black text-white">Csomagok megtekintése</button></div>`;
+        tabContent.querySelector("[data-back-to-plans]")?.addEventListener("click", renderOverview);
+        return;
+      }
       const fields=[["revenue","Vállalási ár nettó"],["material","Anyagköltség"],["labor","Saját munkadíj / bérköltség"],["overhead","Rezsiköltség és kiszállás"],["subs","Alvállalkozók"],["tax","Adók és járulékok"],["target","Kívánt haszon (%)"]];
       tabContent.innerHTML=`<div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-xl font-black">Profitkalkulátor</h3><p class="mt-1 text-sm text-slate-600">A mentett árajánlat profitmezőjét nem írja át; ez külön vállalkozói eredményelemzés ugyanazon költséglogika szerint.</p><div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">${fields.map(([id,label],i)=>`<label class="font-bold">${label}<input id="sp360-profit-${id}" type="number" min="0" step="1" value="${i===6?15:0}" class="mt-1 w-full rounded-xl border p-3"></label>`).join("")}</div><div class="mt-4 flex gap-2"><button id="sp360-profit-calc" class="rounded-xl bg-indigo-700 px-5 py-3 font-black text-white">Elemzés</button><button id="sp360-profit-save" class="rounded-xl border border-indigo-300 px-5 py-3 font-black text-indigo-800" ${session?"":"disabled"}>Mentés</button></div><div id="sp360-profit-result" class="mt-4"></div></div>`;
       lockToolIfGuest();
@@ -253,6 +280,11 @@
     };
 
     const renderDocuments = () => {
+      if (!activePro) {
+        tabContent.innerHTML = `<div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-950"><h3 class="text-xl font-black">Dokumentumkészítő – 360 PRO</h3><p class="mt-2">Az ellenőrzött szerződés- és igazolásminták, a mentés és a PDF a 360 PRO csomag részei.</p><button type="button" data-back-to-plans class="mt-4 rounded-xl bg-emerald-700 px-5 py-3 font-black text-white">Csomagok megtekintése</button></div>`;
+        tabContent.querySelector("[data-back-to-plans]")?.addEventListener("click", renderOverview);
+        return;
+      }
       tabContent.innerHTML=`<div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-xl font-black">Ellenőrzött felépítésű dokumentumminták</h3><div class="mt-4 grid gap-3 md:grid-cols-2"><label class="font-bold">Dokumentum típusa<select id="sp360-doc-type" class="mt-1 w-full rounded-xl border p-3">${Object.entries(documentTypes).map(([id,label])=>`<option value="${id}">${label}</option>`).join("")}</select></label><label class="font-bold">Vállalkozó<input id="sp360-doc-contractor" class="mt-1 w-full rounded-xl border p-3"></label><label class="font-bold">Megrendelő<input id="sp360-doc-client" class="mt-1 w-full rounded-xl border p-3"></label><label class="font-bold">Projekt neve<input id="sp360-doc-project" class="mt-1 w-full rounded-xl border p-3"></label><label class="font-bold">Helyszín<input id="sp360-doc-location" class="mt-1 w-full rounded-xl border p-3"></label><label class="font-bold">Összeg<input id="sp360-doc-amount" class="mt-1 w-full rounded-xl border p-3" placeholder="Pl. 1 250 000 Ft + ÁFA"></label><label class="font-bold">Határidő<input id="sp360-doc-deadline" type="date" class="mt-1 w-full rounded-xl border p-3"></label><label class="font-bold md:col-span-2">Munka leírása<textarea id="sp360-doc-scope" rows="4" class="mt-1 w-full rounded-xl border p-3"></textarea></label><label class="font-bold md:col-span-2">Megjegyzések<textarea id="sp360-doc-notes" rows="3" class="mt-1 w-full rounded-xl border p-3"></textarea></label></div><div class="mt-4 flex flex-wrap gap-2"><button id="sp360-doc-generate" class="rounded-xl bg-indigo-700 px-5 py-3 font-black text-white">Dokumentum elkészítése</button><button id="sp360-doc-save" class="rounded-xl border border-indigo-300 px-5 py-3 font-black text-indigo-800" ${session?"":"disabled"}>Mentés</button><button id="sp360-doc-pdf" class="rounded-xl border border-slate-300 px-5 py-3 font-black">PDF</button></div><div id="sp360-doc-preview" class="mt-5 overflow-x-auto rounded-xl border bg-slate-50"></div></div>`;
       lockToolIfGuest();
       let values={};

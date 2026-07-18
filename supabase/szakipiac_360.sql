@@ -3,12 +3,18 @@
 
 create table if not exists public.szakipiac_360_entitlements (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  plan text not null default 'free' check (plan in ('free', '360')),
+  plan text not null default 'free' check (plan in ('free', 'basic', 'pro')),
   expires_at timestamptz,
   source text not null default 'admin',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.szakipiac_360_entitlements drop constraint if exists szakipiac_360_entitlements_plan_check;
+-- A korábbi egyetlen 360 csomag PRO-ként él tovább, a meglévő lejárattal.
+update public.szakipiac_360_entitlements set plan = 'pro' where plan = '360';
+alter table public.szakipiac_360_entitlements
+  add constraint szakipiac_360_entitlements_plan_check check (plan in ('free', 'basic', 'pro'));
 
 alter table public.szakipiac_360_entitlements enable row level security;
 grant select on public.szakipiac_360_entitlements to authenticated;
@@ -61,13 +67,15 @@ begin
   if v_email = 'atika.76@windowslive.com' then
     v_plan := 'admin';
     v_limit := 10000;
-  elsif exists (
-    select 1 from public.szakipiac_360_entitlements e
-    where e.user_id = v_user and e.plan = '360'
-      and (e.expires_at is null or e.expires_at >= now())
-  ) then
-    v_plan := '360';
-    v_limit := 20;
+  else
+    select e.plan into v_plan
+    from public.szakipiac_360_entitlements e
+    where e.user_id = v_user and e.plan in ('basic','pro')
+      and (e.expires_at is null or e.expires_at >= now());
+    if v_plan = 'basic' then v_limit := 10;
+    elsif v_plan = 'pro' then v_limit := 20;
+    else v_plan := 'free'; v_limit := 3;
+    end if;
   end if;
 
   insert into public.szakipiac_360_ai_usage(user_id, usage_date, request_count, updated_at)
@@ -207,7 +215,7 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_is_admin boolean := lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com';
-  v_is_360 boolean := false;
+  v_plan text := 'free';
   v_count integer := 0;
   v_id uuid;
 begin
@@ -215,15 +223,14 @@ begin
   if p_item_type not in ('document','material','profit','quote_text') then raise exception 'Ismeretlen munkater-tipus.'; end if;
   if length(trim(coalesce(p_title,''))) < 2 then raise exception 'Adj meg cimet.'; end if;
 
-  select exists (
-    select 1 from public.szakipiac_360_entitlements e
-    where e.user_id = v_user and e.plan = '360' and (e.expires_at is null or e.expires_at >= now())
-  ) into v_is_360;
+  select e.plan into v_plan from public.szakipiac_360_entitlements e
+  where e.user_id = v_user and e.plan in ('basic','pro') and (e.expires_at is null or e.expires_at >= now());
+  v_plan := coalesce(v_plan, 'free');
 
-  if not v_is_admin and not v_is_360 and p_source_id is null then
+  if not v_is_admin and v_plan <> 'pro' and p_source_id is null then
     select count(*) into v_count from public.szakipiac_360_workspace_items where user_id = v_user;
-    if v_count >= 3 then
-      raise exception 'Az ingyenes csomagban legfeljebb 3 munkater-mentes lehet. A SzakiPiac 360 csomagban korlatlan.' using errcode = 'P0001';
+    if (v_plan = 'free' and v_count >= 3) or (v_plan = 'basic' and v_count >= 30) then
+      raise exception 'Elerted a csomagod mentesi keretet. A 360 Alap 30, a 360 PRO korlatlan munkater-mentest ad.' using errcode = 'P0001';
     end if;
   end if;
 
@@ -271,9 +278,9 @@ begin
     return jsonb_build_object('granted',false,'plan','free','remaining',0);
   end if;
   insert into public.szakipiac_360_entitlements(user_id,plan,expires_at,source)
-  values(v_user,'360',now()+interval '30 days','welcome_first_15')
+  values(v_user,'pro',now()+interval '30 days','welcome_first_15')
   returning * into v_ent;
-  return jsonb_build_object('granted',true,'plan','360','expires_at',v_ent.expires_at,'remaining',greatest(14-v_welcome_count,0));
+  return jsonb_build_object('granted',true,'plan','pro','expires_at',v_ent.expires_at,'remaining',greatest(14-v_welcome_count,0));
 end;
 $$;
 

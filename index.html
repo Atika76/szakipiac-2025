@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- PayPal -->
-  <script src="https://www.paypal.com/sdk/js?client-id=AQsaQCLj0og2wsfMoDKAqxJieD2cgXwWq5cssAJCJbO2KoYE8LGHCREyR4vMzMfKZK68qw6EY7IAxMYF&currency=HUF"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AQsaQCLj0og2wsfMoDKAqxJieD2cgXwWq5cssAJCJbO2KoYE8LGHCREyR4vMzMfKZK68qw6EY7IAxMYF&currency=HUF&components=buttons,funding-eligibility&enable-funding=card"></script>
 
   <!-- Image compression -->
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js" defer></script>
@@ -518,7 +518,7 @@
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (error) entitlementReady = false;
-        if (data?.plan === "360" && (!data.expires_at || new Date(data.expires_at).getTime() >= Date.now())) plan = "360";
+        if (["basic", "pro"].includes(data?.plan) && (!data.expires_at || new Date(data.expires_at).getTime() >= Date.now())) plan = data.plan;
 
         const today = new Date().toISOString().slice(0, 10);
         const { data: usage } = await supaClient
@@ -530,8 +530,8 @@
         usedToday = Number(usage?.request_count || 0);
       }
 
-      const planLabel = plan === "admin" ? "Admin" : (plan === "360" ? "SzakiPiac 360" : "Ingyenes");
-      const dailyLimit = plan === "admin" ? "korlátlan" : (plan === "360" ? "20/nap" : "3/nap");
+      const planLabel = plan === "admin" ? "Admin" : plan === "pro" ? "360 PRO" : plan === "basic" ? "360 Alap" : "Ingyenes";
+      const dailyLimit = plan === "admin" ? "korlátlan" : plan === "pro" ? "20/nap" : plan === "basic" ? "10/nap" : "3/nap";
       const locked = session ? "" : "disabled";
       const serviceCards = [
         ["weboldal", "🌐", "Weboldalkészítés", "Saját bemutatkozó oldal szolgáltatásokkal, referenciákkal, térképpel és ajánlatkérővel.", "Egyedi kivitelezés"],
@@ -592,7 +592,8 @@
           </section>
 
           <section id="service-request-section" class="rounded-3xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm">
-            <h2 class="text-2xl font-black text-indigo-950">Szolgáltatás egyeztetése</h2>
+            <h2 class="text-2xl font-black text-indigo-950">Egyedi szolgáltatás ajánlatkérése</h2>
+            <p class="mt-2 text-sm text-indigo-900">Ez még nem vásárlás és nem jár fizetési kötelezettséggel. Előbb egyeztetjük a pontos feladatot és az árat.</p>
             ${!session ? `<div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900"><b>Az igény elküldéséhez regisztráció vagy bejelentkezés szükséges.</b><br><a href="#auth" class="font-black underline">Regisztráció / Belépés</a></div>` : ""}
             <form id="service-request-form" class="mt-5 grid gap-4 md:grid-cols-2">
               <label class="font-bold text-indigo-950">Szolgáltatás
@@ -1810,7 +1811,7 @@
               },
               onError: error => {
                 console.error("PayPal hiba", error);
-                showToast("A PayPal-fizetés nem sikerült.", "error");
+                showToast("A fizetés nem sikerült.", "error");
               }
             }).render('#paypal-container');
           }
@@ -1843,7 +1844,7 @@
         const requiresPayment = ["premium", "extra"].includes(selectedPackage)
           && session.user.email !== ADMIN_EMAIL
           && !isPackageCoveredByGrant(selectedPackage);
-        if (requiresPayment) return showToast("Ehhez a csomaghoz használd a PayPal-fizetési gombot.", "info");
+        if (requiresPayment) return showToast("Ehhez a csomaghoz használd a PayPal- vagy bankkártyás fizetési gombot.", "info");
         processUpload();
       });
 
@@ -2132,7 +2133,7 @@
         const city = profile.city || "";
         const selected = pkg?.csomag || "alap";
         const entitlement = entitlementMap.get(u.user_id);
-        const entitlementActive = entitlement?.plan === "360" && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now());
+        const entitlementActive = ["basic", "pro"].includes(entitlement?.plan) && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now());
         const active = isPackageActive(pkg);
         const statusHtml = pkg
           ? `<span class="${active ? "text-green-700" : "text-red-600"} font-semibold">${active ? "Aktív" : "Lejárt"}</span>`
@@ -2159,7 +2160,8 @@
             <td class="p-2">
               <select id="plan360-${u.user_id}" class="border rounded p-1.5 w-full text-xs">
                 <option value="free" ${!entitlementActive ? "selected" : ""}>Ingyenes</option>
-                <option value="360" ${entitlementActive ? "selected" : ""}>360</option>
+                <option value="basic" ${entitlementActive && entitlement?.plan === "basic" ? "selected" : ""}>360 Alap</option>
+                <option value="pro" ${entitlementActive && entitlement?.plan === "pro" ? "selected" : ""}>360 PRO</option>
               </select>
               <input id="plan360-exp-${u.user_id}" type="date" value="${dateInputValue(entitlement?.expires_at, 30)}" class="mt-1 border rounded p-1.5 w-full text-xs">
               <button type="button" onclick="window.save360Access('${u.user_id}')" class="mt-1 w-full rounded bg-indigo-700 px-2 py-1 text-xs font-bold text-white hover:bg-indigo-800">360 mentés</button>
@@ -2411,7 +2413,7 @@
       if (!expiresRaw) return showToast("Adj meg 360 lejárati dátumot.", "error");
       const { error } = await supaClient.from("szakipiac_360_entitlements").upsert({
         user_id: userId,
-        plan: "360",
+        plan,
         expires_at: new Date(`${expiresRaw}T23:59:59`).toISOString(),
         source: "admin",
         updated_at: new Date().toISOString()
