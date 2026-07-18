@@ -50,6 +50,9 @@ values
 ('szerkezet-savalap','szerkezet','Sávalap betonozás (C16/20)','anyag','m³',30000,35000,43000,12500,15500,21000,1,'SzakiPiac 2026 referencia','2026-07-12'),
 ('szerkezet-fofal','szerkezet','Főfalazás (30-as tégla)','anyag','m²',10500,12500,15500,7000,8500,11500,1,'SzakiPiac 2026 referencia','2026-07-12'),
 ('szerkezet-valaszfal','szerkezet','Válaszfalazás (10-es tégla)','anyag','m²',5700,6800,8500,4500,5500,7500,1,'SzakiPiac 2026 referencia','2026-07-12'),
+('guided-zsaluko','szerkezet','Zsalukő falazása és kibetonozása','anyag','m²',10000,12000,15000,8000,10000,13000,1,'SzakiPiac 360 belső referencia','2026-07-18'),
+('guided-betonacel','szerkezet','Betonacél szerelése','anyag','kg',350,430,540,330,420,570,1,'SzakiPiac 360 belső referencia','2026-07-18'),
+('guided-vasalt-aljzat','aljzat','Vasalt aljzatbeton készítése','anyag','m²',8500,10500,13500,6800,8500,11500,1,'SzakiPiac 360 belső referencia','2026-07-18'),
 ('festo-elokeszites','festo','Felület-előkészítés és alapozás','anyag','m²',350,450,650,650,850,1200,1,'https://ujrafestes.hu/arak/festes-arak-2026.html','2026-07-12'),
 ('festo-glett','festo','Glettelés és csiszolás 2 rétegben','anyag','m²',850,1100,1450,2200,2850,3500,1,'https://horizontmagazin.hu/szobafestes-arlista-ennyit-kernek-a-festok-iden/','2026-07-12'),
 ('festo-festes','festo','Festés 2 rétegben, fehér','anyag','m²',650,850,1200,1300,1600,2200,1,'https://ujrafestes.hu/arak/festes-arak-2026.html','2026-07-12'),
@@ -78,11 +81,11 @@ values
 ('jarulekos-gep','jarulekos','Gép- és eszközhasználat','egyeb','nap',0,0,0,8000,15000,30000,1,'SzakiPiac 2026 referencia','2026-07-12')
 on conflict (id) do nothing;
 
--- Kezdő normaidők: a jelenlegi ellenőrzött átlagos munkadíjakból, a 6 764 Ft/óra
+-- Kezdő normaidők: a jelenlegi ellenőrzött átlagos munkadíjakból, a 7 830 Ft/óra
 -- referencia-rezsióradíjból visszaszámított, admin által tovább finomítható értékek.
 update public.epitoipari_arak
-set norma_ora_atlag = round((munka_atlag / 6764.0)::numeric, 3),
-    norma_ora_min = round((munka_min / 6764.0)::numeric, 3),
-    norma_ora_max = round((munka_max / 6764.0)::numeric, 3),
+set norma_ora_atlag = round((munka_atlag / 7830.0)::numeric, 3),
+    norma_ora_min = round((munka_min / 7830.0)::numeric, 3),
+    norma_ora_max = round((munka_max / 7830.0)::numeric, 3),
     munkatartalom = coalesce(munkatartalom, megnevezes || ' – normál, előkészített munkakörülmények között')
 where norma_ora_atlag = 0 and munka_atlag > 0 and egyseg <> 'alkalom';

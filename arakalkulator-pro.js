@@ -9,7 +9,7 @@
     "Vas": 1.02, "Zala": 1.00, "Országos átlag": 1.00
   };
   const QUALITY_FACTORS = { alap: 0.88, kozep: 1, premium: 1.32 };
-  const DEFAULT_OVERHEAD_RATE = 6764;
+  const DEFAULT_OVERHEAD_RATE = 7830;
   let catalog = [];
 
   function pricingSettings() {
@@ -167,6 +167,17 @@
     items.push(catalogToItem(row)); renderItems(); calcAndRender(); toast("Tétel hozzáadva. Most ellenőrizd az adatait ✅");
     setTimeout(() => goToQuoteStep("step2"), 80);
   }
+
+  // Közös katalógus-kapu a vezetett ajánlatkészítőnek. Így ugyanazokat az
+  // adminból frissíthető árakat használja, nem tart fenn második árlistát.
+  window.SzakiPiacPriceCatalog = {
+    get(id) {
+      const row = catalog.find(item => item.id === id);
+      return row ? catalogToItem(row) : null;
+    },
+    all() { return catalog.map(row => ({ ...row })); },
+    isLoaded() { return catalog.length > 0; }
+  };
 
   async function loadCatalog() {
     const { data, error } = await supa.from("epitoipari_arak").select("*").eq("aktiv", true).order("szakag").order("megnevezes");

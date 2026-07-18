@@ -1284,7 +1284,7 @@ async function loadSaved() {
             <div class="font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
             <div class="flex gap-2 mt-2 justify-end">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
-              <button data-epitesnaplo="${r.id}" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-extrabold text-sm">Építési Napló</button>
+              <button data-epitesnaplo="${r.id}" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-extrabold text-sm">Projektbe / Naplóba</button>
               <button data-del="${r.id}" class="px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>
           </div>
@@ -1383,6 +1383,7 @@ function addRow() {
 
 function clearRows() {
   items = [DEFAULT_ROW()];
+  window.__guidedQuoteCalculations = [];
   renderItems();
   calcAndRender();
 }
@@ -1418,6 +1419,13 @@ function resetAll() {
   $("quote_scope").value = "";
   $("quote_notes").value = "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.";
   currentQuoteId = null;
+  window.__guidedQuoteCalculations = [];
+  if ($("quote_number") && window.SzakiPiacQuoteWorkshop) {
+    $("quote_number").value = `SZP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${String(Date.now()).slice(-4)}`;
+    $("quote_status").value = "draft";
+    $("quote_valid_days").value = 30;
+    $("quote_deposit").value = 0;
+  }
 
   items = [DEFAULT_ROW()];
   renderItems();
@@ -1583,6 +1591,7 @@ async function boot() {
 boot();
 </script>
 <script src="arakalkulator-pro.js"></script>
+<script src="ajanlat-muhely.js"></script>
 
 </body>
 </html>

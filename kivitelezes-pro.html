@@ -191,7 +191,7 @@
               <label class="text-xs font-bold">Ársáv<select id="priceBand" class="mt-1 w-full rounded-lg border p-2"><option value="min">Minimum</option><option value="atlag" selected>Átlag</option><option value="max">Maximum</option></select></label>
               <label class="text-xs font-bold">Anyagminőség<select id="materialQuality" class="mt-1 w-full rounded-lg border p-2"><option value="alap">Alap</option><option value="kozep" selected>Közép</option><option value="premium">Prémium</option></select></label>
               <label class="text-xs font-bold">Terület<select id="priceRegion" class="mt-1 w-full rounded-lg border p-2"><option value="1">Országos átlag</option><option value="1.18">Budapest</option><option value="1.10">Pest</option><option value="1.05">Nyugat-Magyarország</option><option value="0.96">Kedvezőbb árszintű térség</option></select></label>
-              <label class="text-xs font-bold">Rezsióradíj<input id="overheadRate" type="number" min="0" value="6764" class="mt-1 w-full rounded-lg border p-2"></label>
+              <label class="text-xs font-bold">Rezsióradíj<input id="overheadRate" type="number" min="0" value="7830" class="mt-1 w-full rounded-lg border p-2"></label>
               <label class="text-xs font-bold">Emelet<input id="conditionFloor" type="number" min="0" value="0" class="mt-1 w-full rounded-lg border p-2"></label>
               <label class="text-xs font-bold">Lift<select id="conditionLift" class="mt-1 w-full rounded-lg border p-2"><option value="igen">Van / földszint</option><option value="korlatozott">Korlátozott</option><option value="nem">Nincs</option></select></label>
               <label class="text-xs font-bold">Parkolási távolság<input id="conditionParking" type="number" min="0" value="0" placeholder="méter" class="mt-1 w-full rounded-lg border p-2"></label>
@@ -630,7 +630,7 @@ function readProjectForm() {
     priceBand: $("priceBand")?.value || "atlag",
     materialQuality: $("materialQuality")?.value || "kozep",
     priceRegion: $("priceRegion")?.value || "1",
-    overheadRate: Number($("overheadRate")?.value || 6764),
+    overheadRate: Number($("overheadRate")?.value || 7830),
     conditionFloor: Number($("conditionFloor")?.value || 0),
     conditionLift: $("conditionLift")?.value || "igen",
     conditionParking: Number($("conditionParking")?.value || 0),
@@ -655,7 +655,7 @@ function writeProjectForm() {
   if($("priceBand")) $("priceBand").value=state.project.priceBand||"atlag";
   if($("materialQuality")) $("materialQuality").value=state.project.materialQuality||"kozep";
   if($("priceRegion")) $("priceRegion").value=state.project.priceRegion||"1";
-  if($("overheadRate")) $("overheadRate").value=state.project.overheadRate||6764;
+  if($("overheadRate")) $("overheadRate").value=state.project.overheadRate||7830;
   if($("conditionFloor")) $("conditionFloor").value=state.project.conditionFloor||0;
   if($("conditionLift")) $("conditionLift").value=state.project.conditionLift||"igen";
   if($("conditionParking")) $("conditionParking").value=state.project.conditionParking||0;
@@ -670,7 +670,7 @@ function catalogItem(priceId, qty, trade) {
 }
 
 function pricingSelection() {
-  return { band:$("priceBand")?.value || "atlag", quality:QUALITY_FACTORS[$("materialQuality")?.value] || 1, region:Number($("priceRegion")?.value || 1), rate:Number($("overheadRate")?.value || 6764) };
+  return { band:$("priceBand")?.value || "atlag", quality:QUALITY_FACTORS[$("materialQuality")?.value] || 1, region:Number($("priceRegion")?.value || 1), rate:Number($("overheadRate")?.value || 7830) };
 }
 
 function refreshCatalogPrices() {
