@@ -163,7 +163,9 @@
   }
   function addCatalogItem(id) {
     const row = catalog.find(x => x.id === id); if (!row) return toast("Ez a referenciaár még nem töltődött be.", "error");
-    items.push(catalogToItem(row)); renderItems(); calcAndRender(); toast("Tétel hozzáadva ✅");
+    items = items.filter(it => String(it.name || "").trim() || safeNum(it.mat_unit_price) || safeNum(it.lab_unit_price) || safeNum(it.hours));
+    items.push(catalogToItem(row)); renderItems(); calcAndRender(); toast("Tétel hozzáadva. Most ellenőrizd az adatait ✅");
+    setTimeout(() => goToQuoteStep("step2"), 80);
   }
 
   async function loadCatalog() {

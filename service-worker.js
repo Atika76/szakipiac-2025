@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-360-v3-20260718';
+const CACHE_NAME = 'szakipiac-360-v4-20260718';
 
 const APP_SHELL_URLS = [
   '/',

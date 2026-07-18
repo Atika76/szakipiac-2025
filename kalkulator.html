@@ -32,6 +32,56 @@
       .calc-nav-links > a { display: none; }
       #toast { left: 1rem; right: 1rem; width: auto; }
     }
+
+    @media screen and (max-width: 1535px) {
+      #quoteItemsTable,
+      #quoteItemsTable tbody,
+      #quoteItemsTable tr,
+      #quoteItemsTable td { display: block; width: 100%; }
+      #quoteItemsTable thead { display: none; }
+      #quoteItemsTable tr {
+        margin-bottom: 1rem;
+        padding: .75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        background: #f9fafb;
+      }
+      #quoteItemsTable td { padding: .4rem 0; }
+      #quoteItemsTable td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: .3rem;
+        color: #4b5563;
+        font-size: .75rem;
+        font-weight: 800;
+      }
+      #quoteItemsTable td.item-select {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+      }
+      #quoteItemsTable td.item-select::after {
+        content: "Tétel kijelölése";
+        color: #374151;
+        font-size: .8rem;
+        font-weight: 700;
+      }
+      #quoteItemsTable td.item-total {
+        margin-top: .3rem;
+        padding: .75rem;
+        border-radius: .75rem;
+        background: #eef2ff;
+      }
+      #quoteItemsTable td.item-delete button { width: 100%; }
+    }
+    @media screen and (min-width: 640px) and (max-width: 1535px) {
+      #quoteItemsTable tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1rem;
+      }
+      #quoteItemsTable td:nth-child(2) { grid-column: 1 / -1; }
+    }
   </style>
 
   <script>
@@ -112,17 +162,24 @@
               <button id="btnReset" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-800 font-bold hover:bg-gray-200">Alaphelyzet</button>
             </div>
           </div>
+          <div class="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 no-print">
+            <a href="#step1" class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-extrabold text-indigo-800">1. Szakág választása</a>
+            <a href="#step2" class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-extrabold text-gray-700">2. Tételek és árak</a>
+            <a href="#step3" class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-extrabold text-gray-700">3. Projekt és számítás</a>
+            <a href="#step4" class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-extrabold text-gray-700">4. Szöveg és PDF</a>
+          </div>
         </div>
 
         <!-- QUICK PACKAGES -->
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6 no-print">
+        <div id="step1" class="scroll-mt-24 bg-white border border-gray-100 rounded-2xl shadow-soft p-6 no-print">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <h2 class="text-lg font-extrabold text-gray-900"><i class="fa-solid fa-bolt text-orange-500 mr-2"></i>Gyors csomagok</h2>
-              <p class="text-sm text-gray-600 mt-1">Állítsd be a globál mennyiséget, válassz csomagot – és kész a tételes lista.</p>
+              <div class="text-xs font-black uppercase tracking-wider text-indigo-700">1. lépés</div>
+              <h2 class="mt-1 text-lg font-extrabold text-gray-900"><i class="fa-solid fa-bolt text-orange-500 mr-2"></i>Válassz szakágat vagy külön költséget</h2>
+              <p class="text-sm text-gray-600 mt-1">Kattints egy kártyára. A tételek bekerülnek a következő lépésbe, ahol külön szerkesztheted őket.</p>
             </div>
             <div class="text-xs text-gray-500 hidden md:block">
-              Tipp: a csomagok egységárai példák – te finomítod.
+              A referenciaárakat mindig ellenőrizd.
             </div>
           </div>
 
@@ -193,6 +250,10 @@
 
           <!-- Global apply -->
           <div class="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+            <div class="mb-4">
+              <div class="font-extrabold text-gray-900">Gyors mennyiségbeállítás <span class="text-sm font-semibold text-gray-500">(nem kötelező)</span></div>
+              <p class="mt-1 text-sm text-gray-600">Adj meg egy kiinduló mennyiséget. A következő lépésben minden tételt külön pontosíthatsz.</p>
+            </div>
             <div class="space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="rounded-xl border border-gray-200 bg-white p-3">
@@ -233,9 +294,54 @@
           </div>
         </div>
 
+        <!-- ITEMS -->
+        <div id="step2" class="scroll-mt-24 bg-white border border-gray-100 rounded-2xl shadow-soft p-4 sm:p-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <div class="text-xs font-black uppercase tracking-wider text-indigo-700">2. lépés</div>
+              <h2 class="mt-1 text-lg font-extrabold text-gray-900">Tételek, mennyiségek és egységárak</h2>
+              <p class="mt-1 text-sm text-gray-600">Ellenőrizd külön minden sor mennyiségét, mértékegységét, anyagárát és munkadíját.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 no-print">
+              <button id="btnBackToPackages" type="button" class="px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 font-bold hover:bg-indigo-100">+ Szakág hozzáadása</button>
+              <button id="btnAddRow" class="px-4 py-2 rounded-xl bg-gray-900 text-white font-bold hover:bg-black">+ Egyedi tétel</button>
+              <button id="btnClearRows" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-800 font-bold hover:bg-gray-200">Összes törlése</button>
+            </div>
+          </div>
+
+          <div id="itemsEmptyHint" class="mb-4 hidden rounded-xl border border-dashed border-indigo-300 bg-indigo-50 p-4 text-sm font-semibold text-indigo-900 no-print">
+            Még nincs kitöltött tétel. Válassz szakágat, vagy kattints az „Egyedi tétel” gombra.
+          </div>
+
+          <div class="lg:overflow-x-auto">
+            <table id="quoteItemsTable" class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 text-left">
+                  <th class="p-2 min-w-[60px] no-print">✓</th>
+                  <th class="p-2 min-w-[220px]">Megnevezés</th>
+                  <th class="p-2 min-w-[120px]">Típus</th>
+                  <th class="p-2 min-w-[90px]">Menny.</th>
+                  <th class="p-2 min-w-[110px]">Egység</th>
+                  <th class="p-2 min-w-[140px]">Anyag egységár</th>
+                  <th class="p-2 min-w-[140px]">Munka egységár</th>
+                  <th class="p-2 min-w-[120px]">Óra (munka)</th>
+                  <th class="p-2 min-w-[150px]">Részösszeg (nettó)</th>
+                  <th class="p-2 min-w-[80px] no-print" title="Törlés">✖</th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+            Az árak tájékoztató referenciaértékek. A végleges ajánlat előtt ellenőrizd a mennyiségeket, a munkakörülményeket és minden egységárat.
+          </div>
+        </div>
+
         <!-- PROJECT + CLIENT -->
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
-          <h2 class="text-lg font-extrabold text-gray-900 mb-4">Projekt adatok</h2>
+        <div id="step3" class="scroll-mt-24 bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
+          <div class="text-xs font-black uppercase tracking-wider text-indigo-700">3. lépés</div>
+          <h2 class="mt-1 text-lg font-extrabold text-gray-900 mb-4">Projekt és megrendelő adatai</h2>
 
           <!-- PRIVACY NOTE -->
           <div class="mb-4 text-xs text-gray-600 bg-gray-50 border rounded-xl p-3">
@@ -288,7 +394,8 @@
 
         <!-- SETTINGS -->
         <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
-          <h2 class="text-lg font-extrabold text-gray-900 mb-4">Számítás beállításai</h2>
+          <h2 class="text-lg font-extrabold text-gray-900 mb-1">Számítás finomítása</h2>
+          <p class="mb-4 text-sm text-gray-600">Állítsd be a rezsióradíjat, a hasznot, a kedvezményt és az ÁFA mértékét.</p>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="border rounded-2xl p-4 bg-gray-50">
@@ -333,10 +440,11 @@
         </div>
 
         <!-- PROFESSIONAL QUOTE TEXT -->
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
+        <div id="step4" class="scroll-mt-24 bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
           <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <h2 class="text-lg font-extrabold text-gray-900">Szakmai ajánlatszöveg</h2>
+              <div class="text-xs font-black uppercase tracking-wider text-indigo-700">4. lépés</div>
+              <h2 class="mt-1 text-lg font-extrabold text-gray-900">Ajánlatszöveg elkészítése és PDF</h2>
               <p class="mt-1 text-sm text-gray-600">A Gemini csak a bevezetőt és a munkaleírást fogalmazza meg. Az árakat és a matematikát nem módosíthatja.</p>
             </div>
             <button id="btnGenerateQuoteText" type="button" class="no-print rounded-xl bg-indigo-600 px-4 py-2 font-extrabold text-white hover:bg-indigo-700">✨ Szöveg megírása</button>
@@ -347,40 +455,9 @@
             <div><label class="text-sm font-semibold text-gray-700">Feltételek és megjegyzések</label><textarea id="quote_notes" rows="3" class="mt-1 w-full rounded-xl border px-3 py-2">Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.</textarea></div>
           </div>
           <p class="mt-3 text-xs font-semibold text-amber-700">Ellenőrizd a szöveget a PDF elkészítése előtt. A Gemini nem helyettesíti a helyszíni felmérést vagy a szakember döntését.</p>
-        </div>
-
-        <!-- ITEMS -->
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
-          <div class="flex items-center justify-between gap-4 mb-4">
-            <h2 class="text-lg font-extrabold text-gray-900">Tételes lista</h2>
-            <div class="flex gap-2 no-print">
-              <button id="btnAddRow" class="px-4 py-2 rounded-xl bg-gray-900 text-white font-bold hover:bg-black">+ Tétel</button>
-              <button id="btnClearRows" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-800 font-bold hover:bg-gray-200">Összes törlése</button>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="bg-gray-50 text-left">
-                  <th class="p-2 min-w-[60px] no-print">✓</th>
-                  <th class="p-2 min-w-[220px]">Megnevezés</th>
-                  <th class="p-2 min-w-[120px]">Típus</th>
-                  <th class="p-2 min-w-[90px]">Menny.</th>
-                  <th class="p-2 min-w-[110px]">Egység</th>
-                  <th class="p-2 min-w-[140px]">Anyag egységár</th>
-                  <th class="p-2 min-w-[140px]">Munka egységár</th>
-                  <th class="p-2 min-w-[120px]">Óra (munka)</th>
-                  <th class="p-2 min-w-[150px]">Részösszeg (nettó)</th>
-                  <th class="p-2 min-w-[80px] no-print" title="Törlés">✖</th>
-                </tr>
-              </thead>
-              <tbody id="itemsBody"></tbody>
-            </table>
-          </div>
-
-          <div class="mt-4 text-xs text-gray-500">
-            Tipp: “Anyag” és “Munka” külön egységárral megy. Munka típusnál a rezsi “Óra” alapján adódik hozzá.
+          <div class="mt-5 grid gap-3 sm:grid-cols-2 no-print">
+            <button id="btnPrintBottom" type="button" class="rounded-xl bg-green-600 px-4 py-3 font-extrabold text-white hover:bg-green-700">🖨️ Ajánlat nyomtatása / PDF</button>
+            <button id="btnPdfProBottom" type="button" class="rounded-xl bg-indigo-600 px-4 py-3 font-extrabold text-white hover:bg-indigo-700">📄 PDF-fájl mentése (PRO)</button>
           </div>
         </div>
 
@@ -715,21 +792,23 @@ function totals() {
 function renderItems() {
   const body = $("itemsBody");
   body.innerHTML = "";
+  const hasNamedItem = items.some(it => String(it.name || "").trim());
+  $("itemsEmptyHint")?.classList.toggle("hidden", hasNamedItem);
 
   items.forEach((it, idx) => {
     const disabledHours = it.type !== "munka";
     const tr = document.createElement("tr");
     tr.className = "border-b last:border-b-0";
     tr.innerHTML = `
-      <td class="p-2 no-print">
+      <td class="p-2 no-print item-select">
         <input data-k="selected" data-i="${idx}" type="checkbox" class="h-5 w-5" ${it.selected ? "checked" : ""}>
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Megnevezés">
         <input data-k="name" data-i="${idx}" class="w-full border rounded-xl px-2 py-2" placeholder="Pl: Burkolás 20m²" value="${escapeHtml(it.name)}" autocomplete="off">
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Típus">
         <select data-k="type" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold" autocomplete="off">
           <option value="anyag" ${it.type==="anyag"?"selected":""}>Anyag</option>
           <option value="munka" ${it.type==="munka"?"selected":""}>Munka</option>
@@ -737,36 +816,36 @@ function renderItems() {
         </select>
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Mennyiség">
         <input data-k="qty" data-i="${idx}" type="number" min="0" step="0.01" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.qty}" autocomplete="off">
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Mértékegység">
         <input data-k="unit" data-i="${idx}" class="w-full border rounded-xl px-2 py-2 font-semibold" placeholder="db / m² / fm" value="${escapeHtml(it.unit)}" autocomplete="off">
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Anyag egységára">
         <input data-k="mat_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.mat_unit_price}" autocomplete="off">
         <div class="text-[11px] text-gray-500 mt-1">${it.type==="anyag" ? `árrés: +${Math.max(0, safeNum($("material_margin").value)).toFixed(1)}%` : "—"}</div>
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Munka egységára">
         <input data-k="lab_unit_price" data-i="${idx}" type="number" min="0" step="1" class="w-full border rounded-xl px-2 py-2 font-semibold" value="${it.lab_unit_price}" autocomplete="off">
         <div class="text-[11px] text-gray-500 mt-1">munka/egység</div>
       </td>
 
-      <td class="p-2">
+      <td class="p-2" data-label="Munkaórák">
         <input data-k="hours" data-i="${idx}" type="number" min="0" step="0.25"
           class="w-full border rounded-xl px-2 py-2 font-semibold ${disabledHours ? "bg-gray-100 text-gray-400" : "bg-white"}"
           value="${it.hours}" ${disabledHours ? "disabled" : ""} autocomplete="off">
       </td>
 
-      <td class="p-2 font-extrabold text-gray-900">
+      <td class="p-2 font-extrabold text-gray-900 item-total" data-label="Nettó részösszeg">
         <span>${fmtMoney(rowNet(it), $("currency").value)}</span>
       </td>
 
-      <td class="p-2 no-print">
-        <button data-del="${idx}" class="px-3 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 font-extrabold">✖</button>
+      <td class="p-2 no-print item-delete">
+        <button data-del="${idx}" class="px-3 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 font-extrabold" aria-label="Tétel törlése">✖ Törlés</button>
       </td>
     `;
     body.appendChild(tr);
@@ -1006,7 +1085,7 @@ async function applyUsageGate(session) {
   const canSaveAndPdf = ["basic", "pro", "admin"].includes(plan);
   gate?.classList.toggle("hidden", canSaveAndPdf);
   if (!canSaveAndPdf && gate) gate.innerHTML = `<div class="font-extrabold">ℹ️ Ingyenes kalkulátorhasználat</div><p class="mt-1 text-sm">Számolni és tájékozódni ingyenesen is lehet. Mentéshez és PDF-készítéshez 360 Alap vagy 360 PRO csomag szükséges.</p><a href="index.html#szakipiac360" class="mt-2 inline-block font-extrabold underline">Csomagok megtekintése</a>`;
-  ["btnPrint", "btnPdfPro", "btnSave"].forEach(id => {
+  ["btnPrint", "btnPrintBottom", "btnPdfPro", "btnPdfProBottom", "btnSave"].forEach(id => {
     const el = $(id);
     if (!el) return;
     el.disabled = !canSaveAndPdf;
@@ -1291,10 +1370,15 @@ async function generateQuoteText() {
 /* =========================
    12) ACTIONS
 ========================= */
+function goToQuoteStep(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function addRow() {
   items.push(DEFAULT_ROW());
   renderItems();
   calcAndRender();
+  setTimeout(() => goToQuoteStep("step2"), 50);
 }
 
 function clearRows() {
@@ -1362,13 +1446,11 @@ function selectAll(flag){
 
 function applyGlobal(){
   const q = Math.max(0, safeNum($("global_qty").value));
-  const u = $("global_unit").value || "m²";
   let changed = 0;
 
   items.forEach(it => {
     if (it.selected) {
       it.qty = q || it.qty;
-      it.unit = u;
       changed++;
     }
   });
@@ -1385,14 +1467,14 @@ function addPackage(key){
   if (!pkg) return;
 
   const q = Math.max(0, safeNum($("global_qty").value)) || 1;
-  const forcedUnit = $("global_unit").value || null;
+  items = items.filter(it => String(it.name || "").trim() || safeNum(it.mat_unit_price) || safeNum(it.lab_unit_price) || safeNum(it.hours));
 
   pkg.forEach(p => {
     items.push({
       name: p.name,
       type: "anyag",
       qty: q,
-      unit: forcedUnit || p.unit || "m²",
+      unit: p.unit || "m²",
       mat_unit_price: safeNum(p.mat),
       lab_unit_price: safeNum(p.lab),
       hours: safeNum(p.hours || 0),
@@ -1402,7 +1484,8 @@ function addPackage(key){
 
   renderItems();
   calcAndRender();
-  toast("Csomag hozzáadva ✅");
+  toast("A szakág tételei hozzáadva. Most ellenőrizd őket ✅");
+  setTimeout(() => goToQuoteStep("step2"), 80);
 }
 
 /* =========================
@@ -1462,6 +1545,7 @@ async function boot() {
   $("btnAddRow").onclick = addRow;
   $("btnAddRowTop").onclick = addRow;
   $("btnAddCustomRow").onclick = addRow;
+  $("btnBackToPackages").onclick = () => goToQuoteStep("step1");
 
   $("btnClearRows").onclick = () => { if (confirm("Összes tételt törlöd?")) clearRows(); };
   $("btnReset").onclick = resetAll;
@@ -1469,7 +1553,9 @@ async function boot() {
 
   $("btnExportJson").onclick = exportJson;
   $("btnPrint").onclick = () => window.print();
+  $("btnPrintBottom").onclick = () => window.print();
   $("btnPdfPro").onclick = pdfPro;
+  $("btnPdfProBottom").onclick = pdfPro;
   $("btnSave").onclick = saveToSupabase;
   $("btnGenerateQuoteText").onclick = generateQuoteText;
   $("btnRefreshSaved").onclick = loadSaved;
