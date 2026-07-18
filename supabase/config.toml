@@ -26,3 +26,13 @@ entrypoint = "./functions/munkafigyelo-push/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/munkafigyelo-collector/index.ts"
+
+[functions.manage-ad-cleanup]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/manage-ad-cleanup/index.ts"
+
+[functions.paypal-order]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/paypal-order/index.ts"

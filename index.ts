@@ -1,4 +1,4 @@
-// generate-ad Edge Function (SzakiPiac-2025.hu)
+// generate-ad Edge Function (SzakiPiac 360)
 // - Quick & Premium mode támogatás
 // - Kompatibilis: {query} vagy {keywords}, {mode: "quick"|"premium"}
 // - Gemini API (Generative Language API) kulcsot Supabase Secrets-ben tároljuk: GOOGLE_API_KEY
@@ -66,7 +66,7 @@ Kizárólag ezt add vissza, pontosan ebben a formában:
 2) Új sor: LEÍRÁS (2-3 mondat, tegeződve, egyszerű, érthető, konkrét)
 Ne tegyél hozzá semmi mást.`;
 
-    const promptPremium = `Írj magyarul egy *prémium marketing* hirdetési szöveget a következő témára/kulcsszóra: "${query}" a SzakiPiac-2025.hu oldalra.
+    const promptPremium = `Írj magyarul egy *prémium marketing* hirdetési szöveget a következő témára/kulcsszóra: "${query}" a SzakiPiac 360 oldalra.
 Hangnem: tegeződő, bizalomépítő, profin megfogalmazott.
 
 Kizárólag ezt add vissza, pontosan ebben a formában:

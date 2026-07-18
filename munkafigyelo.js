@@ -382,7 +382,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
   function shellHtml() {
     return `<section class="max-w-7xl mx-auto px-4 py-8">
       <div class="rounded-3xl bg-gradient-to-br from-emerald-700 to-slate-900 text-white p-6 md:p-8 shadow-xl mb-6">
-        <p class="uppercase tracking-[0.25em] text-emerald-100 text-xs font-black mb-2">SzakiPiac Munkafigyelő</p>
+        <p class="uppercase tracking-[0.25em] text-emerald-100 text-xs font-black mb-2">SzakiPiac 360 Munkafigyelő</p>
         <h1 class="text-3xl md:text-5xl font-black leading-tight">Friss munkák egy helyen</h1>
         <p class="text-emerald-50 mt-3 max-w-3xl">Külső forrásokból gyűjtött szakemberkeresések, megrendelői munkák és közbeszerzések egy helyen.</p>
       </div>
@@ -1052,7 +1052,7 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
     if (!slider || slider.dataset[PARTNER_FLAG] === "true") return;
     slider.dataset[PARTNER_FLAG] = "true";
     const ads = [
-      { title: "SzakiPiac-2025.hu", sub: "Hirdess, találj, dolgozz!", url: "#feltoltes", img: "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png", bg: "from-yellow-300 to-orange-400", text: "text-slate-950" },
+      { title: "SzakiPiac 360", sub: "Hirdess, találj, dolgozz!", url: "#feltoltes", img: "https://raw.githubusercontent.com/Atika76/szakipiac-2025/main/szakipiac-reklam.png", bg: "from-yellow-300 to-orange-400", text: "text-slate-950" },
       { title: "Lidl", sub: "Akciók és ajánlatok", url: "https://www.lidl.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/1200px-Lidl-Logo.svg.png", bg: "from-blue-700 to-yellow-300", text: "text-white" },
       { title: "PENNY", sub: "Heti ajánlatok", url: "https://www.penny.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Penny_logo.svg/1200px-Penny_logo.svg.png", bg: "from-red-600 to-yellow-300", text: "text-white" },
       { title: "ALDI", sub: "Aktuális ajánlatok", url: "https://www.aldi.hu/", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Aldi_S%C3%BCd_logo.svg/1200px-Aldi_S%C3%BCd_logo.svg.png", bg: "from-blue-900 to-orange-400", text: "text-white" },

@@ -59,6 +59,28 @@ serve(async (req) => {
 
     if (!keywords) throw new Error("Adj meg kulcsszót (pl. szobafestés).");
 
+    // SzakiPiac 360 napi AI-keret. A frissítés biztonságosan, atomi RPC-ben történik.
+    // Átmeneti kompatibilitás: amíg az SQL migráció nincs telepítve, nem törjük el
+    // a már működő szövegírót, csak naplózzuk a hiányzó RPC-t.
+    let quota: Record<string, unknown> | null = null;
+    const { data: quotaData, error: quotaError } = await authClient.rpc("szakipiac_360_consume_ai", {
+      p_mode: mode,
+    });
+    if (quotaError) {
+      console.warn("SzakiPiac 360 AI-korlát még nem elérhető:", quotaError.message);
+    } else {
+      quota = quotaData as Record<string, unknown>;
+      if (quota?.allowed === false) {
+        return new Response(JSON.stringify({
+          error: `Elérted a mai AI-keretedet (${quota.used}/${quota.limit}). Holnap újra használhatod.`,
+          quota,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429,
+        });
+      }
+    }
+
     const modelNames = [
       Deno.env.get("GEMINI_MODEL"),
       "gemini-2.5-flash",
@@ -181,7 +203,7 @@ KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
     const description = out.description || out.leiras || "";
     const cta = out.cta || "";
 
-    return new Response(JSON.stringify({ title, description, cta, purpose, model: usedModel }), {
+    return new Response(JSON.stringify({ title, description, cta, purpose, model: usedModel, quota }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

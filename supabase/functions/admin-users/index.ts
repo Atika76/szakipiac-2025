@@ -65,7 +65,7 @@ serve(async (req) => {
 
     const data = await adminResponse.json();
 
-    const users = (data.users || []).map((user) => {
+    const users = (data.users || []).map((user: Record<string, any>) => {
       const meta = user.user_metadata || user.raw_user_meta_data || {};
       return {
         user_id: user.id,
@@ -80,8 +80,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error?.message || "Unknown error" }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

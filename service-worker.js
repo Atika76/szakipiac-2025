@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-v23-stabil-fooldal-20260706';
+const CACHE_NAME = 'szakipiac-360-v1-20260718';
 
 const APP_SHELL_URLS = [
   '/',
@@ -30,7 +30,7 @@ self.addEventListener('push', event => {
     payload = { body: event.data ? event.data.text() : 'Új munka érkezett.' };
   }
 
-  const title = payload.title || 'SzakiPiac Munkafigyelő';
+  const title = payload.title || 'SzakiPiac 360 Munkafigyelő';
   const options = {
     body: payload.body || 'Új munka vagy közbeszerzés érkezett.',
     icon: '/icon-192.png',
