@@ -895,9 +895,21 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
       const btn = document.getElementById("ai-btn");
       if (btn) { btn.textContent = mode === "premium" ? "Prémium generálás..." : "Generálás..."; btn.disabled = true; }
       try {
+        const client = window.supaClient;
+        if (!client) throw new Error("A bejelentkezési kapcsolat nem érhető el. Frissítsd az oldalt.");
+        const { data: { session }, error: sessionError } = await client.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.access_token) {
+          window.location.hash = "#auth";
+          throw new Error("Az AI szövegíró használatához regisztráció vagy bejelentkezés szükséges.");
+        }
+
         const res = await fetch("https://bxtpnotswnwrbycvfypz.supabase.co/functions/v1/generate-ad", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`
+          },
           body: JSON.stringify({ query: `${purpose}: ${k}${context ? `. Adatok: ${context}` : ""}`, mode, purpose: adKind })
         });
         const data = await res.json();
