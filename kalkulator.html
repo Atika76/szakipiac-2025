@@ -332,6 +332,23 @@
           </div>
         </div>
 
+        <!-- PROFESSIONAL QUOTE TEXT -->
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 class="text-lg font-extrabold text-gray-900">Szakmai ajánlatszöveg</h2>
+              <p class="mt-1 text-sm text-gray-600">A Gemini csak a bevezetőt és a munkaleírást fogalmazza meg. Az árakat és a matematikát nem módosíthatja.</p>
+            </div>
+            <button id="btnGenerateQuoteText" type="button" class="no-print rounded-xl bg-indigo-600 px-4 py-2 font-extrabold text-white hover:bg-indigo-700">✨ Szöveg megírása</button>
+          </div>
+          <div class="mt-4 grid gap-4">
+            <div><label class="text-sm font-semibold text-gray-700">Bevezető</label><textarea id="quote_intro" rows="3" class="mt-1 w-full rounded-xl border px-3 py-2" placeholder="A szakember által ellenőrizhető bevezető..."></textarea></div>
+            <div><label class="text-sm font-semibold text-gray-700">Munkatartalom összefoglalása</label><textarea id="quote_scope" rows="5" class="mt-1 w-full rounded-xl border px-3 py-2" placeholder="Csak a tételes listában szereplő munkák..."></textarea></div>
+            <div><label class="text-sm font-semibold text-gray-700">Feltételek és megjegyzések</label><textarea id="quote_notes" rows="3" class="mt-1 w-full rounded-xl border px-3 py-2">Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.</textarea></div>
+          </div>
+          <p class="mt-3 text-xs font-semibold text-amber-700">Ellenőrizd a szöveget a PDF elkészítése előtt. A Gemini nem helyettesíti a helyszíni felmérést vagy a szakember döntését.</p>
+        </div>
+
         <!-- ITEMS -->
         <div class="bg-white border border-gray-100 rounded-2xl shadow-soft p-6">
           <div class="flex items-center justify-between gap-4 mb-4">
@@ -457,6 +474,11 @@
       </div>
 
       <div class="mt-6 border-t pt-4">
+        <div id="print_narrative" class="mb-5 hidden text-sm text-gray-700">
+          <p id="print_intro" class="mb-3"></p>
+          <div class="font-bold text-gray-900 mb-1">Munkatartalom</div>
+          <p id="print_scope" class="whitespace-pre-line"></p>
+        </div>
         <h3 class="font-bold text-gray-900 mb-3">Tételek</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -479,7 +501,7 @@
       <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="text-sm text-gray-600">
           <div class="font-bold text-gray-900 mb-2">Megjegyzés</div>
-          <p id="print_note">Az ajánlat tájékoztató jellegű. Pontos felmérés után változhat.</p>
+          <p id="print_note" class="whitespace-pre-line">Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.</p>
         </div>
 
         <div class="border rounded-2xl p-4 bg-gray-50">
@@ -616,6 +638,8 @@ const QUICK = {
    5) STATE
 ========================= */
 let items = [];
+let currentQuoteId = null;
+let quoteSavePromise = null;
 const DEFAULT_ROW = () => ({
   name: "",
   type: "anyag",     // anyag | munka | egyeb
@@ -834,6 +858,14 @@ function calcAndRender() {
     </tr>
   `).join("");
 
+  const intro = $("quote_intro").value.trim();
+  const scope = $("quote_scope").value.trim();
+  const notes = $("quote_notes").value.trim();
+  $("print_narrative").classList.toggle("hidden", !(intro || scope));
+  $("print_intro").textContent = intro;
+  $("print_scope").textContent = scope;
+  $("print_note").textContent = notes || "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés és szakemberi jóváhagyás után adható.";
+
   const sess = (window.__session?.data?.session) || null;
   $("saveHint").textContent = sess
     ? `Belépve: ${sess.user.email} • Munkaórák: ${t.totalHours.toFixed(2)} óra • Anyag árrés: +${Math.max(0, safeNum($("material_margin").value)).toFixed(1)}%`
@@ -865,6 +897,11 @@ function payloadNow() {
       global_unit: $("global_unit").value
     },
     items: items.map(x => ({...x})),
+    narrative: {
+      intro: $("quote_intro").value || "",
+      scope: $("quote_scope").value || "",
+      notes: $("quote_notes").value || ""
+    },
     totals: totals(),
     saved_at: new Date().toISOString()
   };
@@ -890,6 +927,10 @@ function applyPayload(p) {
   $("global_qty").value = p?.settings?.global_qty ?? 50;
   $("global_unit").value = p?.settings?.global_unit ?? "m²";
 
+  $("quote_intro").value = p?.narrative?.intro ?? "";
+  $("quote_scope").value = p?.narrative?.scope ?? "";
+  $("quote_notes").value = p?.narrative?.notes ?? "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.";
+
   items = Array.isArray(p?.items) && p.items.length ? p.items : [DEFAULT_ROW()];
   renderItems();
   calcAndRender();
@@ -910,6 +951,7 @@ function importJson(file) {
   r.onload = () => {
     try {
       const p = JSON.parse(r.result);
+      currentQuoteId = null;
       applyPayload(p);
       toast("Import kész ✅");
     } catch {
@@ -928,17 +970,27 @@ async function refreshSession() {
   return res.data.session;
 }
 
+let guestGateObserver = null;
+function lockGuestControls() {
+  document.querySelectorAll("main input, main select, main textarea, main button").forEach(el => {
+    if (el.closest("#authBox")) return;
+    el.dataset.authLocked = "1";
+    el.disabled = true;
+    el.title = "A használathoz regisztráció vagy bejelentkezés szükséges.";
+  });
+}
+
 function applyUsageGate(session) {
   $("usageGate")?.classList.toggle("hidden", !!session);
   if (!session) {
-    document.querySelectorAll("main input, main select, main textarea, main button").forEach(el => {
-      if (el.closest("#authBox")) return;
-      el.dataset.authLocked = "1";
-      el.disabled = true;
-      el.title = "A használathoz regisztráció vagy bejelentkezés szükséges.";
-    });
+    lockGuestControls();
+    guestGateObserver?.disconnect();
+    guestGateObserver = new MutationObserver(lockGuestControls);
+    guestGateObserver.observe(document.querySelector("main"), { childList: true, subtree: true });
     return;
   }
+  guestGateObserver?.disconnect();
+  guestGateObserver = null;
   document.querySelectorAll('[data-auth-locked="1"]').forEach(el => {
     el.disabled = false;
     el.removeAttribute("data-auth-locked");
@@ -1033,6 +1085,16 @@ function renderAuthBox(session) {
    11) SUPABASE: MENTÉS + LISTA
 ========================= */
 async function saveToSupabase() {
+  if (quoteSavePromise) return quoteSavePromise;
+  quoteSavePromise = persistQuoteToSupabase();
+  try {
+    return await quoteSavePromise;
+  } finally {
+    quoteSavePromise = null;
+  }
+}
+
+async function persistQuoteToSupabase() {
   const session = await refreshSession();
   if (!session) return toast("Mentéshez jelentkezz be!", "error");
 
@@ -1063,11 +1125,20 @@ async function saveToSupabase() {
     payload
   };
 
-  const { error } = await supa.from("ajanlatok").insert([row]);
+  const updateRow = { ...row };
+  delete updateRow.user_id;
+  delete updateRow.user_email;
+  const query = currentQuoteId
+    ? supa.from("ajanlatok").update(updateRow).eq("id", currentQuoteId).select("id").single()
+    : supa.from("ajanlatok").insert([row]).select("id").single();
+  const { data, error } = await query;
   if (error) return toast("Mentési hiba: " + error.message, "error");
 
-  toast("Mentve ✅");
+  currentQuoteId = data?.id || currentQuoteId;
+
+  toast(currentQuoteId ? "Ajánlat mentve, duplikálás nélkül ✅" : "Mentve ✅");
   await loadSaved();
+  return currentQuoteId;
 }
 
 async function loadSaved() {
@@ -1139,6 +1210,7 @@ async function loadSaved() {
       if (!confirm("Biztos törlöd?")) return;
       const { error } = await supa.from("ajanlatok").delete().eq("id", id);
       if (error) return toast("Törlés hiba: " + error.message, "error");
+      if (currentQuoteId === id) currentQuoteId = null;
       toast("Törölve ✅");
       await loadSaved();
     });
@@ -1168,8 +1240,35 @@ async function loadOne(id) {
   if (error) return toast("Betöltés hiba: " + error.message, "error");
   if (!data?.payload) return toast("Nincs payload!", "error");
 
+  currentQuoteId = id;
   applyPayload(data.payload);
   toast("Betöltve ✅");
+}
+
+async function generateQuoteText() {
+  const session = await refreshSession();
+  if (!session) return toast("A szövegíró használatához jelentkezz be!", "error");
+  if (!items.some(item => String(item.name || "").trim())) return toast("Előbb adj legalább egy megnevezett tételt az ajánlathoz.", "error");
+
+  const button = $("btnGenerateQuoteText");
+  button.disabled = true;
+  button.textContent = "Szöveg készül...";
+  try {
+    const quoteId = await saveToSupabase();
+    if (!quoteId) return;
+    const { data, error } = await supa.functions.invoke("generate-quote-text", { body: { quote_id: quoteId } });
+    if (error || !data?.narrative) throw new Error(data?.error || error?.message || "A Gemini nem adott vissza szöveget.");
+    $("quote_intro").value = data.narrative.intro || "";
+    $("quote_scope").value = data.narrative.scope || "";
+    $("quote_notes").value = data.narrative.notes || "";
+    calcAndRender();
+    toast("A szakmai szöveg elkészült. PDF előtt ellenőrizd ✅");
+  } catch (error) {
+    toast("Szövegírási hiba: " + (error?.message || error), "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "✨ Szöveg megírása";
+  }
 }
 
 /* =========================
@@ -1214,6 +1313,10 @@ function resetAll() {
   $("material_margin").value = 10;
   $("global_qty").value = 50;
   $("global_unit").value = "m²";
+  $("quote_intro").value = "";
+  $("quote_scope").value = "";
+  $("quote_notes").value = "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.";
+  currentQuoteId = null;
 
   items = [DEFAULT_ROW()];
   renderItems();
@@ -1222,6 +1325,7 @@ function resetAll() {
 }
 
 function exampleItems() {
+  currentQuoteId = null;
   items = [
     { name: "Csemperagasztó (25kg)", type: "anyag", qty: 6, unit: "zsák", mat_unit_price: 4200, lab_unit_price: 0, hours: 0, selected:false },
     { name: "Fugázóanyag", type: "anyag", qty: 3, unit: "csomag", mat_unit_price: 2600, lab_unit_price: 0, hours: 0, selected:false },
@@ -1309,6 +1413,7 @@ function privacyHardClear() {
   $("client_phone").value = "";
   $("client_city").value = "";
   $("client_address").value = "";
+  currentQuoteId = null;
 }
 
 /* =========================
@@ -1329,7 +1434,7 @@ async function boot() {
   [
     "project_name","currency","client_name","client_email","client_phone","client_city","client_address",
     "overhead_rate","profit_percent","discount_net","vat_enabled","vat_rate",
-    "material_margin","global_qty","global_unit"
+    "material_margin","global_qty","global_unit","quote_intro","quote_scope","quote_notes"
   ].forEach(id => {
     const el = $(id);
     if (!el) return;
@@ -1349,6 +1454,7 @@ async function boot() {
   $("btnPrint").onclick = () => window.print();
   $("btnPdfPro").onclick = pdfPro;
   $("btnSave").onclick = saveToSupabase;
+  $("btnGenerateQuoteText").onclick = generateQuoteText;
   $("btnRefreshSaved").onclick = loadSaved;
 
   $("btnClearClient").onclick = clearClientFields;

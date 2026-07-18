@@ -6,6 +6,7 @@ on:
     paths:
       - 'supabase/functions/send-quote-to-epitesnaplo/**'
       - 'supabase/functions/generate-ad/**'
+      - 'supabase/functions/generate-quote-text/**'
       - 'supabase/functions/manage-ad-cleanup/**'
       - 'supabase/functions/paypal-order/**'
       - 'supabase/authenticated_features.sql'
@@ -41,6 +42,11 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: supabase functions deploy generate-ad --project-ref bxtpnotswnwrbycvfypz --debug
+
+      - name: Deploy authenticated Gemini quote writer
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy generate-quote-text --project-ref bxtpnotswnwrbycvfypz --debug
 
       - name: Deploy authenticated ad and image cleanup
         env:

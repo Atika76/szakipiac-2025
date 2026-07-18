@@ -21,6 +21,8 @@
 
   <!-- Image compression -->
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <script src="./szakipiac-360-tools.js" defer></script>
 
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
@@ -557,12 +559,14 @@
             </div>
           </section>
 
+          <div id="sp360-workspace"></div>
+
           ${!entitlementReady ? `<div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><b>A SzakiPiac 360 adatbázis-beállítása még nincs telepítve.</b> A meglévő eszközök ettől tovább működnek.</div>` : ""}
 
           <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="mb-5">
-              <h2 class="text-2xl font-black text-slate-950">360 Eszközök</h2>
-              <p class="mt-1 text-slate-600">A már elkészült funkciók áttekinthető indítópultja.</p>
+              <h2 class="text-2xl font-black text-slate-950">Meglévő SzakiPiac funkciók</h2>
+              <p class="mt-1 text-slate-600">A már működő modulok közvetlen elérése, új adatmásolatok létrehozása nélkül.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <a href="#feltoltes" class="sp-card rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><b class="text-emerald-950">📣 Hirdetés és Gemini szövegíró</b><p class="mt-2 text-sm text-emerald-800">Hirdetésfeladás, képek, Facebook-megosztás és kiemelés.</p></a>
@@ -637,6 +641,16 @@
         document.getElementById("service-request-contact").value = session.user.email || "";
         showToast("Az igényt rögzítettük. Az egyeztetés nem jelent fizetési kötelezettséget.", "success");
       });
+
+      const workspace = document.getElementById("sp360-workspace");
+      if (workspace && window.SzakiPiac360Tools) {
+        await window.SzakiPiac360Tools.render(workspace, {
+          client: supaClient,
+          session,
+          showToast,
+          adminEmail: ADMIN_EMAIL
+        });
+      }
     }
 
     async function handleRouteChange() {

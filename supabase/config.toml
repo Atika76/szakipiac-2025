@@ -10,6 +10,11 @@ entrypoint = "./functions/generate-ad/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-ad/*.html" ]
 
+[functions.generate-quote-text]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/generate-quote-text/index.ts"
+
 # SzakiPiac -> Építési Napló átküldő function
 # A felhasználó SzakiPiac bejelentkezését ellenőrzi, ezért verify_jwt = true.
 [functions.send-quote-to-epitesnaplo]

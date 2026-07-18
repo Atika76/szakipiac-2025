@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const products: Record<string, { amount: string; currency: string; description: string }> = {
   ad_premium: { amount: "990", currency: "HUF", description: "SzakiPiac 360 Prémium hirdetés" },
   ad_extra: { amount: "1990", currency: "HUF", description: "SzakiPiac 360 Extra hirdetés" },
+  plan_360_30d: { amount: "3990", currency: "HUF", description: "SzakiPiac 360 - 30 napos hozzáférés" },
 };
 
 const corsHeaders = {
@@ -34,6 +35,9 @@ serve(async req => {
     const paypalSecret = Deno.env.get("PAYPAL_CLIENT_SECRET") || "";
     const paypalEnv = (Deno.env.get("PAYPAL_ENV") || "live").toLowerCase();
     if (!supabaseUrl || !anonKey || !serviceKey) return json({ ok: false, error: "Hiányzó Supabase-beállítás." }, 500);
+    const body = await req.json().catch(() => ({}));
+    const action = String(body?.action || "create");
+    if (action === "status") return json({ ok: true, configured: Boolean(paypalClientId && paypalSecret) });
     if (!paypalClientId || !paypalSecret) return json({ ok: false, configured: false, error: "A szerveroldali PayPal-ellenőrzés még nincs aktiválva." }, 503);
 
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
@@ -51,8 +55,6 @@ serve(async req => {
     const tokenData = await tokenResponse.json().catch(() => ({}));
     if (!tokenResponse.ok || !tokenData?.access_token) return json({ ok: false, error: "A PayPal-hitelesítés nem sikerült." }, 502);
 
-    const body = await req.json().catch(() => ({}));
-    const action = String(body?.action || "create");
     const accessToken = String(tokenData.access_token);
 
     if (action === "create") {
@@ -118,7 +120,26 @@ serve(async req => {
         completed_at: valid ? new Date().toISOString() : null,
       }).eq("id", payment.id);
       if (!valid) return json({ ok: false, error: "A PayPal-fizetés ellenőrzése nem sikerült." }, 400);
-      return json({ ok: true, verified: true, product_code: payment.product_code });
+      let accessExpiresAt: string | null = null;
+      if (payment.product_code === "plan_360_30d") {
+        const { data: current } = await admin
+          .from("szakipiac_360_entitlements")
+          .select("expires_at")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        const currentMs = current?.expires_at ? new Date(current.expires_at).getTime() : 0;
+        const baseMs = Math.max(Date.now(), Number.isFinite(currentMs) ? currentMs : 0);
+        accessExpiresAt = new Date(baseMs + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { error: accessError } = await admin.from("szakipiac_360_entitlements").upsert({
+          user_id: userData.user.id,
+          plan: "360",
+          expires_at: accessExpiresAt,
+          source: "paypal",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+        if (accessError) return json({ ok: false, error: "A fizetés megtörtént, de a 360 hozzáférés aktiválása hibát jelzett: " + accessError.message }, 500);
+      }
+      return json({ ok: true, verified: true, product_code: payment.product_code, access_expires_at: accessExpiresAt });
     }
 
     return json({ ok: false, error: "Ismeretlen fizetési művelet." }, 400);

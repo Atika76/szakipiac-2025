@@ -1,8 +1,10 @@
-const CACHE_NAME = 'szakipiac-360-v1-20260718';
+const CACHE_NAME = 'szakipiac-360-v2-20260718';
 
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
+  '/szakipiac-360-tools.js',
+  '/kalkulator.html',
   '/kivitelezes-pro.html',
   '/icon-192.png',
   '/icon-512.png',

@@ -152,3 +152,130 @@ drop policy if exists "szakipiac_360_payments_read" on public.szakipiac_360_paym
 create policy "szakipiac_360_payments_read"
 on public.szakipiac_360_payments for select to authenticated
 using (auth.uid() = user_id or lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com');
+
+-- Egyetlen kozos munkater a 360 kiegeszito rekordokhoz.
+-- Az ajanlatok es a KivitelezesPRO projektek tovabbra is a sajat, mar letezo tablaikban maradnak.
+create table if not exists public.szakipiac_360_workspace_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  item_type text not null check (item_type in ('document','material','profit','quote_text')),
+  title text not null check (length(title) between 2 and 200),
+  source_type text,
+  source_id uuid,
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.szakipiac_360_workspace_items enable row level security;
+grant select, update, delete on public.szakipiac_360_workspace_items to authenticated;
+
+drop policy if exists "szakipiac_360_workspace_read" on public.szakipiac_360_workspace_items;
+create policy "szakipiac_360_workspace_read"
+on public.szakipiac_360_workspace_items for select to authenticated
+using (auth.uid() = user_id or lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com');
+
+drop policy if exists "szakipiac_360_workspace_update" on public.szakipiac_360_workspace_items;
+create policy "szakipiac_360_workspace_update"
+on public.szakipiac_360_workspace_items for update to authenticated
+using (auth.uid() = user_id or lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com')
+with check (auth.uid() = user_id or lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com');
+
+drop policy if exists "szakipiac_360_workspace_delete" on public.szakipiac_360_workspace_items;
+create policy "szakipiac_360_workspace_delete"
+on public.szakipiac_360_workspace_items for delete to authenticated
+using (auth.uid() = user_id or lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com');
+
+create index if not exists szakipiac_360_workspace_user_idx
+on public.szakipiac_360_workspace_items(user_id, created_at desc);
+create unique index if not exists szakipiac_360_workspace_source_unique
+on public.szakipiac_360_workspace_items(user_id, item_type, source_type, source_id)
+where source_id is not null;
+
+create or replace function public.szakipiac_360_save_workspace_item(
+  p_item_type text,
+  p_title text,
+  p_payload jsonb default '{}'::jsonb,
+  p_source_type text default null,
+  p_source_id uuid default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_is_admin boolean := lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com';
+  v_is_360 boolean := false;
+  v_count integer := 0;
+  v_id uuid;
+begin
+  if v_user is null then raise exception 'A menteshez jelentkezz be.' using errcode = '42501'; end if;
+  if p_item_type not in ('document','material','profit','quote_text') then raise exception 'Ismeretlen munkater-tipus.'; end if;
+  if length(trim(coalesce(p_title,''))) < 2 then raise exception 'Adj meg cimet.'; end if;
+
+  select exists (
+    select 1 from public.szakipiac_360_entitlements e
+    where e.user_id = v_user and e.plan = '360' and (e.expires_at is null or e.expires_at >= now())
+  ) into v_is_360;
+
+  if not v_is_admin and not v_is_360 and p_source_id is null then
+    select count(*) into v_count from public.szakipiac_360_workspace_items where user_id = v_user;
+    if v_count >= 3 then
+      raise exception 'Az ingyenes csomagban legfeljebb 3 munkater-mentes lehet. A SzakiPiac 360 csomagban korlatlan.' using errcode = 'P0001';
+    end if;
+  end if;
+
+  if p_source_id is not null then
+    insert into public.szakipiac_360_workspace_items(user_id,item_type,title,source_type,source_id,payload)
+    values(v_user,p_item_type,left(trim(p_title),200),p_source_type,p_source_id,coalesce(p_payload,'{}'::jsonb))
+    on conflict (user_id,item_type,source_type,source_id) where source_id is not null
+    do update set title=excluded.title,payload=excluded.payload,updated_at=now()
+    returning id into v_id;
+  else
+    insert into public.szakipiac_360_workspace_items(user_id,item_type,title,source_type,source_id,payload)
+    values(v_user,p_item_type,left(trim(p_title),200),p_source_type,p_source_id,coalesce(p_payload,'{}'::jsonb))
+    returning id into v_id;
+  end if;
+  return v_id;
+end;
+$$;
+
+revoke all on function public.szakipiac_360_save_workspace_item(text,text,jsonb,text,uuid) from public, anon;
+grant execute on function public.szakipiac_360_save_workspace_item(text,text,jsonb,text,uuid) to authenticated;
+
+-- Az elso 15 uj 360-felhasznalo egyszeri, 30 napos udvozlo hozzaferese.
+create or replace function public.szakipiac_360_claim_welcome()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_ent public.szakipiac_360_entitlements%rowtype;
+  v_welcome_count integer;
+begin
+  if v_user is null then raise exception 'Jelentkezz be.' using errcode = '42501'; end if;
+  if lower(coalesce(auth.jwt() ->> 'email','')) = 'atika.76@windowslive.com' then
+    return jsonb_build_object('granted',false,'plan','admin','remaining',15);
+  end if;
+  perform pg_advisory_xact_lock(hashtext('szakipiac_360_first_15'));
+  select * into v_ent from public.szakipiac_360_entitlements where user_id = v_user;
+  if found then
+    return jsonb_build_object('granted',false,'plan',v_ent.plan,'expires_at',v_ent.expires_at,'source',v_ent.source);
+  end if;
+  select count(*) into v_welcome_count from public.szakipiac_360_entitlements where source = 'welcome_first_15';
+  if v_welcome_count >= 15 then
+    return jsonb_build_object('granted',false,'plan','free','remaining',0);
+  end if;
+  insert into public.szakipiac_360_entitlements(user_id,plan,expires_at,source)
+  values(v_user,'360',now()+interval '30 days','welcome_first_15')
+  returning * into v_ent;
+  return jsonb_build_object('granted',true,'plan','360','expires_at',v_ent.expires_at,'remaining',greatest(14-v_welcome_count,0));
+end;
+$$;
+
+revoke all on function public.szakipiac_360_claim_welcome() from public, anon;
+grant execute on function public.szakipiac_360_claim_welcome() to authenticated;
