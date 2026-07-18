@@ -42,8 +42,13 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("Hiányzó GEMINI_API_KEY secret a Supabase-ben.");
+    // Régebbi telepítéseknél GOOGLE_API_KEY néven is szerepelhet a Gemini-kulcs.
+    // Mindkettőt kipróbáljuk, így egy lejárt kulcs nem takarja el a működő tartalékot.
+    const apiKeys = Array.from(new Set([
+      Deno.env.get("GEMINI_API_KEY"),
+      Deno.env.get("GOOGLE_API_KEY"),
+    ].filter(Boolean))) as string[];
+    if (!apiKeys.length) throw new Error("Hiányzó Gemini API-kulcs a Supabase Secrets beállításai közül.");
 
     const body = await req.json().catch(() => ({}));
     const keywords = (body?.keywords || body?.query || "").toString().trim();
@@ -131,30 +136,32 @@ KIZÁRÓLAG ilyen JSON-t adj vissza, extra szöveg nélkül:
     let usedModel = "";
     const modelErrors: string[] = [];
 
-    for (const modelName of modelNames) {
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-            },
-          }),
-        },
-      );
+    for (let keyIndex = 0; keyIndex < apiKeys.length && !geminiData; keyIndex++) {
+      for (const modelName of modelNames) {
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKeys[keyIndex]}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+              },
+            }),
+          },
+        );
 
-      if (geminiResponse.ok) {
-        geminiData = await geminiResponse.json();
-        usedModel = modelName;
-        break;
+        if (geminiResponse.ok) {
+          geminiData = await geminiResponse.json();
+          usedModel = modelName;
+          break;
+        }
+
+        const errorBody = await geminiResponse.text();
+        modelErrors.push(`kulcs ${keyIndex + 1}, ${modelName}: ${errorBody}`);
+        console.error("Gemini API hiba:", `kulcs ${keyIndex + 1}`, modelName, errorBody);
       }
-
-      const errorBody = await geminiResponse.text();
-      modelErrors.push(`${modelName}: ${errorBody}`);
-      console.error("Gemini API hiba:", modelName, errorBody);
     }
 
     if (!geminiData) {
