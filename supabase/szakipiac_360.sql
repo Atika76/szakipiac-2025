@@ -3,7 +3,7 @@
 
 create table if not exists public.szakipiac_360_entitlements (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  plan text not null default 'free' check (plan in ('free', 'basic', 'pro')),
+  plan text not null default 'free' check (plan in ('free', 'basic', 'pro', 'bundle')),
   expires_at timestamptz,
   source text not null default 'admin',
   created_at timestamptz not null default now(),
@@ -14,7 +14,7 @@ alter table public.szakipiac_360_entitlements drop constraint if exists szakipia
 -- A korábbi egyetlen 360 csomag PRO-ként él tovább, a meglévő lejárattal.
 update public.szakipiac_360_entitlements set plan = 'pro' where plan = '360';
 alter table public.szakipiac_360_entitlements
-  add constraint szakipiac_360_entitlements_plan_check check (plan in ('free', 'basic', 'pro'));
+  add constraint szakipiac_360_entitlements_plan_check check (plan in ('free', 'basic', 'pro', 'bundle'));
 
 alter table public.szakipiac_360_entitlements enable row level security;
 grant select on public.szakipiac_360_entitlements to authenticated;
@@ -70,10 +70,10 @@ begin
   else
     select e.plan into v_plan
     from public.szakipiac_360_entitlements e
-    where e.user_id = v_user and e.plan in ('basic','pro')
+    where e.user_id = v_user and e.plan in ('basic','pro','bundle')
       and (e.expires_at is null or e.expires_at >= now());
     if v_plan = 'basic' then v_limit := 10;
-    elsif v_plan = 'pro' then v_limit := 20;
+    elsif v_plan in ('pro','bundle') then v_limit := 20;
     else v_plan := 'free'; v_limit := 3;
     end if;
   end if;
@@ -224,10 +224,10 @@ begin
   if length(trim(coalesce(p_title,''))) < 2 then raise exception 'Adj meg cimet.'; end if;
 
   select e.plan into v_plan from public.szakipiac_360_entitlements e
-  where e.user_id = v_user and e.plan in ('basic','pro') and (e.expires_at is null or e.expires_at >= now());
+  where e.user_id = v_user and e.plan in ('basic','pro','bundle') and (e.expires_at is null or e.expires_at >= now());
   v_plan := coalesce(v_plan, 'free');
 
-  if not v_is_admin and v_plan <> 'pro' and p_source_id is null then
+  if not v_is_admin and v_plan not in ('pro','bundle') and p_source_id is null then
     select count(*) into v_count from public.szakipiac_360_workspace_items where user_id = v_user;
     if (v_plan = 'free' and v_count >= 3) or (v_plan = 'basic' and v_count >= 30) then
       raise exception 'Elerted a csomagod mentesi keretet. A 360 Alap 30, a 360 PRO korlatlan munkater-mentest ad.' using errcode = 'P0001';

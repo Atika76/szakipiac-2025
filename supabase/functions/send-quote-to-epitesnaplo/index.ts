@@ -101,6 +101,13 @@ serve(async (req) => {
     const userEmail = String(userData.user.email || "").toLowerCase();
     const admin = createClient(supabaseUrl, serviceKey);
     let importBody: Record<string, unknown> | null = null;
+    const { data: sourceEntitlement } = await admin
+      .from("szakipiac_360_entitlements")
+      .select("plan,expires_at")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    const hasBundle = sourceEntitlement?.plan === "bundle"
+      && (!sourceEntitlement.expires_at || new Date(sourceEntitlement.expires_at).getTime() >= Date.now());
 
     if (quoteId) {
       const { data: quote, error: quoteError } = await admin
@@ -198,6 +205,20 @@ serve(async (req) => {
     }
 
     if (!importBody) return json(req, { ok: false, error: "Nincs átadható adat." }, 200);
+    if (hasBundle) {
+      const currentPayload = importBody.payload && typeof importBody.payload === "object"
+        ? importBody.payload as Record<string, unknown>
+        : {};
+      importBody.payload = {
+        ...currentPayload,
+        bundle_entitlement: {
+          plan: "bundle",
+          user_email: userEmail,
+          expires_at: sourceEntitlement.expires_at || null,
+          verified_by: "szakipiac",
+        },
+      };
+    }
 
     const response = await fetch(endpoint, {
       method: "POST",
