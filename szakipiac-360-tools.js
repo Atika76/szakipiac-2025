@@ -141,13 +141,13 @@
       paypalConfigured = paypalRes.data?.configured === true;
     }
 
-    const entitlementActive = Boolean(entitlement) && ["basic", "pro"].includes(entitlement?.plan) && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now());
+    const entitlementActive = Boolean(entitlement) && ["basic", "pro", "bundle"].includes(entitlement?.plan) && (!entitlement.expires_at || new Date(entitlement.expires_at).getTime() >= Date.now());
     const activePlan = isAdmin ? "admin" : entitlementActive ? entitlement.plan : "free";
     const active360 = activePlan !== "free";
-    const activePro = ["pro", "admin"].includes(activePlan);
-    const planLabel = activePlan === "admin" ? "Admin" : activePlan === "pro" ? "360 PRO" : activePlan === "basic" ? "360 Alap" : "Ingyenes";
-    const aiLimit = activePlan === "admin" ? "∞" : activePlan === "pro" ? 20 : activePlan === "basic" ? 10 : 3;
-    const saveLimit = activePlan === "admin" || activePlan === "pro" ? "korlátlan" : activePlan === "basic" ? 30 : 3;
+    const activePro = ["pro", "bundle", "admin"].includes(activePlan);
+    const planLabel = activePlan === "admin" ? "Admin" : activePlan === "bundle" ? "Szaki Digitális Csomag" : activePlan === "pro" ? "360 PRO" : activePlan === "basic" ? "360 Alap" : "Ingyenes";
+    const aiLimit = activePlan === "admin" ? "∞" : ["pro", "bundle"].includes(activePlan) ? 20 : activePlan === "basic" ? 10 : 3;
+    const saveLimit = ["admin", "pro", "bundle"].includes(activePlan) ? "korlátlan" : activePlan === "basic" ? 30 : 3;
     const daysLeft = entitlement?.expires_at ? Math.ceil((new Date(entitlement.expires_at).getTime() - Date.now()) / 86400000) : null;
     const countTable = async table => {
       if (!session) return 0;
@@ -203,6 +203,7 @@
       const paymentLabel = code => ({
         plan_360_basic_30d: "360 Alap – 30 nap",
         plan_360_pro_30d: "360 PRO – 30 nap",
+        plan_bundle_30d: "Szaki Digitális Csomag – 30 nap",
         plan_360_30d: "Korábbi 360 – 30 nap",
         ad_premium: "Prémium hirdetés",
         ad_extra: "Extra hirdetés"
@@ -212,10 +213,11 @@
           <div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Meglévő munkáid</h3><div class="mt-4 grid gap-2"><a href="kalkulator.html" class="rounded-xl bg-orange-50 p-3 font-bold text-orange-900">${quoteCount} mentett árajánlat megnyitása</a><a href="kivitelezes-pro.html" class="rounded-xl bg-emerald-50 p-3 font-bold text-emerald-900">${projectCount} KivitelezésPRO projekt megnyitása</a><a href="#feltoltes" class="rounded-xl bg-blue-50 p-3 font-bold text-blue-900">${adCount} hirdetés kezelése</a><a href="uzenetek.html" class="rounded-xl bg-violet-50 p-3 font-bold text-violet-900">${inquiryCount} új érdeklődés / üzenet megnyitása</a></div></div>
           <div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Jelenlegi hozzáférés</h3><p class="mt-2 text-sm text-slate-600"><b>${planLabel}</b>${isAdmin ? " – nincs lejárat és nincs fizetési kötelezettség." : active360 ? ` – aktív eddig: ${dateHu(entitlement?.expires_at)}.` : " – örök ingyenes csomag, nem jár le."}</p><div class="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700"><b>Egy közös fizetési felület:</b> PayPal és – jogosultságtól függően – bankkártya. A Prémium és Extra hirdetéskiemelés változatlanul megmarad.</div></div>
         </div>
-        ${isAdmin ? "" : `<div class="mt-4 grid gap-4 lg:grid-cols-3">
+        ${isAdmin ? "" : `<div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5"><h3 class="text-xl font-black">Ingyenes</h3><div class="mt-2 text-3xl font-black">0 Ft</div><p class="mt-3 text-sm text-slate-600">Nem jár le · napi 3 Gemini · 3 mentés · alap anyagszámítás.</p></div>
           <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><h3 class="text-xl font-black text-indigo-950">360 Alap</h3><div class="mt-2 text-3xl font-black text-indigo-950">1 990 Ft <span class="text-sm">/ 30 nap</span></div><p class="mt-3 text-sm text-indigo-900">Napi 10 Gemini · 30 mentés · anyagszámoló · árajánlat-mentés és PDF.</p><div id="sp360-basic-buttons" class="mt-4">${!session ? "Jelentkezz be a vásárláshoz." : !paypalConfigured ? "" : ""}</div></div>
           <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5"><h3 class="text-xl font-black text-emerald-950">360 PRO</h3><div class="mt-2 text-3xl font-black text-emerald-950">4 990 Ft <span class="text-sm">/ 30 nap</span></div><p class="mt-3 text-sm text-emerald-900">Napi 20 Gemini · korlátlan mentés · profitkalkulátor · dokumentumok · teljes 360 eszköztár.</p><div id="sp360-pro-buttons" class="mt-4">${!session ? "Jelentkezz be a vásárláshoz." : ""}</div></div>
+          <div class="rounded-2xl border-2 border-amber-400 bg-amber-50 p-5 shadow-sm"><div class="inline-flex rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-amber-950">BEVEZETŐ ÁR</div><h3 class="mt-3 text-xl font-black text-amber-950">Szaki Digitális Csomag</h3><div class="mt-2 text-3xl font-black text-amber-950">6 990 Ft <span class="text-sm">/ 30 nap</span></div><p class="mt-3 text-sm text-amber-900">SzakiPiac 360 PRO + Építési Napló saját logós ajánlatkészítővel. Egy fizetés, közös jogosultság.</p><p class="mt-2 text-xs font-bold text-amber-800">Ha elakadsz vagy hibát tapasztalsz, írj az adminnak, és segítünk.</p><div id="sp360-bundle-buttons" class="mt-4">${!session ? "Jelentkezz be a vásárláshoz." : ""}</div></div>
         </div>`}
         <div class="mt-4 grid gap-4 lg:grid-cols-2"><div class="rounded-2xl border border-slate-200 p-5"><div class="flex items-center justify-between gap-3"><h3 class="text-lg font-black">Legutóbbi 360 mentések</h3><span class="text-xs text-slate-500">A kereted: ${saveLimit}</span></div><div class="mt-3 space-y-2">${workspace.length ? workspace.slice(0,8).map(item=>`<div class="flex items-center justify-between rounded-xl bg-slate-50 p-3"><div><b>${esc(item.title)}</b><div class="text-xs text-slate-500">${esc(item.item_type)} · ${new Date(item.created_at).toLocaleString("hu-HU")}</div></div><button type="button" data-delete-workspace="${item.id}" class="text-sm font-bold text-red-600">Törlés</button></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs külön 360 mentésed.</div>`}</div></div><div class="rounded-2xl border border-slate-200 p-5"><h3 class="text-lg font-black">Fizetési előzmények</h3><div class="mt-3 space-y-2">${payments.length ? payments.map(payment=>`<div class="rounded-xl bg-slate-50 p-3"><div class="flex justify-between gap-3"><b>${esc(paymentLabel(payment.product_code))}</b><span class="font-black">${num(payment.amount).toLocaleString("hu-HU")} ${esc(payment.currency)}</span></div><div class="mt-1 text-xs text-slate-500">${new Date(payment.created_at).toLocaleString("hu-HU")} · ${payment.status === "completed" ? "Sikeres" : payment.status === "pending" ? "Folyamatban" : "Sikertelen"}</div></div>`).join("") : `<div class="text-sm text-slate-500">Még nincs 360 fizetési előzményed.</div>`}</div></div></div>`;
       const renderPaymentButton = (productCode, selector, successText) => {
@@ -236,8 +238,9 @@
           onError: error => toast(error?.message || "PayPal-hiba történt.", "error")
         }).render(selector);
       };
-      if (activePlan !== "pro") renderPaymentButton("plan_360_basic_30d", "#sp360-basic-buttons", "A 360 Alap csomag automatikusan aktiválva.");
-      renderPaymentButton("plan_360_pro_30d", "#sp360-pro-buttons", "A 360 PRO csomag automatikusan aktiválva.");
+      if (!["pro", "bundle"].includes(activePlan)) renderPaymentButton("plan_360_basic_30d", "#sp360-basic-buttons", "A 360 Alap csomag automatikusan aktiválva.");
+      if (activePlan !== "bundle") renderPaymentButton("plan_360_pro_30d", "#sp360-pro-buttons", "A 360 PRO csomag automatikusan aktiválva.");
+      renderPaymentButton("plan_bundle_30d", "#sp360-bundle-buttons", "A Szaki Digitális Csomag automatikusan aktiválva 30 napra.");
       tabContent.querySelectorAll("[data-delete-workspace]").forEach(button => button.addEventListener("click", async () => {
         if (!confirm("Biztosan törlöd ezt a 360 mentést?")) return;
         const { error } = await client.from("szakipiac_360_workspace_items").delete().eq("id", button.dataset.deleteWorkspace);

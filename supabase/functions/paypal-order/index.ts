@@ -6,6 +6,7 @@ const products: Record<string, { amount: string; currency: string; description: 
   ad_extra: { amount: "1990", currency: "HUF", description: "SzakiPiac 360 Extra hirdetés" },
   plan_360_basic_30d: { amount: "1990", currency: "HUF", description: "SzakiPiac 360 Alap - 30 napos hozzáférés" },
   plan_360_pro_30d: { amount: "4990", currency: "HUF", description: "SzakiPiac 360 PRO - 30 napos hozzáférés" },
+  plan_bundle_30d: { amount: "6990", currency: "HUF", description: "Szaki Digitális Csomag - 30 napos hozzáférés" },
   plan_360_30d: { amount: "3990", currency: "HUF", description: "Korábbi SzakiPiac 360 - 30 napos hozzáférés" },
 };
 
@@ -106,14 +107,18 @@ serve(async req => {
         .eq("user_id", userData.user.id)
         .maybeSingle();
       if (paymentError || !payment) return json({ ok: false, error: "A fizetés nem található." }, 404);
-      if (payment.product_code === "plan_360_basic_30d") {
+      if (["plan_360_basic_30d", "plan_360_pro_30d", "plan_360_30d"].includes(payment.product_code)) {
         const { data: currentPlan } = await admin
           .from("szakipiac_360_entitlements")
           .select("plan,expires_at")
           .eq("user_id", userData.user.id)
           .maybeSingle();
+        const currentBundleIsActive = currentPlan?.plan === "bundle" && (!currentPlan.expires_at || new Date(currentPlan.expires_at).getTime() >= Date.now());
+        if (currentBundleIsActive) return json({ ok: false, error: "Aktív Szaki Digitális Csomag mellett alacsonyabb csomag nem vásárolható. A közös csomagot hosszabbítsd meg." }, 409);
         const currentProIsActive = currentPlan?.plan === "pro" && (!currentPlan.expires_at || new Date(currentPlan.expires_at).getTime() >= Date.now());
-        if (currentProIsActive) return json({ ok: false, error: "Aktív PRO csomag mellett Alap csomag nem vásárolható. A PRO csomagot hosszabbítsd meg." }, 409);
+        if (payment.product_code === "plan_360_basic_30d" && currentProIsActive) {
+          return json({ ok: false, error: "Aktív PRO csomag mellett Alap csomag nem vásárolható. A PRO csomagot hosszabbítsd meg." }, 409);
+        }
       }
 
       const captureResponse = await fetch(`${apiBase}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
@@ -134,6 +139,8 @@ serve(async req => {
       let accessExpiresAt: string | null = null;
       const purchasedPlan = payment.product_code === "plan_360_basic_30d"
         ? "basic"
+        : payment.product_code === "plan_bundle_30d"
+          ? "bundle"
         : ["plan_360_pro_30d", "plan_360_30d"].includes(payment.product_code)
           ? "pro"
           : null;
