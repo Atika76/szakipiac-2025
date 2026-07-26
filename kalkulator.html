@@ -1217,6 +1217,7 @@ async function persistQuoteToSupabase() {
     vat_rate: t.vatRate,
     vat_amount: t.vatAmount,
     total_gross: t.grossTotal,
+    quote_number: payload.quote_meta?.number || null,
 
     payload
   };
@@ -1255,7 +1256,7 @@ async function loadSaved() {
 
   const { data, error } = await supa
     .from("ajanlatok")
-    .select("id, created_at, project_name, client_name, total_gross, currency, user_email")
+    .select("id, created_at, project_name, client_name, total_gross, currency, user_email, quote_number, quote_status, valid_until, accepted_at, payload")
     .order("created_at", { ascending: false })
     .limit(30);
 
@@ -1272,19 +1273,29 @@ async function loadSaved() {
   list.innerHTML = data.map(r => {
     const dt = new Date(r.created_at).toLocaleString("hu-HU");
     const owner = isAdmin ? `<div class="text-xs text-gray-500">Tulaj: ${escapeHtml(r.user_email || "")}</div>` : "";
+    const status = r.quote_status || "draft";
+    const statusLabels = { draft: "Piszkozat", sent: "Elküldve", viewed: "Megtekintve", accepted: "Elfogadva", rejected: "Elutasítva", expired: "Lejárt" };
+    const statusColors = { accepted: "bg-emerald-100 text-emerald-800", rejected: "bg-red-100 text-red-800", expired: "bg-amber-100 text-amber-800", viewed: "bg-blue-100 text-blue-800", sent: "bg-indigo-100 text-indigo-800", draft: "bg-slate-200 text-slate-700" };
+    const importDisabled = status !== "accepted";
+    const number = r.quote_number || r.payload?.quote_meta?.number || "";
     return `
       <div class="border rounded-2xl p-3 bg-gray-50">
         <div class="flex items-start justify-between gap-3">
           <div>
             <div class="font-extrabold text-gray-900">${escapeHtml(r.project_name || "—")}</div>
             <div class="text-xs text-gray-600">${dt} • ${escapeHtml(r.client_name || "—")}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-2">
+              ${number ? `<span class="text-xs text-gray-500">${escapeHtml(number)}</span>` : ""}
+              <span class="rounded-full px-2 py-1 text-xs font-extrabold ${statusColors[status] || statusColors.draft}">${statusLabels[status] || escapeHtml(status)}</span>
+            </div>
             ${owner}
           </div>
           <div class="text-right">
             <div class="font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
             <div class="flex gap-2 mt-2 justify-end">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
-              <button data-epitesnaplo="${r.id}" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-extrabold text-sm">Projektbe / Naplóba</button>
+              <button data-share="${r.id}" data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold text-sm">Ügyfélnek küldhető link</button>
+              <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Projektbe / Naplóba</button>
               <button data-del="${r.id}" class="px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>
           </div>
@@ -1298,6 +1309,9 @@ async function loadSaved() {
   });
   list.querySelectorAll("button[data-epitesnaplo]").forEach(btn => {
     btn.addEventListener("click", async () => sendQuoteToEpitesNaplo(btn.dataset.epitesnaplo));
+  });
+  list.querySelectorAll("button[data-share]").forEach(btn => {
+    btn.addEventListener("click", async () => shareQuoteWithClient(btn.dataset.share, Number(btn.dataset.validDays) || 30));
   });
 
   list.querySelectorAll("button[data-del]").forEach(btn => {
@@ -1314,9 +1328,40 @@ async function loadSaved() {
 }
 
 
+async function shareQuoteWithClient(id, validDays) {
+  const session = await refreshSession();
+  if (!session) return toast("A link készítéséhez jelentkezz be!", "error");
+  toast("Biztonságos ajánlati link készül...", "info");
+  const { data, error } = await supa.rpc("create_quote_share_v1", {
+    p_quote_id: id,
+    p_valid_days: validDays
+  });
+  if (error || !data?.ok) return toast("Linkkészítési hiba: " + (error?.message || data?.error || "ismeretlen hiba"), "error");
+  const shareUrl = new URL("ajanlat.html", window.location.href);
+  shareUrl.searchParams.set("token", data.token);
+  try {
+    await navigator.clipboard.writeText(shareUrl.href);
+    toast("Az ügyfélnek küldhető link a vágólapra került ✓", "ok");
+  } catch {
+    window.prompt("Másold ki az ügyfélnek küldhető linket:", shareUrl.href);
+  }
+  await loadSaved();
+  window.open(shareUrl.href, "_blank", "noopener,noreferrer");
+}
+
 async function sendQuoteToEpitesNaplo(id) {
   const session = await refreshSession();
   if (!session) return toast("Átküldéshez jelentkezz be!", "error");
+
+  const { data: quote, error: quoteError } = await supa
+    .from("ajanlatok")
+    .select("quote_status, accepted_at")
+    .eq("id", id)
+    .single();
+  if (quoteError) return toast("Ajánlat-ellenőrzési hiba: " + quoteError.message, "error");
+  if (quote?.quote_status !== "accepted" || !quote?.accepted_at) {
+    return toast("Csak az ügyfél által online elfogadott ajánlatból készülhet projekt.", "error");
+  }
 
   toast("Import link készítése az Építési Naplóhoz...", "info");
   const { data, error } = await supa.functions.invoke("send-quote-to-epitesnaplo", {
@@ -1332,12 +1377,14 @@ async function sendQuoteToEpitesNaplo(id) {
 }
 
 async function loadOne(id) {
-  const { data, error } = await supa.from("ajanlatok").select("payload").eq("id", id).single();
+  const { data, error } = await supa.from("ajanlatok").select("payload, quote_number, quote_status").eq("id", id).single();
   if (error) return toast("Betöltés hiba: " + error.message, "error");
   if (!data?.payload) return toast("Nincs payload!", "error");
 
   currentQuoteId = id;
   applyPayload(data.payload);
+  if ($("quote_number") && data.quote_number) $("quote_number").value = data.quote_number;
+  if ($("quote_status")) $("quote_status").value = data.quote_status || "draft";
   toast("Betöltve ✅");
 }
 

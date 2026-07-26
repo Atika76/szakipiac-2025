@@ -13,6 +13,7 @@ on:
       - 'supabase/price_catalog.sql'
       - 'supabase/admin_analytics.sql'
       - 'supabase/szakipiac_360.sql'
+      - 'supabase/ajanlat_elfogadas.sql'
       - 'supabase/config.toml'
       - '.github/workflows/deploy-szakipiac-import-function.yml'
 
@@ -62,6 +63,7 @@ jobs:
           supabase db query --linked --file supabase/price_catalog.sql
           supabase db query --linked --file supabase/admin_analytics.sql
           supabase db query --linked --file supabase/szakipiac_360.sql
+          supabase db query --linked --file supabase/ajanlat_elfogadas.sql
 
       - name: Deploy server-verified PayPal order function
         env:

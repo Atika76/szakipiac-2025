@@ -119,9 +119,15 @@ serve(async (req) => {
       if (!ownsQuote && userEmail !== adminEmail) {
         return json(req, { ok: false, error: "Ezt az ajánlatot nem küldheted át." }, 200);
       }
+      if (quote.quote_status !== "accepted" || !quote.accepted_at) {
+        return json(req, { ok: false, error: "Csak az ügyfél által online elfogadott ajánlat adható át az Építési Naplóba." }, 200);
+      }
 
       importBody = {
         source_quote_id: quote.id,
+        source_status: quote.quote_status,
+        accepted_at: quote.accepted_at,
+        quote_number: quote.quote_number,
         project_name: quote.project_name,
         client_name: quote.client_name,
         client_email: quote.client_email,
@@ -188,6 +194,7 @@ serve(async (req) => {
           items,
         },
       };
+      importBody.source_status = "kivitelezes_pro";
     }
 
     if (!importBody) return json(req, { ok: false, error: "Nincs átadható adat." }, 200);
@@ -208,6 +215,17 @@ serve(async (req) => {
         ok: false,
         error: result?.error || `Az Építési Napló import végpont hibát adott (${response.status}).`,
       }, 200);
+    }
+
+    if (quoteId) {
+      const { error: markError } = await admin
+        .from("ajanlatok")
+        .update({
+          import_requested_at: new Date().toISOString(),
+          import_request_id: safeText(result?.request_id || "", 200) || null,
+        })
+        .eq("id", quoteId);
+      if (markError) console.error("Az importjelölés nem sikerült", markError);
     }
 
     return json(req, { ok: true, ...result });

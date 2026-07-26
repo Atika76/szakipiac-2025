@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Árajánlat megtekintése | SzakiPiac</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#172033;background:#f4f7f6}*{box-sizing:border-box}body{margin:0}
+    .wrap{width:min(920px,calc(100% - 28px));margin:28px auto 60px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .logo{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#087f5b;color:#fff;font-weight:900}.brand strong{font-size:1.25rem}.muted{color:#64748b}
+    .card{background:#fff;border:1px solid #dbe4e1;border-radius:22px;box-shadow:0 12px 36px #1232;padding:clamp(18px,4vw,34px);margin-bottom:18px}
+    .headline{display:flex;gap:18px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.headline h1{margin:.2rem 0;font-size:clamp(1.55rem,4vw,2.25rem)}
+    .status{padding:8px 12px;border-radius:999px;background:#e8f5ef;color:#087f5b;font-weight:800}.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:22px 0}
+    .meta div{padding:13px;border-radius:14px;background:#f7faf9}.meta small{display:block;color:#64748b;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:14px}
+    th,td{padding:12px 8px;border-bottom:1px solid #e7eeeb;text-align:left}th:last-child,td:last-child{text-align:right}.total{font-size:1.35rem;font-weight:900;text-align:right;margin-top:18px;color:#087f5b}
+    label{display:block;font-weight:700;margin:14px 0 6px}input,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px;font:inherit}textarea{min-height:90px;resize:vertical}
+    .check{display:flex;align-items:flex-start;gap:10px;font-weight:500}.check input{width:auto;margin-top:4px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+    button{border:0;border-radius:13px;padding:13px 18px;font:inherit;font-weight:900;cursor:pointer}.accept{background:#087f5b;color:#fff}.reject{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+    button:disabled{opacity:.55;cursor:not-allowed}.notice{padding:14px;border-radius:13px;background:#eef6ff;color:#1d4f84;margin:14px 0}.notice.error{background:#fff1f2;color:#9f1239}
+    .notice.success{background:#eaf8f1;color:#086b4c}.hidden{display:none}.prose{white-space:pre-wrap;line-height:1.6}.empty{text-align:center;padding:30px 10px}
+    @media(max-width:600px){th:nth-child(2),td:nth-child(2){display:none}.actions button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand"><div class="logo">SZ</div><div><strong>SzakiPiac</strong><div class="muted">Online árajánlat</div></div></div>
+    <div id="state" class="card empty"><strong>Az ajánlat betöltése folyamatban…</strong></div>
+    <div id="quote" class="hidden">
+      <section class="card">
+        <div class="headline"><div><div class="muted" id="number"></div><h1 id="project"></h1></div><span class="status" id="status"></span></div>
+        <div class="meta">
+          <div><small>Ügyfél</small><strong id="client"></strong></div><div><small>Vállalkozó</small><strong id="contractor"></strong></div>
+          <div><small>Érvényes eddig</small><strong id="validUntil"></strong></div><div><small>Fizetési feltétel</small><strong id="payment"></strong></div>
+        </div>
+        <div id="intro" class="prose"></div>
+        <table aria-label="Ajánlati tételek"><thead><tr><th>Tétel</th><th>Mennyiség</th><th>Összeg</th></tr></thead><tbody id="items"></tbody></table>
+        <div class="total">Végösszeg: <span id="total"></span></div><div id="notes" class="prose muted"></div>
+      </section>
+      <section id="decisionCard" class="card">
+        <h2>Döntés az ajánlatról</h2>
+        <p class="muted">A döntés rögzítéséről az ajánlat készítője értesül. Az elfogadás nem helyettesíti a felek részletes vállalkozási szerződését.</p>
+        <div id="feedback" class="notice hidden" role="status" aria-live="polite"></div>
+        <label for="decisionName">Név</label><input id="decisionName" autocomplete="name">
+        <label for="decisionEmail">E-mail-cím</label><input id="decisionEmail" type="email" autocomplete="email">
+        <label for="decisionComment">Megjegyzés (nem kötelező)</label><textarea id="decisionComment"></textarea>
+        <label class="check"><input id="termsAccepted" type="checkbox"><span>Elfogadás esetén elfogadom az ajánlatban szereplő tartalmat, összeget, érvényességet és fizetési feltételeket.</span></label>
+        <label class="check"><input id="privacyAccepted" type="checkbox"><span>Tudomásul veszem, hogy a nevemet, e-mail-címemet, döntésemet és megjegyzésemet az ajánlat kezelése és igazolhatósága céljából tárolják.</span></label>
+        <div class="actions"><button id="acceptBtn" class="accept">Elfogadom az ajánlatot</button><button id="rejectBtn" class="reject">Elutasítom az ajánlatot</button></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const client=supabase.createClient("https://bxtpnotswnwrbycvfypz.supabase.co","sb_publishable_Mb8TFdTfXZqemImigup9Ig_RpJhUrx8"),$=id=>document.getElementById(id);
+    const token=new URLSearchParams(location.search).get("token")||"";const labels={sent:"Elküldve",viewed:"Megtekintve",accepted:"Elfogadva",rejected:"Elutasítva",expired:"Lejárt",draft:"Piszkozat"};
+    const money=(value,currency="HUF")=>new Intl.NumberFormat("hu-HU",{style:"currency",currency:currency||"HUF",maximumFractionDigits:0}).format(Number(value)||0);
+    const date=value=>value?new Date(value).toLocaleString("hu-HU"):"—";
+    function feedback(message,type=""){const box=$("feedback");box.textContent=message;box.className=`notice ${type}`;}
+    function finishState(message,type=""){const state=$("state");state.innerHTML="";const strong=document.createElement("strong");strong.textContent=message;state.appendChild(strong);state.className=`card empty notice ${type}`;}
+    function render(data){
+      const payload=data.payload||{},meta=payload.quote_meta||{},contractor=meta.contractor||{};
+      $("number").textContent=data.quote_number?`Ajánlatszám: ${data.quote_number}`:"Árajánlat";$("project").textContent=data.project_name||payload.project_name||"Árajánlat";
+      $("status").textContent=labels[data.status]||data.status;$("client").textContent=data.client_name||payload.client?.name||"—";$("contractor").textContent=contractor.name||"Az ajánlat készítője";
+      $("validUntil").textContent=date(data.valid_until);$("payment").textContent=meta.payment_terms||"Az ajánlat szerint";$("intro").textContent=payload.narrative?.intro||"";
+      $("notes").textContent=payload.narrative?.notes||"";const tbody=$("items");tbody.innerHTML="";
+      (Array.isArray(payload.items)?payload.items:[]).forEach(item=>{const tr=document.createElement("tr"),qty=Number(item.qty)||0,unit=item.unit||"db";
+        const total=item.total??qty*((Number(item.mat_unit_price)||Number(item.material)||0)+(Number(item.lab_unit_price)||Number(item.labor)||0));
+        [item.name||"Tétel",`${qty} ${unit}`,money(total,data.currency)].forEach(text=>{const td=document.createElement("td");td.textContent=text;tr.appendChild(td)});tbody.appendChild(tr)});
+      $("total").textContent=money(data.total_gross,data.currency);$("decisionEmail").value=data.client_email||"";$("state").classList.add("hidden");$("quote").classList.remove("hidden");
+      if(["accepted","rejected"].includes(data.status)){$("decisionCard").innerHTML=`<h2>${data.status==="accepted"?"Az ajánlatot elfogadták":"Az ajánlatot elutasították"}</h2><p class="muted">A döntés rögzítve: ${date(data.decided_at)}${data.decision_name?` – ${data.decision_name}`:""}</p>`}
+      else if(data.status==="expired"){$("decisionCard").innerHTML="<h2>Az ajánlat érvényessége lejárt</h2><p class=\"muted\">Kérj új ajánlati linket a vállalkozótól.</p>"}
+    }
+    async function load(){if(!token)return finishState("Hiányzik az ajánlati link azonosítója.","error");const {data,error}=await client.rpc("get_public_quote_v1",{p_token:token});
+      if(error||!data?.ok)return finishState("Ez az ajánlati link nem érvényes vagy már visszavonták.","error");render(data)}
+    async function decide(decision){const name=$("decisionName").value.trim(),email=$("decisionEmail").value.trim();
+      if(name.length<2||!email.includes("@"))return feedback("Add meg a neved és egy érvényes e-mail-címet.","error");
+      if(!$("privacyAccepted").checked)return feedback("Az adatkezelési tudomásulvétel szükséges a döntés rögzítéséhez.","error");
+      if(decision==="accepted"&&!$("termsAccepted").checked)return feedback("Az elfogadáshoz jelöld be az ajánlati feltételeket.","error");
+      document.querySelectorAll("button").forEach(button=>button.disabled=true);feedback("A döntés rögzítése folyamatban…");
+      const {data,error}=await client.rpc("decide_public_quote_v1",{p_token:token,p_decision:decision,p_name:name,p_email:email,p_comment:$("decisionComment").value,p_terms_accepted:$("termsAccepted").checked,p_privacy_accepted:true});
+      if(error||!data?.ok){document.querySelectorAll("button").forEach(button=>button.disabled=false);return feedback(data?.error==="expired"?"Az ajánlat időközben lejárt.":(error?.message||"A döntést nem sikerült rögzíteni."),"error")}
+      feedback(decision==="accepted"?"Köszönjük, az ajánlat elfogadását rögzítettük.":"Az ajánlat elutasítását rögzítettük.","success");setTimeout(load,700)}
+    $("acceptBtn").addEventListener("click",()=>decide("accepted"));$("rejectBtn").addEventListener("click",()=>decide("rejected"));load();
+  </script>
+</body>
+</html>
