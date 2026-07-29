@@ -64,6 +64,13 @@ function safeUrl(value) {
   }
 }
 
+function readableTedUrl(value) {
+  const url = safeUrl(value);
+  if (!url) return "";
+  const match = url.match(/\b(\d{6,8}-\d{4})\b/);
+  return match ? `https://ted.europa.eu/hu/notice/-/detail/${match[1]}` : url;
+}
+
 function optionList(values, emptyLabel, selected = "") {
   return `<option value="">${esc(emptyLabel)}</option>${values.map(value =>
     `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(value)}</option>`
@@ -111,6 +118,9 @@ function budgetText(lead) {
 }
 
 function normalizeLead(row) {
+  const forrasTipus = ["megrendelo", "nyilvanos_forras", "kozbeszerzes"].includes(row.forras_tipus)
+    ? row.forras_tipus
+    : "nyilvanos_forras";
   return {
     ...row,
     id: String(row.id || ""),
@@ -127,8 +137,8 @@ function normalizeLead(row) {
     kapcsolat_email: String(row.kapcsolat_email || ""),
     kep_url_tomb: Array.isArray(row.kep_url_tomb) ? row.kep_url_tomb.map(safeUrl).filter(Boolean).slice(0, 5) : [],
     torolheto: Boolean(row.torolheto),
-    forras_tipus: ["megrendelo", "nyilvanos_forras", "kozbeszerzes"].includes(row.forras_tipus) ? row.forras_tipus : "nyilvanos_forras",
-    forras_url: safeUrl(row.forras_url),
+    forras_tipus: forrasTipus,
+    forras_url: forrasTipus === "kozbeszerzes" ? readableTedUrl(row.forras_url) : safeUrl(row.forras_url),
     kapcsolat_elerheto: Boolean(row.kapcsolat_elerheto)
   };
 }
@@ -303,7 +313,12 @@ export function createMunkafigyelo({ client, showToast = () => {}, trackEvent = 
             <div class="rounded-xl bg-slate-50 p-3"><b>Sürgősség:</b><br>${esc(urgencyLabel(lead.surgosseg))}</div>
             <div class="rounded-xl bg-slate-50 p-3"><b>Keret:</b><br>${esc(budgetText(lead))}</div>
             <div class="rounded-xl bg-slate-50 p-3"><b>Kapcsolat módja:</b><br>${esc(lead.kapcsolat_mod || "Nincs megadva")}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Közzététel:</b><br>${esc(formatDate(lead.created_at))}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Kezdés:</b><br>${esc(formatDate(lead.kezdes_datum))}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Határidő / befejezés:</b><br>${esc(formatDate(lead.lejar_at))}</div>
+            <div class="rounded-xl bg-slate-50 p-3"><b>Forrás:</b><br>${esc(typeLabel(lead.forras_tipus))}</div>
           </div>
+          ${lead.forras_url ? `<a href="${esc(lead.forras_url)}" target="_blank" rel="noopener noreferrer" class="mt-5 inline-flex bg-emerald-700 text-white rounded-xl px-4 py-2.5 font-black hover:bg-emerald-800">${lead.forras_tipus === "kozbeszerzes" ? "TED hirdetmény megnyitása" : "Eredeti hirdetés megnyitása"}</a>` : ""}
         </div>
       </div>`;
     document.body.appendChild(modal);
