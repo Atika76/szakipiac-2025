@@ -40,7 +40,7 @@ serve(async (req) => {
   if (!hirdetesId) return json({ error: "missing_hirdetesId" }, 400);
 
   webpush.setVapidDetails(
-    Deno.env.get("MUNKAFIGYELO_VAPID_SUBJECT") || Deno.env.get("VAPID_SUBJECT") || "mailto:info@szakipiac-2025.hu",
+    Deno.env.get("MUNKAFIGYELO_VAPID_SUBJECT") || Deno.env.get("VAPID_SUBJECT") || "mailto:szakipiac2025@gmail.com",
     vapidPublic,
     vapidPrivate
   );
