@@ -26,6 +26,7 @@ type Lead = {
   forras_url: string;
   allapot: "aktiv";
   lejar_at: string;
+  kezdes_datum?: string;
   created_at?: string;
 };
 
@@ -38,6 +39,33 @@ const headers = {
 
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", textNodeName: "#text" });
 
+const TED_NOTICE_TYPES = "cn-standard cn-social cn-desg subco qu-sy pin-cfc-standard pin-cfc-social";
+const TED_FIELDS = [
+  "publication-number",
+  "notice-title",
+  "publication-date",
+  "buyer-name",
+  "classification-cpv",
+  "links",
+  "description-proc",
+  "description-lot",
+  "description-part",
+  "place-of-performance-city-lot",
+  "place-of-performance-city-proc",
+  "place-of-performance-subdiv-lot",
+  "place-of-performance-subdiv-proc",
+  "deadline-receipt-tender-date-lot",
+  "deadline-date-lot",
+  "estimated-value-proc",
+  "estimated-value-cur-proc",
+  "estimated-value-lot",
+  "estimated-value-cur-lot",
+  "contract-duration-start-date-lot",
+  "notice-type",
+  "procedure-type",
+  "document-url-lot"
+];
+
 const DEFAULT_SOURCES: SourceConfig[] = [{
   key: "ted-hu-kozbeszerzesek",
   type: "ted",
@@ -45,8 +73,8 @@ const DEFAULT_SOURCES: SourceConfig[] = [{
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: {
-    query: "buyer-country = HUN",
-    fields: ["publication-number", "notice-title", "publication-date", "buyer-name", "business-country", "classification-cpv", "links"],
+    query: `buyer-country = HUN AND notice-type IN (${TED_NOTICE_TYPES}) SORT BY publication-date DESC`,
+    fields: TED_FIELDS,
     limit: 20
   },
   itemPath: "notices",
@@ -132,6 +160,41 @@ function stripHtml(value: unknown): string {
   return (text(value) || deepText(value)).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function localizedText(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return [...new Set(value.map(localizedText).filter(Boolean))].join("\n\n");
+  }
+  if (typeof value !== "object") return String(value).trim();
+
+  const object = value as Record<string, unknown>;
+  for (const key of ["hun", "HUN", "hu", "eng", "ENG", "en", "#text"]) {
+    const result = localizedText(object[key]);
+    if (result) return result;
+  }
+  for (const nested of Object.values(object)) {
+    const result = localizedText(nested);
+    if (result) return result;
+  }
+  return "";
+}
+
+function cleanLocalizedText(value: unknown): string {
+  return localizedText(value)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function normalizedDate(value: unknown): string {
+  const raw = localizedText(value);
+  const dateOnly = raw.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  if (dateOnly) return new Date(`${dateOnly}T00:00:00.000Z`).toISOString();
+  const timestamp = Date.parse(raw);
+  return Number.isNaN(timestamp) ? "" : new Date(timestamp).toISOString();
+}
+
 function safeLimit(value: string, max = 100): string {
   const cleaned = value.replace(/\s+/g, " ").trim();
   if (cleaned.length <= max) return cleaned;
@@ -151,6 +214,14 @@ function publicationNumber(item: Record<string, unknown>): string {
 function tedDetailUrl(item: Record<string, unknown>): string {
   const number = publicationNumber(item);
   return number ? `https://ted.europa.eu/hu/notice/-/detail/${number}` : "";
+}
+
+function firstTedValue(item: Record<string, unknown>, paths: string[]): unknown {
+  for (const path of paths) {
+    const value = getPath(item, path);
+    if (cleanLocalizedText(value)) return value;
+  }
+  return undefined;
 }
 
 function classifySzakma(item: Record<string, unknown>, cim: string, leiras: string, fallback: string): string {
@@ -195,19 +266,90 @@ function mapItem(item: Record<string, unknown>, source: SourceConfig): Lead | nu
     return undefined;
   };
   const defaults = source.defaults || {};
+  if (source.type === "ted") {
+    const number = publicationNumber(item);
+    const cim = cleanLocalizedText(firstTedValue(item, ["notice-title", "title", "BT-21-Procedure"])) ||
+      number || "TED közbeszerzési hirdetmény";
+    const buyer = cleanLocalizedText(firstTedValue(item, ["buyer-name"]));
+    const procedureDescription = cleanLocalizedText(firstTedValue(item, ["description-proc"]));
+    const lotDescription = cleanLocalizedText(firstTedValue(item, ["description-lot"]));
+    const partDescription = cleanLocalizedText(firstTedValue(item, ["description-part"]));
+    const city = cleanLocalizedText(firstTedValue(item, [
+      "place-of-performance-city-lot",
+      "place-of-performance-city-proc"
+    ]));
+    const primaryCity = city.split(/\n+/).map(value => value.trim()).find(Boolean) || "";
+    const subdivision = cleanLocalizedText(firstTedValue(item, [
+      "place-of-performance-subdiv-lot",
+      "place-of-performance-subdiv-proc"
+    ]));
+    const published = normalizedDate(firstTedValue(item, ["publication-date", "published", "created_at"]));
+    const deadline = normalizedDate(firstTedValue(item, [
+      "deadline-receipt-tender-date-lot",
+      "deadline-date-lot",
+      "deadline",
+      "date-receipt"
+    ]));
+    const startDate = normalizedDate(firstTedValue(item, ["contract-duration-start-date-lot"]));
+    const estimatedValue = cleanLocalizedText(firstTedValue(item, ["estimated-value-proc", "estimated-value-lot"]));
+    const estimatedCurrency = cleanLocalizedText(firstTedValue(item, ["estimated-value-cur-proc", "estimated-value-cur-lot"]));
+    const documentUrl = validUrl(firstTedValue(item, ["document-url-lot"]));
+    const forrasUrl = tedDetailUrl(item) ||
+      validUrl(firstTedValue(item, [
+        "links.html.HUN",
+        "links.html.hun",
+        "links.html.ENG",
+        "links.html.eng",
+        "links.htmlDirect.HUN",
+        "links.htmlDirect.ENG"
+      ]));
+    if (!forrasUrl) return null;
+
+    const details = [
+      buyer ? `Ajánlatkérő: ${buyer}` : "",
+      number ? `TED azonosító: ${number}` : "",
+      published ? `Közzététel: ${published.slice(0, 10)}` : "",
+      deadline ? `Ajánlattételi határidő: ${deadline.slice(0, 10)}` : "",
+      city || subdivision ? `Helyszín: ${[city, subdivision].filter(Boolean).join(", ")}` : "",
+      estimatedValue ? `Becsült érték: ${estimatedValue}${estimatedCurrency ? ` ${estimatedCurrency}` : ""}` : "",
+      procedureDescription ? `Eljárás leírása:\n${procedureDescription}` : "",
+      lotDescription ? `Részletes leírás:\n${lotDescription}` : "",
+      partDescription ? `További részletek:\n${partDescription}` : "",
+      documentUrl ? `Közbeszerzési dokumentumok: ${documentUrl}` : ""
+    ].filter(Boolean);
+    const leiras = details.length
+      ? details.join("\n\n")
+      : `${cim} - TED közbeszerzési hirdetmény. A teljes adatlap a hivatalos TED oldalon érhető el.`;
+    const fallbackSzakma = text(defaults.szakma) || "Egyéb szakember";
+
+    return {
+      cim: safeLimit(cim, 100),
+      leiras: leiras.slice(0, 4000),
+      szakma: classifySzakma(item, cim, leiras, fallbackSzakma),
+      megye: subdivision || text(defaults.megye) || "Országos",
+      telepules: safeLimit(primaryCity || text(defaults.telepules) || "Magyarország", 100),
+      surgosseg: "normal",
+      forras_tipus: "kozbeszerzes",
+      forras_url: forrasUrl,
+      allapot: "aktiv",
+      lejar_at: deadline || new Date(Date.now() + 90 * 86400000).toISOString(),
+      ...(startDate ? { kezdes_datum: startDate } : {}),
+      ...(published ? { created_at: published } : {})
+    };
+  }
   const cim = stripHtml(pick("cim", ["title", "name", "notice-title", "BT-21-Procedure"])) || publicationNumber(item) || "TED közbeszerzési hirdetmény";
   const pickedLeiras = stripHtml(pick("leiras", ["description", "summary", "content", "notice-description"]));
   const leiras = pickedLeiras && pickedLeiras.length >= 30
     ? pickedLeiras
     : `${cim} - TED közbeszerzési hirdetmény. Részletek és dokumentumok a megadott TED hivatkozáson érhetők el.`;
-  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links", "links.html", "links.htmlDirect", "links.htmlDirect.HUN", "links.htmlDirect.ENG"])) || (source.type === "ted" ? tedDetailUrl(item) : "");
+  const forrasUrl = validUrl(pick("forras_url", ["link", "url", "notice-url", "links", "links.html", "links.htmlDirect", "links.htmlDirect.HUN", "links.htmlDirect.ENG"]));
   if (!cim || !forrasUrl) return null;
-  const type = source.type === "ted" ? "kozbeszerzes" : "nyilvanos_forras";
+  const type: Lead["forras_tipus"] = "nyilvanos_forras";
   const urgency = text(pick("surgosseg", ["surgosseg"])) || text(defaults.surgosseg) || "normal";
   const deadline = text(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"])) || deepText(pick("lejar_at", ["deadline", "date-receipt", "lejar_at"]));
   const published = text(pick("created_at", ["pubDate", "published", "publication-date", "created_at"])) || deepText(pick("created_at", ["pubDate", "published", "publication-date", "created_at"]));
   const fallbackSzakma = text(pick("szakma", ["szakma", "category"])) || text(defaults.szakma) || "Egyéb szakember";
-  const szakma = source.type === "ted" ? classifySzakma(item, cim, leiras, fallbackSzakma) : fallbackSzakma;
+  const szakma = fallbackSzakma;
   return {
     cim: safeLimit(cim, 100),
     leiras: leiras.slice(0, 8000),
@@ -235,10 +377,29 @@ function jsonItems(payload: unknown, source: SourceConfig): Record<string, unkno
 
 async function fetchSource(source: SourceConfig): Promise<Record<string, unknown>[]> {
   if (!source.url) throw new Error(`A(z) ${source.key} forrás URL-je hiányzik.`);
+  let requestBody = source.body;
+  if (source.type === "ted") {
+    const configured = source.body && typeof source.body === "object" && !Array.isArray(source.body)
+      ? source.body as Record<string, unknown>
+      : {};
+    const configuredQuery = String(configured.query || "buyer-country = HUN")
+      .replace(/\s+SORT\s+BY[\s\S]*$/i, "")
+      .trim();
+    const query = /\bnotice-type\b/i.test(configuredQuery)
+      ? configuredQuery
+      : `${configuredQuery} AND notice-type IN (${TED_NOTICE_TYPES})`;
+    const configuredLimit = Number(configured.limit);
+    requestBody = {
+      ...configured,
+      query: `${query} SORT BY publication-date DESC`,
+      fields: TED_FIELDS,
+      limit: Number.isFinite(configuredLimit) ? Math.min(50, Math.max(20, configuredLimit)) : 20
+    };
+  }
   const response = await fetch(source.url, {
-    method: source.method || (source.body ? "POST" : "GET"),
+    method: source.method || (requestBody ? "POST" : "GET"),
     headers: source.headers,
-    body: source.body ? JSON.stringify(source.body) : undefined
+    body: requestBody ? JSON.stringify(requestBody) : undefined
   });
   if (!response.ok) throw new Error(`${source.key}: HTTP ${response.status} - ${await response.text()}`);
   if (source.type === "rss") return rssItems(await response.text());
