@@ -533,15 +533,6 @@
 
       const planLabel = plan === "admin" ? "Admin" : plan === "bundle" ? "Szaki Digitális Csomag" : plan === "pro" ? "360 PRO" : plan === "basic" ? "360 Alap" : "Ingyenes";
       const dailyLimit = plan === "admin" ? "korlátlan" : ["pro", "bundle"].includes(plan) ? "20/nap" : plan === "basic" ? "10/nap" : "3/nap";
-      const locked = session ? "" : "disabled";
-      const serviceCards = [
-        ["weboldal", "🌐", "Weboldalkészítés", "Saját bemutatkozó oldal szolgáltatásokkal, referenciákkal, térképpel és ajánlatkérővel.", "Egyedi kivitelezés"],
-        ["messenger", "💬", "Messenger automatizálás", "Gyakori kérdések, kapcsolatfelvétel és érdeklődői adatok rendezett fogadása.", "Meta-beállítás szükséges"],
-        ["ai_chatbot", "🤖", "AI-chatbot", "Weboldali segítő válaszokhoz és előzetes ajánlatkérési adatok összegyűjtéséhez.", "Egyedi beállítás"],
-        ["facebook", "📣", "Facebook-rendszer", "Megosztási sablonok, bejegyzések és érdeklődőgyűjtési folyamat kialakítása.", "A meglévő megosztásra épül"],
-        ["google_cegprofil", "📍", "Google Cégprofil", "A Google- és Térkép-megjelenés létrehozása, kitöltése vagy rendbetétele.", "Emberi közreműködés"],
-        ["ajanlatkero", "📋", "Ajánlatkérő rendszer", "Saját, rendezett adatbekérő folyamat a komolyabb és pontosabb érdeklődőkért.", "SzakiPiac-alapokra épül"]
-      ];
 
       c.innerHTML = `
         <div class="space-y-7">
@@ -578,74 +569,7 @@
               <a href="profilom.html" class="sp-card rounded-2xl border border-slate-200 bg-slate-50 p-5"><b class="text-slate-950">👷 Szakemberprofil</b><p class="mt-2 text-sm text-slate-700">Bemutatkozás, elérhetőség, referenciák és értékelések.</p></a>
             </div>
           </section>
-
-          <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 class="text-2xl font-black text-slate-950">Kérhető digitális szolgáltatások</h2>
-            <p class="mt-2 max-w-4xl text-slate-600">Itt weboldalt, Messenger-automatizálást, AI-chatbotot, Facebook-rendszert, Google Cégprofil-beállítást vagy saját ajánlatkérő rendszert kérhetsz. Válassz egy szolgáltatást, írd le az elképzelésedet, és egyeztetés után egyedi árajánlatot kapsz. Az igény elküldése nem jelent fizetési kötelezettséget.</p>
-            <p class="mt-3 text-sm font-bold text-slate-700">Kérdés esetén: <a href="mailto:${CONTACT_EMAIL}" class="text-indigo-700 underline">${CONTACT_EMAIL}</a></p>
-            <div class="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              ${serviceCards.map(([value, icon, title, text, note]) => `
-                <button type="button" data-service-choice="${value}" class="sp-card text-left rounded-2xl border border-slate-200 bg-slate-50 p-5 hover:border-indigo-300 hover:bg-indigo-50">
-                  <span class="text-3xl">${icon}</span><b class="mt-3 block text-lg text-slate-950">${title}</b>
-                  <span class="mt-2 block text-sm text-slate-600">${text}</span>
-                  <span class="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-800">${note}</span>
-                </button>`).join("")}
-            </div>
-          </section>
-
-          <section id="service-request-section" class="rounded-3xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm">
-            <h2 class="text-2xl font-black text-indigo-950">Egyedi digitális szolgáltatás árajánlatkérése</h2>
-            <p class="mt-2 text-sm text-indigo-900">Válaszd ki, miben kérsz segítséget, majd írd le röviden az elképzelésedet. A SzakiPiac a megadott saját elérhetőségeden keres meg. Ez még nem vásárlás és nem jár fizetési kötelezettséggel.</p>
-            <p class="mt-2 text-sm text-indigo-900">SzakiPiac kapcsolattartás: <a href="mailto:${CONTACT_EMAIL}" class="font-black underline">${CONTACT_EMAIL}</a></p>
-            ${!session ? `<div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900"><b>Az igény elküldéséhez regisztráció vagy bejelentkezés szükséges.</b><br><a href="#auth" class="font-black underline">Regisztráció / Belépés</a></div>` : ""}
-            <form id="service-request-form" class="mt-5 grid gap-4 md:grid-cols-2">
-              <label class="font-bold text-indigo-950">Szolgáltatás
-                <select id="service-request-type" class="mt-1 w-full rounded-xl border border-indigo-200 bg-white p-3" ${locked}>
-                  ${serviceCards.map(([value,,title]) => `<option value="${value}">${title}</option>`).join("")}
-                </select>
-              </label>
-              <label class="font-bold text-indigo-950">A te elérhetőséged
-                <input id="service-request-contact" class="mt-1 w-full rounded-xl border border-indigo-200 bg-white p-3" value="${escapeHtml(session?.user?.email || "")}" placeholder="E-mail vagy telefonszám" ${locked}>
-                <span class="mt-1 block text-xs font-normal text-indigo-800">Ide a saját e-mail címed vagy telefonszámod kerül, hogy válaszolni tudjunk.</span>
-              </label>
-              <label class="font-bold text-indigo-950 md:col-span-2">Mit szeretnél megvalósítani?
-                <textarea id="service-request-details" rows="5" minlength="10" maxlength="4000" required class="mt-1 w-full rounded-xl border border-indigo-200 bg-white p-3" placeholder="Írd le röviden a vállalkozást, a célt és azt, miben kérsz segítséget." ${locked}></textarea>
-              </label>
-              <label class="font-bold text-indigo-950">Tervezett keret – nem kötelező
-                <input id="service-request-budget" class="mt-1 w-full rounded-xl border border-indigo-200 bg-white p-3" placeholder="Pl. még nem tudom / 50–100 ezer Ft" ${locked}>
-              </label>
-              <div class="flex items-end">
-                <button type="submit" class="w-full rounded-xl bg-indigo-700 px-5 py-3 font-black text-white hover:bg-indigo-800 disabled:opacity-50" ${locked}>Igény elküldése</button>
-              </div>
-            </form>
-          </section>
         </div>`;
-
-      c.querySelectorAll("[data-service-choice]").forEach(button => button.addEventListener("click", () => {
-        const select = document.getElementById("service-request-type");
-        if (select) select.value = button.dataset.serviceChoice || "weboldal";
-        document.getElementById("service-request-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }));
-
-      c.querySelector("#service-request-form")?.addEventListener("submit", async event => {
-        event.preventDefault();
-        if (!session?.user?.id) return showToast("Az igény elküldéséhez jelentkezz be.", "error");
-        const details = document.getElementById("service-request-details")?.value.trim() || "";
-        if (details.length < 10) return showToast("Írd le legalább néhány mondatban, miben kérsz segítséget.", "error");
-        const row = {
-          user_id: session.user.id,
-          user_email: session.user.email,
-          service_type: document.getElementById("service-request-type")?.value,
-          contact: document.getElementById("service-request-contact")?.value.trim() || session.user.email,
-          details,
-          budget: document.getElementById("service-request-budget")?.value.trim() || null
-        };
-        const { error } = await supaClient.from("szakipiac_360_service_requests").insert(row);
-        if (error) return showToast("Az igény mentése nem sikerült: " + error.message, "error");
-        event.target.reset();
-        document.getElementById("service-request-contact").value = session.user.email || "";
-        showToast("Az igényt rögzítettük. Az egyeztetés nem jelent fizetési kötelezettséget.", "success");
-      });
 
       const workspace = document.getElementById("sp360-workspace");
       if (workspace && window.SzakiPiac360Tools) {
@@ -2007,20 +1931,6 @@
         return;
       }
 
-      let serviceRequests = [];
-      let serviceRequestsError = null;
-      try {
-        const { data: requestRows, error: requestError } = await supaClient
-          .from("szakipiac_360_service_requests")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(100);
-        if (requestError) throw requestError;
-        serviceRequests = requestRows || [];
-      } catch (e) {
-        serviceRequestsError = e?.message || String(e);
-      }
-
       const usersById = new Map();
       (data || []).forEach(h => {
         if (!h.user_id) return;
@@ -2238,60 +2148,6 @@
         </div>
       `;
 
-      const serviceLabels = {
-        weboldal: "Weboldal készítés",
-        messenger: "Messenger automatizálás",
-        ai_chatbot: "AI-chatbot",
-        facebook: "Facebook-rendszer",
-        google_cegprofil: "Google Cégprofil",
-        ajanlatkero: "Ajánlatkérő rendszer"
-      };
-      const serviceStatusLabels = {
-        uj: "Új",
-        egyeztetes: "Kapcsolatfelvétel / egyeztetés",
-        ajanlat: "Ajánlat elküldve",
-        folyamatban: "Folyamatban",
-        lezart: "Lezárt",
-        elutasitva: "Elutasítva"
-      };
-      const serviceRequestsRows = serviceRequests.length ? serviceRequests.map(request => `
-        <tr class="border-b align-top">
-          <td class="p-2">
-            <div class="font-bold text-gray-900">${escapeHtml(serviceLabels[request.service_type] || request.service_type)}</div>
-            <div class="text-xs text-gray-500 mt-1">${new Date(request.created_at).toLocaleString("hu-HU")}</div>
-          </td>
-          <td class="p-2">
-            <div class="font-semibold break-all">${escapeHtml(request.user_email || "Nincs e-mail")}</div>
-            <div class="mt-1 text-xs">${escapeHtml(request.contact || "Nincs külön kapcsolattartási adat")}</div>
-          </td>
-          <td class="p-2 whitespace-pre-line text-sm">${escapeHtml(request.details || "Nincs részletes leírás")}${request.budget ? `<div class="mt-1 text-xs font-bold text-emerald-700">Keret: ${escapeHtml(request.budget)}</div>` : ""}</td>
-          <td class="p-2">
-            <select id="service-status-${request.id}" class="w-full rounded border border-gray-300 p-1.5 text-xs">
-              ${Object.entries(serviceStatusLabels).map(([value, label]) => `<option value="${value}" ${request.status === value ? "selected" : ""}>${label}</option>`).join("")}
-            </select>
-          </td>
-          <td class="p-2">
-            <div class="grid gap-1">
-              <button type="button" onclick="window.update360ServiceRequest('${request.id}')" class="rounded bg-emerald-700 px-2 py-1 text-xs font-bold text-white hover:bg-emerald-800">Mentés</button>
-              <button type="button" onclick="window.delete360ServiceRequest('${request.id}')" class="rounded border border-red-200 px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-50">Törlés</button>
-            </div>
-          </td>
-        </tr>
-      `).join("") : `<tr><td colspan="5" class="p-4 text-center text-gray-500">Még nincs SzakiPiac 360 szolgáltatási kérelem.</td></tr>`;
-      const serviceRequestsHtml = `
-        <div class="mb-8">
-          <h3 class="text-lg font-bold">SzakiPiac 360 szolgáltatási kérelmek</h3>
-          <p class="mb-3 text-sm text-gray-600">A kérelmek önmagukban nem indítanak fizetést. Itt követheted, kivel kell felvenni a kapcsolatot és hol tart az egyedi ajánlat.</p>
-          ${serviceRequestsError ? `<div class="mb-3 rounded border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">A modul még nem elérhető. Telepítsd a <code>supabase/szakipiac_360.sql</code> fájlt.<br><span class="text-xs">${escapeHtml(serviceRequestsError)}</span></div>` : ""}
-          <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="w-full min-w-[850px] text-sm">
-              <thead><tr class="bg-gray-100 text-left"><th class="p-2">Szolgáltatás</th><th class="p-2">Érdeklődő</th><th class="p-2">Igény</th><th class="p-2">Állapot</th><th class="p-2">Művelet</th></tr></thead>
-              <tbody>${serviceRequestsRows}</tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
       document.getElementById("admin-page").innerHTML = `
         <div class="bg-white p-6 rounded shadow">
           <div class="flex items-center justify-between mb-4">
@@ -2301,7 +2157,6 @@
 
           ${statsHtml}
           ${adminPackagesHtml}
-          ${serviceRequestsHtml}
 
           <div id="munkafigyelo-admin"></div>
 
@@ -2382,30 +2237,6 @@
       if (error) return showToast("A megtekintések törlése nem sikerült: " + error.message, "error");
 
       showToast(`${Number(deletedCount || 0).toLocaleString("hu-HU")} megtekintési rekord törölve.`, "success");
-      await showAdminPage();
-    };
-
-    window.update360ServiceRequest = async (requestId) => {
-      const { data: { session } } = await supaClient.auth.getSession();
-      if (!session || session.user.email !== ADMIN_EMAIL) return showToast("Nincs admin jogosultságod.", "error");
-      const status = document.getElementById(`service-status-${requestId}`)?.value;
-      if (!status) return showToast("Válassz állapotot.", "error");
-      const { error } = await supaClient
-        .from("szakipiac_360_service_requests")
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq("id", requestId);
-      if (error) return showToast("A szolgáltatási kérelem mentése nem sikerült: " + error.message, "error");
-      showToast("A szolgáltatási kérelem állapota mentve.", "success");
-      await showAdminPage();
-    };
-
-    window.delete360ServiceRequest = async (requestId) => {
-      const { data: { session } } = await supaClient.auth.getSession();
-      if (!session || session.user.email !== ADMIN_EMAIL) return showToast("Nincs admin jogosultságod.", "error");
-      if (!confirm("Biztosan törlöd ezt a SzakiPiac 360 szolgáltatási kérelmet?")) return;
-      const { error } = await supaClient.from("szakipiac_360_service_requests").delete().eq("id", requestId);
-      if (error) return showToast("A szolgáltatási kérelem törlése nem sikerült: " + error.message, "error");
-      showToast("A szolgáltatási kérelem törölve.", "success");
       await showAdminPage();
     };
 
