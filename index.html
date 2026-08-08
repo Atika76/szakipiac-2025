@@ -44,6 +44,38 @@
     .ad-img-frame img { width: 100%; height: 100%; object-fit: cover; }
     img[loading="lazy"] { content-visibility: auto; }
 
+    @media (max-width: 1023px) {
+      #mobile-menu {
+        max-height: calc(100dvh - 4rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+      #mobile-nav-auth-section > div {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.5rem;
+        text-align: left;
+      }
+      #mobile-nav-auth-section > div > * {
+        display: flex;
+        width: 100%;
+        max-width: none;
+        min-height: 44px;
+        margin-left: 0;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f9fafb;
+      }
+      #mobile-nav-auth-section > div > span {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    }
+
     /* --- BIZALMI PAJZS STÍLUSOK --- */
     .bizalmi-pajzs {
       cursor: help;
@@ -138,7 +170,7 @@
 
 <body class="bg-gray-50 text-gray-800">
 
-  <div class="fixed bottom-4 right-4 z-[60] text-xs bg-white border border-gray-200 px-3 py-2 rounded-full shadow-lg flex gap-2 items-center opacity-90 hover:opacity-100 transition">
+  <div class="fixed bottom-4 right-4 z-40 text-xs bg-white border border-gray-200 px-3 py-2 rounded-full shadow-lg flex gap-2 items-center opacity-90 hover:opacity-100 transition">
     <span class="font-bold text-gray-900">HU</span>
     <span class="text-gray-300">|</span>
     <a href="/En/index.html#home" class="text-gray-500 hover:text-green-600 font-medium">EN</a>
@@ -182,7 +214,7 @@
         <div id="nav-auth-section" class="hidden lg:block shrink-0 text-sm max-w-[360px]"></div>
 
         <div class="lg:hidden flex items-center ml-auto">
-          <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-xl text-gray-700 hover:text-black hover:bg-gray-100 focus:outline-none ring-1 ring-gray-300 shadow-sm bg-white" aria-label="Menü megnyitása">
+          <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-xl text-gray-700 hover:text-black hover:bg-gray-100 focus:outline-none ring-1 ring-gray-300 shadow-sm bg-white" aria-label="Menü megnyitása" aria-controls="mobile-menu" aria-expanded="false">
             <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -614,6 +646,7 @@
       }
 
       document.getElementById("mobile-menu")?.classList.add("hidden");
+      document.getElementById("mobile-menu-button")?.setAttribute("aria-expanded", "false");
     }
 
     /* =========================
@@ -2334,8 +2367,11 @@
         });
       });
 
-      document.getElementById("mobile-menu-button")?.addEventListener("click", () => {
-        document.getElementById("mobile-menu")?.classList.toggle("hidden");
+      document.getElementById("mobile-menu-button")?.addEventListener("click", event => {
+        const mobileMenu = document.getElementById("mobile-menu");
+        if (!mobileMenu) return;
+        const isOpen = mobileMenu.classList.toggle("hidden") === false;
+        event.currentTarget.setAttribute("aria-expanded", String(isOpen));
       });
 
       document.getElementById("btn-next")?.addEventListener("click", nextReklam);
