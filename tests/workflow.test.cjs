@@ -9,6 +9,7 @@ function clientContext(options={}) {
   refreshSession:async()=>({user:{id:options.user||'owner'}}),loadSavedProjects:async()=>{},sendKivitelezesToEpitesNaplo:async id=>calls.push(['send',id]),
   supa:{rpc:async(name,args)=>{calls.push([name,structuredClone(args)]);if(options.wait)await new Promise(r=>resolve=r);
    if(options.failBefore && calls.length===1)throw Error('request lost before commit');
+   const rejection=options.rejectRequest?.(args,calls.length);if(rejection)return {data:null,error:rejection};
    let row=records.get(args.p_id);
    if(row && args.p_revision!==row.revision)return {data:row}; // real SQL verifies replay equality separately
    row={id:args.p_id,revision:(row?.revision||0)+1,...args.p_row};records.set(row.id,row);writes++;
@@ -80,4 +81,46 @@ test('accepted quote row disables new client links, other rows remain usable',as
   vm.createContext(c);vm.runInContext(span(calc,'async function loadSaved()','async function shareQuoteWithClient('),c);await c.loadSaved();
   const button=list.innerHTML.match(/<button data-share="q"[^>]*>/)[0];assert.equal(/\sdisabled[\s>]/.test(button),status==='accepted',status);
  }
+});
+
+
+test('rejected foreign or invalid quote can be corrected after INSERT and UPDATE errors',async()=>{
+ for(const code of ['P0001','22P02','23503','42501'])for(const existing of [false,true]){
+  const x=clientContext({rejectRequest:args=>args.p_row.source_quote_id==='invalid'?{code,message:'Rejected quote'}:null});
+  if(existing)await x.context.saveSupabase();
+  const oldRevision=x.context.cloudProject.revision;
+  x.context.state.source_quote_id='invalid';assert.equal(await x.context.saveSupabase(),null);
+  const id=x.context.cloudProject.id;assert.equal(x.context.cloudProject.unconfirmed,null);
+  assert.equal(x.context.cloudProject.revision,oldRevision);assert.equal(x.records.size,existing?1:0);
+  x.context.state.source_quote_id='own-quote';assert.equal(await x.context.saveSupabase(),id);
+  assert.equal(x.calls.at(-1)[1].p_row.source_quote_id,'own-quote');assert.equal(x.records.size,1);
+  assert.equal(x.context.cloudProject.revision,existing?2:1);
+ }
+});
+
+test('explicit validation rejection during recovery is released for the next corrected save',async()=>{
+ const x=clientContext({failBefore:true,rejectRequest:args=>args.p_row.source_quote_id==='invalid'?{code:'P0001',message:'Rejected quote'}:null});
+ x.context.state.source_quote_id='invalid';await x.context.saveSupabase();const first=x.calls[0][1];
+ x.context.state.source_quote_id='own-quote';assert.equal(await x.context.saveSupabase(),null);
+ assert.deepEqual(x.calls[1][1],first);assert.equal(x.context.cloudProject.unconfirmed,null);
+ assert.equal(await x.context.saveSupabase(),first.p_id);assert.equal(x.records.size,1);
+ assert.equal(x.records.get(first.p_id).source_quote_id,'own-quote');
+});
+
+test('returned transport, connection, gateway and timeout errors preserve uncertain requests',async()=>{
+ for(const code of ['', '08006','PGRST000','57014','504']){
+  const x=clientContext({rejectRequest:(_,n)=>n===1?{code,message:'Uncertain result'}:null});
+  assert.equal(await x.context.saveSupabase(),null);const first=x.calls[0][1];
+  assert.deepEqual(JSON.parse(JSON.stringify(x.context.cloudProject.unconfirmed)),first);
+  x.context.state.project.name='Edited after failure';assert.equal(await x.context.saveSupabase(),first.p_id);
+  assert.deepEqual(x.calls[1][1],first);assert.equal(x.records.size,1);
+  assert.equal(x.records.get(first.p_id).project_name,'Edited after failure');
+ }
+});
+
+test('missing write acknowledgement remains uncertain even after commit',async()=>{
+ const x=clientContext();const rpc=x.context.supa.rpc;let first=true;
+ x.context.supa.rpc=async(...args)=>{const result=await rpc(...args);if(first){first=false;return {data:{id:result.data.id}}}return result};
+ assert.equal(await x.context.saveSupabase(),null);assert.ok(x.context.cloudProject.unconfirmed);
+ await x.context.saveSupabase();assert.equal(x.records.size,1);assert.equal(x.context.cloudProject.unconfirmed,null);
 });

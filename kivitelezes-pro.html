@@ -1223,6 +1223,13 @@ function syncLinkedQuote() {
 }
 async function saveSupabase(options = {}) {
   const context = cloudProject;
+  function rejectWrite(error) {
+    // Only explicit transactional PostgreSQL validation/permission rejections
+    // release the request. Network, gateway, timeout and unknown errors remain
+    // ambiguous. Keep the project ID/revision so retries cannot create copies.
+    if (/^(?:22[0-9A-Z]{3}|23[0-9A-Z]{3}|P0001|42501)$/.test(error.code || "")) context.unconfirmed = null;
+    throw error;
+  }
   if (context.pending) {
     const id = await context.pending;
     if (options.openEpitesNaplo && id && context === cloudProject) await sendKivitelezesToEpitesNaplo(id);
@@ -1245,14 +1252,14 @@ async function saveSupabase(options = {}) {
       // against the recovered revision instead of overwriting an unknown one.
       if (context.unconfirmed) {
         const { data: recovered, error: recoveryError } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
-        if (recoveryError) throw recoveryError;
+        if (recoveryError) rejectWrite(recoveryError);
         if (!recovered?.id || !Number.isInteger(recovered.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
         context.revision = recovered.revision;
         context.unconfirmed = null;
       }
       context.unconfirmed = { p_id: context.id, p_revision: context.revision, p_row: row };
       const { data, error } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
-      if (error) throw error;
+      if (error) rejectWrite(error);
       if (!data?.id || !Number.isInteger(data.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
       context.revision = data.revision;
       context.unconfirmed = null;

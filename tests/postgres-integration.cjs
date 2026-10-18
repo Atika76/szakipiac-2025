@@ -35,6 +35,20 @@ check('stale revision and foreign user cannot overwrite project',()=>{sql(save(o
 check('admin can update but cannot reassign owner',()=>{assert.equal(JSON.parse(sql(save(admin,2))).user_id,owner);sql(as(admin,`update kivitelezes_projektek set user_id='${other}' where id='${project}'`),false)});
 check('direct legacy writes bump optimistic revision',()=>{sql(as(owner,`update kivitelezes_projektek set project_name='Legacy edit' where id='${project}'`));assert.equal(sql(`select revision from kivitelezes_projektek where id='${project}'`),'4')});
 check('foreign quote cannot be linked to project',()=>{const foreign={...payload,source_quote_id:legacy};sql(as(other,`select save_kivitelezes_project_v2('88888888-8888-4888-8888-888888888888',null,'${JSON.stringify(foreign)}');`),false)});
+// A rejected call must roll back; fixing its link reuses the same project ID.
+check('invalid quote rejection then corrected INSERT and UPDATE keep one project',()=>{
+ const id='66666666-6666-4666-8666-666666666666';
+ const run=(revision,row)=>as(owner,`select save_kivitelezes_project_v2('${id}',${revision===null?'null':revision},'${JSON.stringify(row)}');`);
+ for(const source_quote_id of ['not-a-uuid','55555555-5555-4555-8555-555555555555'])sql(run(null,{...payload,source_quote_id}),false);
+ assert.equal(sql(`select count(*) from kivitelezes_projektek where id='${id}'`),'0');
+ assert.equal(JSON.parse(sql(run(null,payload))).revision,1);
+ const foreign='44444444-4444-4444-8444-444444444444';
+ sql(as(other,`insert into ajanlatok(id,user_id,project_name) values('${foreign}','${other}','Foreign quote');`));
+ sql(run(1,{...payload,source_quote_id:foreign}),false);
+ assert.equal(sql(`select revision from kivitelezes_projektek where id='${id}'`),'1');
+ assert.equal(JSON.parse(sql(run(1,{...payload,project_name:'Corrected'}))).revision,2);
+ assert.equal(sql(`select count(*) from kivitelezes_projektek where id='${id}'`),'1');
+});
 // Lost HTTP responses: different saved_at must not create a conflict or a new row.
 const retryId='77777777-7777-4777-8777-777777777777';
 const retryRow={...payload,payload:{items:[],saved_at:'first'}};

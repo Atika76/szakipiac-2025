@@ -9,7 +9,7 @@ const mock=`(() => {
  b.eq=(key,value)=>{if(key==='id')id=value;return b};b.insert=rows=>{op='insert';row=rows[0];return b};b.update=r=>{op='update';row=r;return b};b.delete=()=>b;
  const result=()=>{if(table==='ajanlatok')return {data:id?quote:[quote]};if(table==='epitoipari_arak')return {data:[]};if(table==='kivitelezes_projektek')return {data:id?window.__records.get(id):[...window.__records.values()]};return {data:null}};
  b.single=b.maybeSingle=async()=>result();b.then=(ok,fail)=>Promise.resolve(result()).then(ok,fail);return b},
- rpc:async(name,args)=>{window.__calls.push([name,args]);if(name==='save_kivitelezes_project_v2'){const old=window.__records.get(args.p_id);if(old && args.p_revision!==old.revision)return {data:old};const row={id:args.p_id,revision:(old?.revision||0)+1,user_id:session.user.id,created_at:'2026-10-18',...args.p_row};window.__records.set(row.id,row);if(window.__loseResponse){window.__loseResponse=false;throw Error('Injected lost response after commit');}return {data:row}}return {data:{ok:true}}},
+ rpc:async(name,args)=>{window.__calls.push([name,args]);if(name==='save_kivitelezes_project_v2'){if(args.p_row.source_quote_id==='foreign-quote')return {data:null,error:{code:'P0001',message:'Quote owner mismatch'}};const old=window.__records.get(args.p_id);if(old && args.p_revision!==old.revision)return {data:old};const row={id:args.p_id,revision:(old?.revision||0)+1,user_id:session.user.id,created_at:'2026-10-18',...args.p_row};window.__records.set(row.id,row);if(window.__loseResponse){window.__loseResponse=false;throw Error('Injected lost response after commit');}return {data:row}}return {data:{ok:true}}},
  functions:{invoke:async()=>({data:{ok:true,import_url:'https://example.test/import'}})}
  })};
 })();`;
@@ -33,7 +33,15 @@ for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
  await page.locator('#projectName').fill('MÄ‚Ĺ‚dosÄ‚Â­tott munka');await page.locator('#btnSaveSupabase').click();
  await page.waitForFunction(()=>[...window.__records.values()][0].revision===2);
  assert.equal(await page.evaluate(()=>window.__records.size),1);
+ // An invalid imported/stale quote selection is explicitly rejected, then corrected.
+ await page.evaluate(()=>document.querySelector('#linkedQuoteId').add(new Option('Foreign quote','foreign-quote')));
+ await page.locator('#linkedQuoteId').selectOption('foreign-quote');await page.locator('#btnSaveSupabase').click();
+ await page.waitForFunction(()=>!cloudProject.pending);
+ assert.equal(await page.evaluate(()=>cloudProject.unconfirmed),null);
+ assert.equal(await page.evaluate(()=>[...window.__records.values()][0].revision),2);
  await page.locator('#linkedQuoteId').selectOption('11111111-1111-4111-8111-111111111111');assert.equal(await page.locator('#btnSaveAndOpenEpitesNaplo').isDisabled(),false);
+ await page.locator('#btnSaveSupabase').click();await page.waitForFunction(()=>[...window.__records.values()][0].revision===3);
+ assert.equal(await page.evaluate(()=>window.__records.size),1);
  await page.locator('#btnNewProject').click();assert.equal(await page.locator('#linkedQuoteId').inputValue(),'');
  await page.locator('#btnSaveSupabase').click();await page.waitForFunction(()=>window.__records.size===2);
  // Local save is independent of JSON export and restores cloud identity.
@@ -51,7 +59,7 @@ for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
 
  // Inspect overflow and actual touch target visibility on changed fields.
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
- results.push({viewport:viewport.width,scope:'Lost-response recovery, save/update/new/local/JSON, quote load/copy and disabled accepted share',errors:[...errors],networkFailures:[...failures],overflow});
+ results.push({viewport:viewport.width,scope:'Lost-response and deterministic rejection recovery, save/update/new/local/JSON, quote load/copy and disabled accepted share',errors:[...errors],networkFailures:[...failures],overflow});
  assert.deepEqual(errors,[]);
  // The import page uses the same session fixture; deliberately partial result stays visible.
  let attempts=0,mode='partial',lastBody=null;

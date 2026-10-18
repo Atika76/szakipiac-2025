@@ -2,6 +2,7 @@
 // No hosted projects, production credentials, npm packages or production writes.
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {spawn,spawnSync}=require('node:child_process');const assert=require('node:assert/strict');
+const vm=require('node:vm');
 if(process.env.CI!=='true')throw Error('Run only on the isolated CI runner.');
 if(process.env.SUPABASE_ACCESS_TOKEN)throw Error('Hosted Supabase token must be absent.');
 const source=process.cwd(),peer=path.resolve(process.env.PEER_REPO||'peer-naplo');
@@ -85,6 +86,30 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
   const payload={project_name:'E2E original',client:{name:'Test client'},items:[{name:'Burkolás',qty:2,unit:'m²',mat_unit_price:100,lab_unit_price:150}],totals:{grossTotal:635,materialTotal:200,laborTotal:300,vatAmount:135}};
   let quote;
   await pass('real Auth login + owner RLS creates a draft quote',async()=>{const res=await request(a,'/rest/v1/ajanlatok',{token:ownerA.token,body:{user_id:ownerA.id,user_email:'owner@example.test',project_name:'E2E original',client_name:'Test client',total_gross:635,payload}});assert.equal(res.status,201,JSON.stringify(res.data));quote=res.data[0];});
+  await pass('actual save client recovers after real REST SQLSTATE validation rejections',async()=>{
+   const otherA=await user(a,'other@example.test');
+   const foreign=await request(a,'/rest/v1/ajanlatok',{token:otherA.token,body:{user_id:otherA.id,project_name:'Foreign draft'}});
+   assert.equal(foreign.status,201,JSON.stringify(foreign.data));
+   const html=fs.readFileSync(path.join(source,'kivitelezes-pro.html'),'utf8');
+   const saveCode=html.slice(html.indexOf('async function saveSupabase('),html.indexOf('async function loadSavedProjects('));
+   for(const [invalid,code] of [['not-a-uuid','22P02'],[foreign.data[0].id,'P0001']]){
+    let rejected;const messages=[];
+    const c={crypto,JSON,toast:message=>messages.push(message),readProjectForm(){},totals:()=>({gross:635}),
+     state:{project:{name:'Correctable project'},source_quote_id:invalid},
+     normalizeProjectStateForSave:()=>({items:[],saved_at:new Date().toISOString()}),
+     cloudProject:{id:null,revision:null,owner:null,pending:null,unconfirmed:null},
+     refreshSession:async()=>({user:{id:ownerA.id}}),loadSavedProjects:async()=>{},
+     supa:{rpc:async(name,args)=>{const res=await request(a,'/rest/v1/rpc/'+name,{token:ownerA.token,body:args});if(res.status>=400){rejected=res.data;return {data:null,error:res.data}}return {data:res.data,error:null}}}};
+    vm.createContext(c);vm.runInContext(saveCode,c);
+    for(const revision of [null,1]){
+     c.state.source_quote_id=invalid;assert.equal(await c.saveSupabase(),null,messages.join('\n'));
+     assert.equal(rejected.code,code);assert.equal(c.cloudProject.unconfirmed,null);assert.equal(c.cloudProject.revision,revision);
+     const id=c.cloudProject.id;c.state.source_quote_id=quote.id;assert.equal(await c.saveSupabase(),id,messages.join('\n'));
+     assert.equal(c.cloudProject.revision,(revision||0)+1);
+     assert.equal(sql(a,`select count(*) from kivitelezes_projektek where id='${id}'`),'1');
+    }
+   }
+  });
   await pass('draft cannot cross the real sender Edge Function',async()=>{const res=await request(a,'/functions/v1/send-quote-to-epitesnaplo',{token:ownerA.token,body:{quoteId:quote.id}});assert.equal(res.status,409,JSON.stringify(res.data));});
   let share;
   await pass('real anonymous client reads and accepts the exact shared version',async()=>{
