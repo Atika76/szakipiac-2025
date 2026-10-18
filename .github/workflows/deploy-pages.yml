@@ -1,9 +1,13 @@
 name: Deploy static site to GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      production_confirmation:
+        description: 'Külön tulajdonosi jóváhagyás után írd be: DEPLOY_PRODUCTION'
+        required: true
+        type: string
+
 
 permissions:
   contents: read
@@ -16,6 +20,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.production_confirmation == 'DEPLOY_PRODUCTION'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

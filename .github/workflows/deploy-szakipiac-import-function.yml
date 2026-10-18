@@ -2,23 +2,16 @@ name: Deploy SzakiPiac import function
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'supabase/functions/send-quote-to-epitesnaplo/**'
-      - 'supabase/functions/generate-ad/**'
-      - 'supabase/functions/generate-quote-text/**'
-      - 'supabase/functions/manage-ad-cleanup/**'
-      - 'supabase/functions/paypal-order/**'
-      - 'supabase/authenticated_features.sql'
-      - 'supabase/price_catalog.sql'
-      - 'supabase/admin_analytics.sql'
-      - 'supabase/szakipiac_360.sql'
-      - 'supabase/ajanlat_elfogadas.sql'
-      - 'supabase/config.toml'
-      - '.github/workflows/deploy-szakipiac-import-function.yml'
+    inputs:
+      production_confirmation:
+        description: 'Külön tulajdonosi jóváhagyás után írd be: DEPLOY_PRODUCTION'
+        required: true
+        type: string
+
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.production_confirmation == 'DEPLOY_PRODUCTION'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
