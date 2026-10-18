@@ -5,6 +5,13 @@ alter table public.ajanlat_megosztasok add column if not exists quote_snapshot j
 alter table public.kivitelezes_projektek add column if not exists source_quote_id uuid references public.ajanlatok(id);
 alter table public.kivitelezes_projektek add column if not exists revision integer not null default 1;
 
+-- Live preflight found no UPDATE policy on ajanlatok. Add one without replacing
+-- the existing SELECT/INSERT/DELETE policies. Trigger guards state and content.
+drop policy if exists "ajanlatok_workflow_v2_update" on public.ajanlatok;
+create policy "ajanlatok_workflow_v2_update" on public.ajanlatok for update to authenticated
+using (user_id=auth.uid() or lower(coalesce(auth.jwt()->>'email',''))='atika.76@windowslive.com')
+with check (user_id=auth.uid() or lower(coalesce(auth.jwt()->>'email',''))='atika.76@windowslive.com');
+
 -- System metadata is excluded; all other present/future content columns are protected.
 create or replace function public.quote_content_v2(p_row jsonb) returns jsonb
 language sql immutable set search_path = pg_catalog as $$

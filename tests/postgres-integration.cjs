@@ -5,6 +5,7 @@ file('tests/bootstrap.sql');
 for(const p of ['ajanlatok_schema.sql','kivitelezes_pro_schema.sql','ajanlat_elfogadas.sql'])file('supabase/'+p);
 const legacy='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 sql(`insert into ajanlatok(id,user_id,quote_status,accepted_at,project_name) values('${legacy}','${owner}','accepted','2026-01-01','Legacy');`);
+sql('drop policy ajanlatok_update_own_or_admin on ajanlatok;'); // Match live missing UPDATE policy.
 const migration='supabase/migrations/202610180001_quote_workflow_stabilization.sql';
 file(migration);file(migration);
 check('migration repeats without manufacturing historical decisions',()=>{assert.equal(sql(`select count(*) from ajanlat_megosztasok where quote_id='${legacy}'`),'0');assert.equal(sql(`select accepted_at::date from ajanlatok where id='${legacy}'`),'2026-01-01')});
@@ -12,7 +13,9 @@ let seq=0;
 function quote(){const id=`00000000-0000-4000-8000-${String(++seq).padStart(12,'0')}`;sql(as(owner,`insert into ajanlatok(id,user_id,user_email,project_name,total_gross,payload) values('${id}','${owner}','owner@example.test','Original',127000,'{"items":[{"name":"Original item"}]}');`));return id;}
 function share(q){return JSON.parse(sql(as(owner,`select create_quote_share_v1('${q}',30)`))).token;}
 function decide(t){return `select decide_public_quote_v1('${t}','accepted','Test client','client@example.test','',true,true);`;}
-const q=quote(),token=share(q);
+const q=quote();
+check('draft UPDATE works with live-compatible added RLS policy',()=>{sql(as(owner,`update ajanlatok set project_name='Original' where id='${q}';`));assert.equal(sql(as(owner,`update ajanlatok set total_gross=127000 where id='${q}' returning id;`)),q)});
+const token=share(q);
 check('sent content is immutable via direct authenticated write',()=>sql(as(owner,`update ajanlatok set total_gross=1 where id='${q}';`),false));
 check('snapshot contains the exact sent content',()=>{const v=JSON.parse(sql(`set role anon;select get_public_quote_v1('${token}');`));assert.equal(v.total_gross,127000);assert.equal(v.payload.items[0].name,'Original item')});
 check('valid public decision is recorded by trusted server RPC',()=>{assert.equal(JSON.parse(sql(`set role anon;${decide(token)}`)).decision,'accepted');assert.equal(sql(`select quote_status from ajanlatok where id='${q}'`),'accepted')});
@@ -34,13 +37,13 @@ check('foreign quote cannot be linked to project',()=>{const foreign={...payload
 (async()=>{
  // Real concurrent connections; quote row lock is acquired before the link lock.
  let id=quote(),t=share(id);
- let holder=concurrent(`begin;select id from ajanlatok where id='${id}' for update;\echo READY
+ let holder=concurrent(`begin;select id from ajanlatok where id='${id}' for update;\\echo READY
 select pg_sleep(1);set role anon;${decide(t)}commit;`);
  await ready(holder);
  let writer=concurrent(as(owner,`update ajanlatok set total_gross=5 where id='${id}';`));
  const [a,b]=await Promise.all([holder.done,writer.done]);assert.equal(a.code,0,a.err);assert.notEqual(b.code,0);assert.equal(sql(`select total_gross from ajanlatok where id='${id}'`),'127000');console.log('PASS concurrent acceptance wins; waiting content edit is refused');
  id=quote();t=share(id);
- holder=concurrent(`begin;select id from ajanlatok where id='${id}' for update;\echo READY
+ holder=concurrent(`begin;select id from ajanlatok where id='${id}' for update;\\echo READY
 select pg_sleep(1);${as(owner,`update ajanlatok set total_gross=5 where id='${id}';`)}commit;`);
  await ready(holder);writer=concurrent(`set role anon;${decide(t)}`);
  const [c,d]=await Promise.all([holder.done,writer.done]);assert.notEqual(c.code,0);assert.equal(d.code,0,d.err);assert.equal(sql(`select quote_status from ajanlatok where id='${id}'`),'accepted');console.log('PASS edit-first transaction rolls back; waiting acceptance keeps original content');
