@@ -5,6 +5,8 @@ alter table public.ajanlat_megosztasok add column if not exists quote_snapshot j
 alter table public.kivitelezes_projektek add column if not exists source_quote_id uuid references public.ajanlatok(id);
 alter table public.kivitelezes_projektek add column if not exists revision integer not null default 1;
 
+grant update on public.ajanlatok to authenticated;
+
 -- Live preflight found no UPDATE policy on ajanlatok. Add one without replacing
 -- the existing SELECT/INSERT/DELETE policies. Trigger guards state and content.
 drop policy if exists "ajanlatok_workflow_v2_update" on public.ajanlatok;
