@@ -1,6 +1,8 @@
 name: Deploy static site to GitHub Pages
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       production_confirmation:
@@ -20,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.production_confirmation == 'DEPLOY_PRODUCTION'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.production_confirmation == 'DEPLOY_PRODUCTION'))
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

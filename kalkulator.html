@@ -1320,7 +1320,7 @@ async function loadSaved() {
             <div class="mt-2 font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
             <div class="saved-quote-actions">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
-              <button data-share="${r.id}" data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold text-sm">Ügyfélnek küldhető link</button>
+              <button data-share="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlathoz nem készíthető új ügyféllink. Új ajánlatverzióhoz készíts másolatot."' : ""} data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Ügyfélnek küldhető link</button>
               <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Munka indítása / Napló</button>
               <button data-del="${r.id}" class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>

@@ -8,6 +8,7 @@ sql(`insert into ajanlatok(id,user_id,quote_status,accepted_at,project_name) val
 sql('drop policy ajanlatok_update_own_or_admin on ajanlatok;'); // Match live missing UPDATE policy.
 const migration='supabase/migrations/202610180001_quote_workflow_stabilization.sql';
 file(migration);file(migration);
+file('supabase/migrations/202610180002_project_save_retry.sql');file('supabase/migrations/202610180002_project_save_retry.sql');
 check('migration repeats without manufacturing historical decisions',()=>{assert.equal(sql(`select count(*) from ajanlat_megosztasok where quote_id='${legacy}'`),'0');assert.equal(sql(`select accepted_at::date from ajanlatok where id='${legacy}'`),'2026-01-01')});
 let seq=0;
 function quote(){const id=`00000000-0000-4000-8000-${String(++seq).padStart(12,'0')}`;sql(as(owner,`insert into ajanlatok(id,user_id,user_email,project_name,total_gross,payload) values('${id}','${owner}','owner@example.test','Original',127000,'{"items":[{"name":"Original item"}]}');`));return id;}
@@ -30,10 +31,27 @@ const project='99999999-9999-4999-8999-999999999999';
 let payload={project_name:'Project',client_name:'Client',location:'Test',total_gross:127000,payload:{items:[]},source_quote_id:q};
 const save=(user,revision,row=payload)=>as(user,`select save_kivitelezes_project_v2('${project}',${revision===null?'null':revision},'${JSON.stringify(row)}');`);
 check('first save INSERT, second save UPDATE, one real PostgreSQL row',()=>{assert.equal(JSON.parse(sql(save(owner,null))).revision,1);assert.equal(JSON.parse(sql(save(owner,1))).revision,2);assert.equal(sql(`select count(*) from kivitelezes_projektek where id='${project}'`),'1')});
-check('stale revision and foreign user cannot overwrite project',()=>{sql(save(owner,1),false);sql(save(other,2),false);assert.equal(sql(`select revision from kivitelezes_projektek where id='${project}'`),'2')});
+check('stale revision and foreign user cannot overwrite project',()=>{sql(save(owner,1,{...payload,project_name:'Stale overwrite'}),false);sql(save(other,2),false);assert.equal(sql(`select revision from kivitelezes_projektek where id='${project}'`),'2')});
 check('admin can update but cannot reassign owner',()=>{assert.equal(JSON.parse(sql(save(admin,2))).user_id,owner);sql(as(admin,`update kivitelezes_projektek set user_id='${other}' where id='${project}'`),false)});
 check('direct legacy writes bump optimistic revision',()=>{sql(as(owner,`update kivitelezes_projektek set project_name='Legacy edit' where id='${project}'`));assert.equal(sql(`select revision from kivitelezes_projektek where id='${project}'`),'4')});
 check('foreign quote cannot be linked to project',()=>{const foreign={...payload,source_quote_id:legacy};sql(as(other,`select save_kivitelezes_project_v2('88888888-8888-4888-8888-888888888888',null,'${JSON.stringify(foreign)}');`),false)});
+// Lost HTTP responses: different saved_at must not create a conflict or a new row.
+const retryId='77777777-7777-4777-8777-777777777777';
+const retryRow={...payload,payload:{items:[],saved_at:'first'}};
+const retrySave=(revision,row=retryRow)=>as(owner,`select save_kivitelezes_project_v2('${retryId}',${revision===null?'null':revision},'${JSON.stringify(row)}');`);
+check('committed INSERT response lost: timestamp-only retry returns original revision',()=>{
+ assert.equal(JSON.parse(sql(retrySave(null))).revision,1);
+ assert.equal(JSON.parse(sql(retrySave(null,{...retryRow,payload:{...retryRow.payload,saved_at:'retry'}}))).revision,1);
+ assert.equal(sql(`select count(*) from kivitelezes_projektek where id='${retryId}'`),'1');
+});
+check('retry refuses a changed scalar business field or owner',()=>{
+ sql(retrySave(null,{...retryRow,total_gross:1}),false);sql(as(other,`select save_kivitelezes_project_v2('${retryId}',null,'${JSON.stringify(retryRow)}');`),false);
+});
+check('committed UPDATE response lost: timestamp-only retry acknowledges next revision',()=>{
+ const next={...retryRow,project_name:'Updated'};assert.equal(JSON.parse(sql(retrySave(1,next))).revision,2);
+ assert.equal(JSON.parse(sql(retrySave(1,{...next,payload:{...next.payload,saved_at:'retry update'}}))).revision,2);
+ sql(retrySave(1,{...next,client_name:'different'}),false);
+});
 (async()=>{
  // Real concurrent connections; quote row lock is acquired before the link lock.
  let id=quote(),t=share(id);

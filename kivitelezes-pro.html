@@ -573,9 +573,9 @@ const TEMPLATE_CATALOG = {
   facade: [["homlokzat-eps",160,"homlokzat"],["jarulekos-gep",10,"bontas"],["jarulekos-hulladek",4,"bontas"]]
 };
 
-let cloudProject = { id: null, revision: null, owner: null, pending: null };
+let cloudProject = { id: null, revision: null, owner: null, pending: null, unconfirmed: null };
 let linkedQuotes = [];
-function resetCloudProject() { cloudProject = { id: null, revision: null, owner: null, pending: null }; }
+function resetCloudProject() { cloudProject = { id: null, revision: null, owner: null, pending: null, unconfirmed: null }; }
 
 let state = {
   project: {},
@@ -1085,7 +1085,7 @@ function renderLocalSaveStatus() {
 
 function saveLocal() {
   readProjectForm();
-  const safeState = { ...state, cloud_project: { id: cloudProject.id, revision: cloudProject.revision, owner: cloudProject.owner }, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
+  const safeState = { ...state, cloud_project: { id: cloudProject.id, revision: cloudProject.revision, owner: cloudProject.owner, unconfirmed: cloudProject.unconfirmed || null }, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
   localStorage.setItem(LOCAL_KEY, JSON.stringify(safeState));
   renderLocalSaveStatus();
   toast("Projekt mentve a böngészőbe ✅");
@@ -1240,9 +1240,22 @@ async function saveSupabase(options = {}) {
       if (context.owner && context.owner !== session.user.id) throw new Error("Másik fiók projektje. Töltsd be újra a saját projektedet.");
       context.id ||= crypto.randomUUID();
       context.owner = session.user.id;
-      const { data, error } = await supa.rpc("save_kivitelezes_project_v2", { p_id: context.id, p_revision: context.revision, p_row: row });
+      // Retain an ambiguous request until its exact write is acknowledged. If
+      // the user edited after the failure, recover first, then save the edits
+      // against the recovered revision instead of overwriting an unknown one.
+      if (context.unconfirmed) {
+        const { data: recovered, error: recoveryError } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
+        if (recoveryError) throw recoveryError;
+        if (!recovered?.id || !Number.isInteger(recovered.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
+        context.revision = recovered.revision;
+        context.unconfirmed = null;
+      }
+      context.unconfirmed = { p_id: context.id, p_revision: context.revision, p_row: row };
+      const { data, error } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
       if (error) throw error;
+      if (!data?.id || !Number.isInteger(data.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
       context.revision = data.revision;
+      context.unconfirmed = null;
       if (context === cloudProject) toast("Projekt mentve, új másolat nélkül ✅");
       await loadSavedProjects();
       return data.id;
