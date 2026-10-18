@@ -14,7 +14,7 @@ Alap: `af89b7760555c989d6e5d1f116b4ebf759cf7ac9`. Fejlesztési ág: `codex/issue
 
 ## Adatbázis és migráció
 
-Új migráció: `supabase/migrations/202610180001_quote_workflow_stabilization.sql`.
+Migrációk: `supabase/migrations/202610180001_quote_workflow_stabilization.sql` és az elveszett válaszok biztonságos újrapróbálását javító `202610180002_project_save_retry.sql`. Az eredeti 001 változat változatlan.
 
 Előfeltétel: a meglévő `ajanlatok`, `ajanlat_megosztasok`, `kivitelezes_projektek` sémák és a pgcrypto kiterjesztés. A migráció újrafuttatható, nem töröl üzleti rekordot, nem írja át a történeti elfogadásokat. Új mezők: ajánlat szülőverzió, megosztási snapshot, kivitelezési ajánlatkapcsolat és revízió.
 
@@ -24,17 +24,23 @@ A jelenlegi éles RLS-leltár alapján hiányzó UPDATE policy külön hozzáad�
 
 Az első fejlesztési push commitja `d27ae5c`: már kizárta az automatikus éles telepítést. Sem az első push, sem a tesztek nem indítottak production deploy-t.
 
-A Pages és backend workflow-k most csak manuálisan, mainről, `DEPLOY_PRODUCTION` bemenettel futhatnak. Ezt senki nem indította el. A tulajdonosi engedélyt a bemenet nem helyettesíti. A backend workflow a korábbi alapdefiníciók után újra alkalmazza a stabilizáló migrációt, így későbbi jóváhagyott futás sem telepít vissza régi, kevésbé védett ajánlatfüggvényeket.
+A Pages main-pushra automatikus; kézi indításkor main és explicit megerősítés szükséges. Fejlesztési ágról nem publikálhat. Ez a main automatikus megjelenését helyreállítja, mainre ebben a munkában nem került commit.
 
-Élesítés csak a két PR ellenőrzése, az ÉpítésNapló tényleges séma/RLS előellenőrzése és staging próba után:
+A backend workflow csak a két issue-8 migrációt és a `send-quote-to-epitesnaplo` függvényt érinti. Külön `migrate` és `functions` kézi fázis van; main és `DEPLOY_PRODUCTION` szükséges. A tulajdonosi jóváhagyást ez nem helyettesíti. Az árkatalógus, PayPal, AI és egyéb sémák/funkciók nem részei ennek a telepítésnek.
 
-1. Tulajdonos által jóváhagyott mentés/karbantartási időablak, aktuális main és séma ismételt leltára.
-2. Mindkét új migráció telepítése, még a frontend változtatása előtt.
-3. ÉpítésNapló v2 fogadó- és claim-függvények telepítése.
-4. SzakiPiac v2 átadó telepítése.
-5. Frontendek publikálása és jóváhagyott ellenőrzés.
+A két valódi, elkülönített Supabase-stackkel végzett integráció sikeres; az éles Napló-séma/konfiguráció 403 miatti leltára továbbra is blokkoló. Jóváhagyott sorrend:
 
-Verzióeltéréskor az import hibával megáll; nincs elfogadás nélküli visszaesési út. A manuális régi workflow-k más meglévő backend-funkciókat is telepítenek, ezért indításuk előtt a teljes lépéssort át kell nézni; a fenti célzott sorrendhez jóváhagyott, célzott telepítés ajánlott.
+1. Mindkét PR független ellenőrzése; hosted séma/RLS/konfiguráció összevetése, mentés és tulajdonosi jóváhagyás.
+2. Mindkét repo `migrate` fázisa: csak a saját 001 és 002 migrációk, más SQL nélkül.
+3. Napló `functions` fázis: kizárólag `create-szakipiac-import`, `claim-szakipiac-import`.
+4. SzakiPiac `functions` fázis: kizárólag `send-quote-to-epitesnaplo`.
+5. Jóváhagyott mainre összevonás/publikálás és ellenőrzés. A main frontend-commitját csak a kompatibilis backend után szabad engedni, mivel a Pages automatikusan publikál.
+
+Ha a backend-workflow-k mainre emelése megelőzi az alkalmazáskódot, az is csak külön tulajdonosi jóváhagyással történhet. E feladatban egyik lépést sem indítottuk el. Verzióeltéréskor az import megáll; nincs elfogadást megkerülő visszaesési út.
+
+## Második ellenőrzés javításai
+
+A kliens a bizonytalan mentési kérést megőrzi, és mentés előtt visszaigazoltatja. A 002 migráció a saved_at nélküli teljes üzleti tartalmat hasonlítja; a tételek, összegek, ügyfél, helyszín vagy ajánlatkapcsolat eltérését nem kezeli puszta ismétlésként. A recovery a közben írt másik revíziót sem írhatja felül. Az elfogadott ajánlat új ügyféllink-gombja letiltott; új változat az eddigi másolatgombbal készül.
 
 ## Visszaállítás
 
