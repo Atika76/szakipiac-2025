@@ -303,7 +303,7 @@
     }
     byId("quote_number").value = newNumber();
     duplicate.addEventListener("click", () => {
-      currentQuoteId = null;
+      detachQuoteVersion();
       byId("quote_number").value = newNumber();
       byId("quote_status").value = "draft";
       calcAndRender();

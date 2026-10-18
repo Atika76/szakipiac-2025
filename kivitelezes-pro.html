@@ -145,6 +145,7 @@
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <label class="block"><span class="text-sm font-bold">Projekt neve</span><input id="projectName" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Pl. Kovács család lakásfelújítás"></label>
+            <label class="block"><span class="text-sm font-bold">Kapcsolt árajánlat</span><select id="linkedQuoteId" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3"><option value="">Nincs kapcsolt ajánlat</option></select><span class="text-xs">Naplóindításhoz elfogadott ajánlat szükséges.</span></label>
             <label class="block"><span class="text-sm font-bold">Megrendelő</span><input id="clientName" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Ügyfél neve"></label>
             <label class="block"><span class="text-sm font-bold">Telefon / e-mail</span><input id="clientContact" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="+36... / email"></label>
             <label class="block"><span class="text-sm font-bold">Helyszín</span><input id="location" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Város, cím"></label>
@@ -572,6 +573,10 @@ const TEMPLATE_CATALOG = {
   facade: [["homlokzat-eps",160,"homlokzat"],["jarulekos-gep",10,"bontas"],["jarulekos-hulladek",4,"bontas"]]
 };
 
+let cloudProject = { id: null, revision: null, owner: null, pending: null };
+let linkedQuotes = [];
+function resetCloudProject() { cloudProject = { id: null, revision: null, owner: null, pending: null }; }
+
 let state = {
   project: {},
   phases: [],
@@ -714,6 +719,9 @@ function ancillaryCosts() {
 }
 
 function applyTemplate(key) {
+  resetCloudProject();
+  state.source_quote_id = null;
+  if ($("linkedQuoteId")) $("linkedQuoteId").value = "";
   const tpl = PROJECT_TEMPLATES[key] || PROJECT_TEMPLATES.completeFlat;
   state.project.name = tpl.name;
   state.project.description = tpl.description;
@@ -1077,7 +1085,7 @@ function renderLocalSaveStatus() {
 
 function saveLocal() {
   readProjectForm();
-  const safeState = { ...state, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
+  const safeState = { ...state, cloud_project: { id: cloudProject.id, revision: cloudProject.revision, owner: cloudProject.owner }, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
   localStorage.setItem(LOCAL_KEY, JSON.stringify(safeState));
   renderLocalSaveStatus();
   toast("Projekt mentve a böngészőbe ✅");
@@ -1088,10 +1096,14 @@ function loadLocal() {
   if (!raw) return toast("Nincs mentett projekt ebben a böngészőben.", "info");
   try {
     const loaded = JSON.parse(raw);
+    resetCloudProject();
+    Object.assign(cloudProject, loaded.cloud_project || {});
+    cloudProject.pending = null;
     state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...loaded, photos: [] };
     writeProjectForm();
     renderAll();
     renderLocalSaveStatus();
+    syncLinkedQuote();
     toast("Böngészős mentés betöltve ✅");
   } catch (e) {
     toast("A böngészős mentés nem olvasható.", "error");
@@ -1124,9 +1136,13 @@ function importJson(file) {
   reader.onload = () => {
     try {
       const loaded = JSON.parse(reader.result);
+      resetCloudProject();
+      delete loaded.cloud_project;
+      delete loaded.source_quote_id;
       state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...loaded, photos: [] };
       writeProjectForm();
       renderAll();
+      syncLinkedQuote();
       toast("JSON projekt importálva ✅");
     } catch (e) {
       toast("Nem sikerült beolvasni a JSON fájlt.", "error");
@@ -1188,42 +1204,55 @@ function normalizeProjectStateForSave() {
   };
 }
 
+async function loadLinkedQuotes() {
+  const session = await refreshSession();
+  if (!session) return;
+  const { data, error } = await supa.from("ajanlatok").select("id,project_name,quote_number,quote_status,user_id").order("created_at", { ascending: false });
+  if (error) return toast("Ajánlatkapcsolatok nem tölthetők be: " + error.message, "error");
+  linkedQuotes = data || [];
+  const select = $("linkedQuoteId");
+  select.innerHTML = '<option value="">Nincs kapcsolt ajánlat</option>' + linkedQuotes.map(q => `<option value="${escapeAttr(q.id)}">${escapeHtml(q.quote_number || q.project_name || q.id)} (${escapeHtml(q.quote_status)})</option>`).join("");
+  syncLinkedQuote();
+}
+function syncLinkedQuote() {
+  if (!$("linkedQuoteId")) return;
+  $("linkedQuoteId").value = state.source_quote_id || "";
+  const accepted = linkedQuotes.some(q => q.id === state.source_quote_id && q.quote_status === "accepted");
+  $("btnSaveAndOpenEpitesNaplo").disabled = !accepted;
+  $("btnSaveAndOpenEpitesNaplo").textContent = "🏗️ Mentés + Munka indítása";
+}
 async function saveSupabase(options = {}) {
-  readProjectForm();
-  try {
-    if (!supa) return toast("A Supabase könyvtár nem töltődött be.", "error");
-    const session = await refreshSession();
-    if (!session) return toast("Supabase mentéshez előbb jelentkezz be a SzakiPiac oldalon.", "info");
-
-    const t = totals();
-    const payload = normalizeProjectStateForSave();
-    const row = {
-      user_id: session.user.id,
-      user_email: session.user.email,
-      project_name: state.project.name || "Névtelen kivitelezési projekt",
-      client_name: state.project.clientName || "",
-      location: state.project.location || "",
-      total_gross: Math.round(t.gross),
-      status: "draft",
-      payload
-    };
-    const { data, error } = await supa
-      .from("kivitelezes_projektek")
-      .insert([row])
-      .select("id")
-      .single();
-    if (error) throw error;
-    toast("Projekt mentve Supabase-ba ✅");
-    await loadSavedProjects();
-
-    if (options.openEpitesNaplo && data?.id) {
-      await sendKivitelezesToEpitesNaplo(data.id);
-    }
-    return data?.id || null;
-  } catch (e) {
-    toast("Supabase mentési hiba: " + (e.message || e), "error");
-    return null;
+  const context = cloudProject;
+  if (context.pending) {
+    const id = await context.pending;
+    if (options.openEpitesNaplo && id && context === cloudProject) await sendKivitelezesToEpitesNaplo(id);
+    return id;
   }
+  readProjectForm();
+  const payload = JSON.parse(JSON.stringify(normalizeProjectStateForSave()));
+  const row = { project_name: state.project.name || "Névtelen kivitelezési projekt", client_name: state.project.clientName || "",
+    location: state.project.location || "", total_gross: Math.round(totals().gross), payload, source_quote_id: state.source_quote_id || null };
+  context.pending = (async () => {
+    try {
+      if (!supa) throw new Error("A Supabase könyvtár nem töltődött be.");
+      const session = await refreshSession();
+      if (!session) throw new Error("Supabase mentéshez jelentkezz be.");
+      if (context.owner && context.owner !== session.user.id) throw new Error("Másik fiók projektje. Töltsd be újra a saját projektedet.");
+      context.id ||= crypto.randomUUID();
+      context.owner = session.user.id;
+      const { data, error } = await supa.rpc("save_kivitelezes_project_v2", { p_id: context.id, p_revision: context.revision, p_row: row });
+      if (error) throw error;
+      context.revision = data.revision;
+      if (context === cloudProject) toast("Projekt mentve, új másolat nélkül ✅");
+      await loadSavedProjects();
+      return data.id;
+    } catch (e) { toast("Supabase mentési hiba: " + (e.message || e), "error"); return null; }
+  })();
+  try {
+    const id = await context.pending;
+    if (options.openEpitesNaplo && id && context === cloudProject) await sendKivitelezesToEpitesNaplo(id);
+    return id;
+  } finally { context.pending = null; }
 }
 
 async function loadSavedProjects() {
@@ -1294,10 +1323,13 @@ async function loadSavedProjects() {
 
 async function loadSavedProject(id) {
   try {
-    const { data, error } = await supa.from("kivitelezes_projektek").select("payload").eq("id", id).single();
+    const { data, error } = await supa.from("kivitelezes_projektek").select("id,payload,revision,user_id,source_quote_id").eq("id", id).single();
     if (error) throw error;
     if (!data?.payload) return toast("Ehhez a mentéshez nincs projektadat.", "error");
-    state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...data.payload, photos: [] };
+    resetCloudProject();
+    Object.assign(cloudProject, { id: data.id, revision: data.revision, owner: (await refreshSession())?.user.id });
+    state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...data.payload, photos: [], source_quote_id: data.source_quote_id };
+    syncLinkedQuote();
     writeProjectForm();
     renderAll();
     toast("Supabase mentés betöltve ✅");
@@ -1312,6 +1344,7 @@ async function deleteSavedProject(id) {
   try {
     const { error } = await supa.from("kivitelezes_projektek").delete().eq("id", id);
     if (error) throw error;
+    if (cloudProject.id === id) resetCloudProject();
     toast("Supabase mentés törölve ✅");
     await loadSavedProjects();
   } catch (e) {
@@ -1379,6 +1412,7 @@ function bindEvents() {
     $(id).addEventListener("input", () => { readProjectForm(); renderStats(); renderSummary(); });
   });
 
+  $("linkedQuoteId").addEventListener("change", () => { state.source_quote_id = $("linkedQuoteId").value || null; syncLinkedQuote(); });
   $("btnApplyTemplate").addEventListener("click", () => applyTemplate($("templateSelect").value));
   $("btnNewProject").addEventListener("click", () => applyTemplate($("templateSelect").value));
   $("btnDemo").addEventListener("click", () => {
@@ -1417,6 +1451,7 @@ async function bootPage() {
   await loadPriceCatalog();
   applyTemplate("completeFlat");
   renderLocalSaveStatus();
+  await loadLinkedQuotes();
   await loadSavedProjects();
   await applyUsageGate();
 }

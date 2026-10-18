@@ -731,6 +731,9 @@ const QUICK = {
 ========================= */
 let items = [];
 let currentQuoteId = null;
+let parentQuoteId = null;
+let quoteContextEpoch = 0;
+function detachQuoteVersion() { parentQuoteId = currentQuoteId || parentQuoteId; currentQuoteId = null; quoteContextEpoch++; }
 let quoteSavePromise = null;
 const DEFAULT_ROW = () => ({
   name: "",
@@ -1045,7 +1048,7 @@ function importJson(file) {
   r.onload = () => {
     try {
       const p = JSON.parse(r.result);
-      currentQuoteId = null;
+      currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
       applyPayload(p);
       toast("Import kész ✅");
     } catch {
@@ -1209,12 +1212,21 @@ async function persistQuoteToSupabase() {
   const session = await refreshSession();
   if (!session) return toast("Mentéshez jelentkezz be!", "error");
 
+  const savingId = currentQuoteId;
+  const epoch = quoteContextEpoch;
+  if (savingId) {
+    const { data: stored, error: stateError } = await supa.from("ajanlatok").select("quote_status").eq("id", savingId).single();
+    if (stateError) return toast(stateError.message, "error");
+    if (stored.quote_status !== "draft") return toast("Ez az ajánlat már kiküldött vagy lezárt. A Másolat készítése gombbal készíts új verziót.", "error");
+  }
+  if (epoch !== quoteContextEpoch || savingId !== currentQuoteId) return;
   const t = totals();
   const payload = payloadNow();
 
   const row = {
     user_id: session.user.id,
     user_email: session.user.email,
+    parent_quote_id: parentQuoteId,
 
     project_name: payload.project_name,
     client_name: payload.client.name,
@@ -1240,13 +1252,14 @@ async function persistQuoteToSupabase() {
   const updateRow = { ...row };
   delete updateRow.user_id;
   delete updateRow.user_email;
-  const query = currentQuoteId
-    ? supa.from("ajanlatok").update(updateRow).eq("id", currentQuoteId).select("id").single()
+  delete updateRow.parent_quote_id;
+  const query = savingId
+    ? supa.from("ajanlatok").update(updateRow).eq("id", savingId).select("id").single()
     : supa.from("ajanlatok").insert([row]).select("id").single();
   const { data, error } = await query;
   if (error) return toast("Mentési hiba: " + error.message, "error");
 
-  currentQuoteId = data?.id || currentQuoteId;
+  if (epoch === quoteContextEpoch && currentQuoteId === savingId) currentQuoteId = data?.id || currentQuoteId;
 
   toast(currentQuoteId ? "Ajánlat mentve, duplikálás nélkül ✅" : "Mentve ✅");
   await loadSaved();
@@ -1308,7 +1321,7 @@ async function loadSaved() {
             <div class="saved-quote-actions">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
               <button data-share="${r.id}" data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold text-sm">Ügyfélnek küldhető link</button>
-              <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Projektbe / Naplóba</button>
+              <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Munka indítása / Napló</button>
               <button data-del="${r.id}" class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>
       </div>
@@ -1388,10 +1401,12 @@ async function sendQuoteToEpitesNaplo(id) {
 }
 
 async function loadOne(id) {
-  const { data, error } = await supa.from("ajanlatok").select("payload, quote_number, quote_status").eq("id", id).single();
+  const { data, error } = await supa.from("ajanlatok").select("payload, quote_number, quote_status,parent_quote_id").eq("id", id).single();
   if (error) return toast("Betöltés hiba: " + error.message, "error");
   if (!data?.payload) return toast("Nincs payload!", "error");
 
+  quoteContextEpoch++;
+  parentQuoteId = data.parent_quote_id || null;
   currentQuoteId = id;
   applyPayload(data.payload);
   if ($("quote_number") && data.quote_number) $("quote_number").value = data.quote_number;
@@ -1476,7 +1491,7 @@ function resetAll() {
   $("quote_intro").value = "";
   $("quote_scope").value = "";
   $("quote_notes").value = "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.";
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
   window.__guidedQuoteCalculations = [];
   if ($("quote_number") && window.SzakiPiacQuoteWorkshop) {
     $("quote_number").value = `SZP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${String(Date.now()).slice(-4)}`;
@@ -1492,7 +1507,7 @@ function resetAll() {
 }
 
 function exampleItems() {
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
   items = [
     { name: "Csemperagasztó (25kg)", type: "anyag", qty: 6, unit: "zsák", mat_unit_price: 4200, lab_unit_price: 0, hours: 0, selected:false },
     { name: "Fugázóanyag", type: "anyag", qty: 3, unit: "csomag", mat_unit_price: 2600, lab_unit_price: 0, hours: 0, selected:false },
@@ -1579,7 +1594,7 @@ function privacyHardClear() {
   $("client_phone").value = "";
   $("client_city").value = "";
   $("client_address").value = "";
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
 }
 
 /* =========================
