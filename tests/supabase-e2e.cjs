@@ -27,7 +27,7 @@ enabled = false
 [inbucket]
 enabled = false
 [storage]
-enabled = false
+enabled = true
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:5588"
@@ -64,16 +64,16 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
  try{
   for(const stack of [a,b]){
    console.log('Starting disposable local stack '+stack.id);
-   local(stack,['start','--exclude','studio,inbucket,imgproxy,realtime,storage,meta,analytics,vector']);
+   local(stack,['start','--exclude','studio,inbucket,imgproxy,realtime,meta,analytics,vector']);
    stack.keys=JSON.parse(local(stack,['status','--output','json']));
   }
-  for(const p of ['ajanlatok_schema.sql','kivitelezes_pro_schema.sql','ajanlat_elfogadas.sql'])file(a,source,'supabase/'+p);
+  file(a,source,'tests/hosted-schema.sql');
   for(const p of ['202610180001_quote_workflow_stabilization.sql','202610180002_project_save_retry.sql'])file(a,source,'supabase/migrations/'+p);
   sql(a,'create table public.szakipiac_360_entitlements(user_id uuid primary key,plan text,expires_at timestamptz);');
-  file(b,peer,'supabase-schema.sql');file(b,peer,'supabase/szakipiac_import_schema.sql');
+  file(b,peer,'tests/hosted-schema.sql');file(b,peer,'tests/hosted-storage-policies.sql');
   for(const p of ['202610180001_szakipiac_import_stabilization.sql','202610180002_deleted_import_recovery.sql'])file(b,peer,'supabase/migrations/'+p);
-  // Fresh local Supabase defaults normally grant these. Make fixture explicit.
-  sql(b,'grant select,insert,update,delete on projects,entries,tasks,project_materials to authenticated;');
+  // Use the captured hosted ACL unchanged; test the minimum TRUNCATE proposal separately.
+  sql(b,"insert into storage.buckets(id,name,public) values('project-videos','project-videos',false);");
   for(const stack of [a,b]){
    const log=fs.openSync(path.join(stack.dir,'edge.log'),'w');
    const child=spawn('supabase',['functions','serve','--no-verify-jwt','--env-file',stack.env,'--workdir',stack.dir],{stdio:['ignore',log,log]});servers.push(child);
@@ -118,6 +118,26 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
    const accepted=await request(a,'/rest/v1/rpc/decide_public_quote_v1',{body:{p_token:share,p_decision:'accepted',p_name:'Test client',p_email:'client@example.test',p_comment:'',p_terms_accepted:true,p_privacy_accepted:true}});assert.equal(accepted.status,200,JSON.stringify(accepted.data));assert.equal(accepted.data.decision,'accepted');
   });
   await pass('accepted quote content cannot be altered over real REST/RLS',async()=>{const res=await request(a,'/rest/v1/ajanlatok?id=eq.'+quote.id,{method:'PATCH',token:ownerA.token,body:{total_gross:1}});assert.ok(res.status>=400,JSON.stringify(res.data));});
+  await pass('standalone destination journal CRUD and photos work without source or preparation',async()=>{
+   const created=await request(b,'/rest/v1/projects',{token:ownerB.token,body:{user_id:ownerB.id,name:'Standalone daily journal'}});assert.equal(created.status,201,JSON.stringify(created.data));const id=created.data[0].id;
+   const entry=await request(b,'/rest/v1/entries',{token:ownerB.token,body:{user_id:ownerB.id,project_id:id,note:'Daily photo note',image_urls:['data:image/png;base64,iVBORw0KGgo='],video_urls:[]}});assert.equal(entry.status,201,JSON.stringify(entry.data));
+   const changed=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'PATCH',token:ownerB.token,body:{note:'Updated daily note'}});assert.equal(changed.status,200,JSON.stringify(changed.data));
+   const own=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'GET',token:ownerB.token});assert.equal(own.data[0].image_urls[0],'data:image/png;base64,iVBORw0KGgo=');
+   const foreign=await request(b,'/rest/v1/entries?project_id=eq.'+id,{method:'GET',token:otherB.token});assert.deepEqual(foreign.data,[]);
+   const tasks=await request(b,'/rest/v1/tasks',{token:ownerB.token,body:{user_id:ownerB.id,project_id:id,title:'Standalone task'}});assert.equal(tasks.status,201,JSON.stringify(tasks.data));
+   const material=await request(b,'/rest/v1/project_materials',{token:ownerB.token,body:{user_id:ownerB.id,project_id:id,name:'Standalone material',quantity:2}});assert.equal(material.status,201,JSON.stringify(material.data));
+   const removed=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'DELETE',token:ownerB.token});assert.equal(removed.status,200,JSON.stringify(removed.data));
+  });
+  await pass('real private Storage upload/download rejects foreign owner with hosted policies',async()=>{
+   const object=ownerB.id+'/synthetic-media.png';
+   // The inspected app stores photos inline; private project-videos also accepts
+   // image bytes. Exercise the real generic Storage API with synthetic content.
+   const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=','base64');
+   const headers={apikey:b.keys.ANON_KEY,Authorization:'Bearer '+ownerB.token,'Content-Type':'image/png'};
+   const uploaded=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/project-videos/${object}`,{method:'POST',headers,body:bytes});assert.equal(uploaded.status,200,await uploaded.text());
+   const own=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/authenticated/project-videos/${object}`,{headers});assert.equal(own.status,200,await own.text());
+   const foreign=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/authenticated/project-videos/${object}`,{headers:{...headers,Authorization:'Bearer '+otherB.token}});assert.notEqual(foreign.status,200);
+  });
   let link;
   await pass('real sender Edge authenticates handoff to real receiver Edge + DB',async()=>{const res=await request(a,'/functions/v1/send-quote-to-epitesnaplo',{token:ownerA.token,body:{quoteId:quote.id}});assert.equal(res.status,200,JSON.stringify(res.data));assert.equal(res.data.ok,true,JSON.stringify(res.data));link=new URL(res.data.import_url).searchParams.get('token');assert.ok(link);});
   await pass('real destination Auth rejects a different account',async()=>{const res=await request(b,'/functions/v1/claim-szakipiac-import',{token:otherB.token,body:{token:link}});assert.equal(res.status,403,JSON.stringify(res.data));});

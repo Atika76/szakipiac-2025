@@ -1,11 +1,16 @@
 const fs=require('node:fs');
 const {sql,check,as,owner,other,admin,concurrent,ready,assert}=require('./pg-helper.cjs');
-const file=p=>sql(fs.readFileSync(p,'utf8'));
+const tried=new Set();
+const file=p=>{const text=fs.readFileSync(p,'utf8');
+ if(process.env.ISSUE8_SCHEMA==='hosted' && p.includes('/migrations/') && !tried.has(p)){
+  require('./hosted-migration-check.cjs').verifyRollback(text,p);tried.add(p);
+ }const result=sql(text);if(process.env.ISSUE8_SCHEMA==='hosted' && p.includes('/migrations/'))require('./hosted-migration-check.cjs').verifyPreserved();return result;};
 file('tests/bootstrap.sql');
-for(const p of ['ajanlatok_schema.sql','kivitelezes_pro_schema.sql','ajanlat_elfogadas.sql'])file('supabase/'+p);
+if(process.env.ISSUE8_SCHEMA==='hosted')file('tests/hosted-schema.sql');
+else for(const p of ['ajanlatok_schema.sql','kivitelezes_pro_schema.sql','ajanlat_elfogadas.sql'])file('supabase/'+p);
 const legacy='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 sql(`insert into ajanlatok(id,user_id,quote_status,accepted_at,project_name) values('${legacy}','${owner}','accepted','2026-01-01','Legacy');`);
-sql('drop policy ajanlatok_update_own_or_admin on ajanlatok;'); // Match live missing UPDATE policy.
+sql('drop policy if exists ajanlatok_update_own_or_admin on ajanlatok;'); // Match live missing UPDATE policy.
 const migration='supabase/migrations/202610180001_quote_workflow_stabilization.sql';
 file(migration);file(migration);
 file('supabase/migrations/202610180002_project_save_retry.sql');file('supabase/migrations/202610180002_project_save_retry.sql');

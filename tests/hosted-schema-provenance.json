@@ -1,0 +1,18 @@
+{
+  "collected_at": "2026-10-19T17:52:31.09165+02:00",
+  "source_catalog_sha256": "51537920a46006e8bf1d2e7316fdf9b585c88652292f18edf967efd20c4f7b0b",
+  "tables": [
+    "ajanlat_megosztasok",
+    "ajanlatok",
+    "kivitelezes_projektek"
+  ],
+  "columns": 59,
+  "constraints": 8,
+  "public_policies": 10,
+  "storage_policies": 13,
+  "limitations": [
+    "Auth/Storage platform base comes from local Supabase, not a hosted dump.",
+    "Synthetic test records only; no production data.",
+    "No complete unrelated billing/AI/platform-schema compatibility claim."
+  ]
+}
