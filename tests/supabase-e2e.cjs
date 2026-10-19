@@ -79,6 +79,7 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
    const revokes=fs.readFileSync(path.join(repo,'docs/proposals/revoke-browser-truncate.sql'),'utf8').split('\n').filter(line=>line.startsWith('REVOKE TRUNCATE')&&tables.some(table=>line.includes('public."'+table+'"')));
    sql(stack,'begin;'+revokes.join('\n')+'commit;');
   }
+  file(b,peer,'docs/proposals/enforce-project-write-ownership.sql');
   for(const stack of [a,b]){
    const log=fs.openSync(path.join(stack.dir,'edge.log'),'w');
    const child=spawn('supabase',['functions','serve','--env-file',stack.env,'--workdir',stack.dir],{stdio:['ignore',log,log]});servers.push(child);
@@ -129,6 +130,7 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
    const changed=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'PATCH',token:ownerB.token,body:{note:'Updated daily note'}});assert.equal(changed.status,200,JSON.stringify(changed.data));
    const own=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'GET',token:ownerB.token});assert.equal(own.data[0].image_urls[0],'data:image/png;base64,iVBORw0KGgo=');
    const foreign=await request(b,'/rest/v1/entries?project_id=eq.'+id,{method:'GET',token:otherB.token});assert.deepEqual(foreign.data,[]);
+   const injected=await request(b,'/rest/v1/entries',{token:otherB.token,body:{user_id:otherB.id,project_id:id,note:'Forbidden foreign project write'}});assert.equal(injected.status,403,JSON.stringify(injected.data));
    const tasks=await request(b,'/rest/v1/tasks',{token:ownerB.token,body:{user_id:ownerB.id,project_id:id,title:'Standalone task'}});assert.equal(tasks.status,201,JSON.stringify(tasks.data));
    const material=await request(b,'/rest/v1/project_materials',{token:ownerB.token,body:{user_id:ownerB.id,project_id:id,name:'Standalone material',quantity:2}});assert.equal(material.status,201,JSON.stringify(material.data));
    const removed=await request(b,'/rest/v1/entries?id=eq.'+entry.data[0].id,{method:'DELETE',token:ownerB.token});assert.equal(removed.status,200,JSON.stringify(removed.data));
