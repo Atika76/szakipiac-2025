@@ -21,5 +21,4 @@ REVOKE TRUNCATE ON TABLE public."szakipiac_360_workspace_items" FROM anon,authen
 REVOKE TRUNCATE ON TABLE public."user_packages" FROM anon,authenticated;
 -- Execute each creator-role default change only with authorized role membership.
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA public REVOKE TRUNCATE ON TABLES FROM anon,authenticated;
-ALTER DEFAULT PRIVILEGES FOR ROLE "supabase_admin" IN SCHEMA public REVOKE TRUNCATE ON TABLES FROM anon,authenticated;
 COMMIT;

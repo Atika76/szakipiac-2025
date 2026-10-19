@@ -1401,12 +1401,79 @@ function makePdf() {
     margin: [8, 8, 8, 8],
     filename: projectName.replace(/[^a-z0-9áéíóöőúüű]+/gi, "-") + "-kivitelezespro.pdf",
     image: { type: "jpeg", quality: 0.92 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+    pagebreak: { mode: ["css", "legacy"], avoid: ["tr", ".phase-row", "#photoGrid figure"] }
   };
   toast("PDF készül...", "info");
-  html2pdf().set(opt).from($("pdfArea")).save();
+  const source = $("pdfArea");
+  const printable = source.cloneNode(true);
+  const fields = source.querySelectorAll('input, select, textarea');
+  printable.querySelectorAll('input, select, textarea').forEach((field, index) => {
+    const original = fields[index];
+    const text = document.createElement('div');
+    text.className = field.className;
+    text.textContent = original.type === 'checkbox' ? (original.checked ? '✓' : '☐')
+      : original.tagName === 'SELECT' ? (original.selectedOptions[0]?.textContent || '')
+      : original.value;
+    Object.assign(text.style, { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', minWidth: '0', height: 'auto' });
+    field.replaceWith(text);
+  });
+  printable.querySelectorAll('.no-print').forEach(el => el.remove());
+  printable.querySelectorAll('.print-only').forEach(el => { el.style.display = 'block'; });
+  printable.querySelectorAll('table').forEach(table => {
+    Object.assign(table.style, { minWidth: '0', width: '100%', tableLayout: 'fixed' });
+    table.querySelectorAll('th, td').forEach(cell => {
+      Object.assign(cell.style, { padding: '6px', fontSize: '11px', whiteSpace: 'normal', overflowWrap: 'anywhere' });
+    });
+    table.querySelectorAll('td > div').forEach(value => {
+      Object.assign(value.style, { minWidth: '0', width: '100%', padding: '4px' });
+    });
+  });
+  const photos = printable.querySelector('#photoGrid');
+  if (photos) {
+    photos.style.display = 'block';
+    photos.querySelectorAll('figure').forEach(figure => {
+      Object.assign(figure.style, { display: 'block', width: '50%', marginRight: '0' });
+    });
+  }
+  printable.querySelectorAll('#summaryBox .text-2xl').forEach(value => {
+    Object.assign(value.style, { fontSize: '18px', lineHeight: '1.3', overflowWrap: 'anywhere' });
+  });
+  // Freeze the PDF's grid layout independently from the editor's screen size.
+  printable.querySelectorAll('[class]').forEach(el => {
+    for (const breakpoint of ['sm', 'md', 'lg', 'xl']) {
+      const grid = [...el.classList].find(name => new RegExp('^' + breakpoint + ':grid-cols-\\d+$').test(name));
+      if (grid) el.style.gridTemplateColumns = `repeat(${grid.split('-').pop()}, minmax(0, 1fr))`;
+    }
+  });
+  printable.querySelectorAll('.phase-row').forEach(row => {
+    row.style.gridTemplateColumns = '40px minmax(150px,1.25fr) minmax(140px,1fr) minmax(125px,.85fr) 80px 44px';
+    row.querySelectorAll('.phase-name, .phase-trade, .phase-status, .phase-days').forEach(el => { el.style.gridColumn = 'auto'; });
+    row.querySelectorAll('.phase-note').forEach(el => { el.style.gridColumn = '2 / 6'; });
+    row.querySelectorAll('.delete-phase').forEach(el => el.remove());
+  });
+  return html2pdf().set(opt).from(printable).toContainer().then(function () {
+    Object.assign(this.prop.overlay.style, { overflow: 'visible', width: '1280px', right: 'auto' });
+    Object.assign(this.prop.container.style, { left: '0', right: 'auto', margin: '0' });
+    // The library's break calculation uses viewport coordinates. Measure photos
+    // relative to the export container so scrolling cannot split a photo.
+    const container = this.prop.container;
+    const pageHeight = this.prop.pageSize.inner.px.height;
+    container.querySelectorAll('#photoGrid figure').forEach(figure => {
+      const rect = figure.getBoundingClientRect();
+      const top = rect.top - container.getBoundingClientRect().top;
+      const bottom = top + rect.height;
+      const offset = top % pageHeight;
+      const crossesPage = Math.floor(top / pageHeight) !== Math.floor((bottom - 1) / pageHeight);
+      const padding = crossesPage ? pageHeight - offset + 24 : Math.max(0, 24 - offset);
+      if (rect.height < pageHeight && padding > 0) {
+        const spacer = document.createElement('div');
+        spacer.style.height = padding + 'px';
+        figure.before(spacer);
+      }
+    });
+  }).save();
 }
 
 function handlePhotos(files) {

@@ -7,7 +7,7 @@ function fingerprint(){return sql(`select jsonb_build_object(
  'tables',(select jsonb_agg(jsonb_build_array(relname,relacl,relrowsecurity,relforcerowsecurity) order by relname) from pg_class where relnamespace='public'::regnamespace),
  'functions',(select jsonb_agg(jsonb_build_array(proname,prosrc,proacl,prosecdef,proconfig) order by proname,oid) from pg_proc where pronamespace='public'::regnamespace));`)}
 function verifyRollback(text,name){
- seedLegacy();
+ seedLegacy();if(!legacyCatalog)legacyCatalog=catalogSubset();
  const before=fingerprint();
  assert.match(text,/commit;\s*$/i);
  const broken=text.replace(/commit;\s*$/i,`do $$ begin raise exception 'injected migration interruption'; end $$; commit;`);
@@ -17,6 +17,15 @@ function verifyRollback(text,name){
 
 let legacyRows;
 function seedLegacy(){legacyRows=sql("select jsonb_build_object('accepted_at',accepted_at,'name',project_name,'status',quote_status) from ajanlatok where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'");}
-function verifyPreserved(){assert.equal(sql("select jsonb_build_object('accepted_at',accepted_at,'name',project_name,'status',quote_status) from ajanlatok where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'"),legacyRows);console.log('PASS hosted migration preserves historical accepted quote');}
+function verifyPreserved(){checkLegacyCatalog();assert.equal(sql("select jsonb_build_object('accepted_at',accepted_at,'name',project_name,'status',quote_status) from ajanlatok where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'"),legacyRows);console.log('PASS hosted migration preserves historical accepted quote');}
+
+
+let legacyCatalog;
+function catalogSubset(){return JSON.parse(sql(`select jsonb_build_object(
+ 'constraints',(select jsonb_agg(jsonb_build_array(c.relname,x.conname,pg_get_constraintdef(x.oid)) order by c.relname,x.conname) from pg_constraint x join pg_class c on c.oid=x.conrelid where x.connamespace='public'::regnamespace),
+ 'indexes',(select jsonb_agg(jsonb_build_array(tablename,indexname,indexdef) order by tablename,indexname) from pg_indexes where schemaname='public'),
+ 'policies',(select jsonb_agg(to_jsonb(x) order by tablename,policyname) from pg_policies x where schemaname='public'),
+ 'rights',(select jsonb_agg(jsonb_build_array(relname,relacl,relrowsecurity,relforcerowsecurity) order by relname) from pg_class where relnamespace='public'::regnamespace and relkind='r'));`))}
+function checkLegacyCatalog(){const current=catalogSubset();for(const key of Object.keys(legacyCatalog))for(const row of legacyCatalog[key]||[])assert.ok((current[key]||[]).some(value=>JSON.stringify(value)===JSON.stringify(row)),'Migration changed existing '+key+': '+JSON.stringify(row));}
 
 module.exports={verifyRollback,verifyPreserved};

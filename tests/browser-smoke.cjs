@@ -14,7 +14,7 @@ const mock=`(() => {
  })};
 })();`;
 (async()=>{
-const browser=await chromium.launch({channel:'msedge',headless:true});let results=[];
+const browser=await chromium.launch({channel:process.env.BROWSER_CHANNEL||'msedge',headless:true});let results=[];
 try{
 for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
  const context=await browser.newContext({viewport,acceptDownloads:true});const page=await context.newPage();let errors=[],failures=[];
@@ -77,4 +77,4 @@ for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
 }
 fs.writeFileSync(process.env.BROWSER_REPORT || 'browser-smoke-results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));
 }finally{await browser.close()}
-})().catch(e=>{console.error(e);process.exitCode=1});
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

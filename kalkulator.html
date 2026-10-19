@@ -1578,10 +1578,27 @@ function pdfPro() {
     margin: 0.25,
     filename: `ajanlat_${Date.now()}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+    // Render the same printable layout on phones and desktop. The viewport and
+    // scroll offset of the editor must not clip the offscreen PDF container.
+    html2canvas: { scale: 2, backgroundColor: '#ffffff', windowWidth: 1280, scrollX: 0, scrollY: 0 },
+    pagebreak: { mode: ['css', 'legacy'], avoid: ['#print_items tr', '#printArea .pdf-totals'] },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
-  html2pdf().set(opt).from(el).save();
+  const printable = el.cloneNode(true);
+  printable.style.width = '100%';
+  printable.style.maxWidth = 'none';
+  printable.style.marginTop = '0';
+  printable.style.padding = '16px';
+  printable.querySelectorAll('.md\\:grid-cols-2').forEach(grid => {
+    grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+  });
+  printable.querySelector('#p_sum_gross_total').closest('.border').classList.add('pdf-totals');
+  return html2pdf().set(opt).from(printable).toContainer().then(function () {
+    // html2pdf's viewport-sized, overflow:hidden overlay clips its A4 container
+    // on a phone. Set the geometry before html2canvas measures and clones it.
+    Object.assign(this.prop.overlay.style, { overflow: 'visible', width: '1280px', right: 'auto' });
+    Object.assign(this.prop.container.style, { left: '0', right: 'auto', margin: '0' });
+  }).save();
 }
 
 /* =========================
