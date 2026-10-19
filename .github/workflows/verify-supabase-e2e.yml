@@ -1,0 +1,36 @@
+name: Isolated two-app Supabase E2E
+on:
+  push:
+    branches: ['codex/issue-8-stabilization']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: supabase-e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  supabase-e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      SUPABASE_ACCESS_TOKEN: ''
+      PEER_REPO: peer-naplo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Atika76/Epites-Naplo
+          ref: 7cfb1d0e794d37d5a2328e9c4ef8f6c662e04896
+          path: peer-naplo
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.105.0
+      - run: node tests/supabase-e2e.cjs

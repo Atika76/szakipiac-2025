@@ -1,0 +1,92 @@
+[
+  {
+    "pdf": "quote-1440-1.pdf",
+    "pages": 1,
+    "ink_per_page": [
+      0.04219
+    ],
+    "synthetic_photo_blue_pixels": 0,
+    "searchable_text_characters": 0
+  },
+  {
+    "pdf": "quote-1440-35.pdf",
+    "pages": 3,
+    "ink_per_page": [
+      0.05616,
+      0.06084,
+      0.04846
+    ],
+    "synthetic_photo_blue_pixels": 0,
+    "searchable_text_characters": 2
+  },
+  {
+    "pdf": "quote-390-1.pdf",
+    "pages": 1,
+    "ink_per_page": [
+      0.04218
+    ],
+    "synthetic_photo_blue_pixels": 0,
+    "searchable_text_characters": 0
+  },
+  {
+    "pdf": "quote-390-35.pdf",
+    "pages": 3,
+    "ink_per_page": [
+      0.05615,
+      0.06084,
+      0.04846
+    ],
+    "synthetic_photo_blue_pixels": 0,
+    "searchable_text_characters": 2
+  },
+  {
+    "pdf": "planning-1440.pdf",
+    "pages": 6,
+    "ink_per_page": [
+      0.04075,
+      0.03365,
+      0.04625,
+      0.04588,
+      0.04177,
+      0.08122
+    ],
+    "synthetic_photo_blue_pixels": 46456,
+    "searchable_text_characters": 5
+  },
+  {
+    "pdf": "planning-390.pdf",
+    "pages": 6,
+    "ink_per_page": [
+      0.03797,
+      0.0338,
+      0.04552,
+      0.04604,
+      0.0364,
+      0.08093
+    ],
+    "synthetic_photo_blue_pixels": 46995,
+    "searchable_text_characters": 5
+  },
+  {
+    "pdf": "diary-1440.pdf",
+    "pages": 3,
+    "ink_per_page": [
+      0.04628,
+      0.04289,
+      0.02006
+    ],
+    "synthetic_photo_blue_pixels": 10484,
+    "searchable_text_characters": 1493
+  },
+  {
+    "pdf": "diary-390.pdf",
+    "pages": 3,
+    "ink_per_page": [
+      0.04626,
+      0.04283,
+      0.02003
+    ],
+    "synthetic_photo_blue_pixels": 10484,
+    "searchable_text_characters": 1493
+  }
+]
