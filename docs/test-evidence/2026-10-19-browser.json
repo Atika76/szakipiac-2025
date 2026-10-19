@@ -1,0 +1,28 @@
+[
+  {
+    "viewport": 1440,
+    "scope": "Lost-response and deterministic rejection recovery, save/update/new/local/JSON, quote load/copy and disabled accepted share",
+    "errors": [],
+    "networkFailures": [],
+    "overflow": false
+  },
+  {
+    "viewport": 1440,
+    "scope": "Partial import retry, deleted-project notice, cancelled and confirmed restoration",
+    "errors": [],
+    "attempts": 4
+  },
+  {
+    "viewport": 390,
+    "scope": "Lost-response and deterministic rejection recovery, save/update/new/local/JSON, quote load/copy and disabled accepted share",
+    "errors": [],
+    "networkFailures": [],
+    "overflow": false
+  },
+  {
+    "viewport": 390,
+    "scope": "Partial import retry, deleted-project notice, cancelled and confirmed restoration",
+    "errors": [],
+    "attempts": 4
+  }
+]

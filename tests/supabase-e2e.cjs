@@ -43,7 +43,7 @@ inspector_port = ${port+8}
 function prepare(id,port,repo,names){
  const dir=path.join(sandbox,id);fs.mkdirSync(path.join(dir,'supabase/functions'),{recursive:true});
  let toml=config(id,port);
- for(const name of names){fs.cpSync(path.join(repo,'supabase/functions',name),path.join(dir,'supabase/functions',name),{recursive:true});toml+=`\n[functions.${name}]\nverify_jwt = false\n`;}
+ for(const name of names){fs.cpSync(path.join(repo,'supabase/functions',name),path.join(dir,'supabase/functions',name),{recursive:true});toml+=`\n[functions.${name}]\nverify_jwt = ${id==='issue8-source'?'true':'false'}\n`;}
  fs.writeFileSync(path.join(dir,'supabase/config.toml'),toml);
  const env=path.join(dir,'supabase/functions/.env');fs.writeFileSync(env,`EPITESNAPLO_IMPORT_SECRET=${secret}\nEPITESNAPLO_SITE_URL=http://127.0.0.1:5588\nEPITESNAPLO_IMPORT_ENDPOINT=http://issue8-naplo-api:8000/functions/v1/create-szakipiac-import\n`);
  return {id,dir,port,env};
@@ -73,10 +73,15 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
   file(b,peer,'tests/hosted-schema.sql');file(b,peer,'tests/hosted-storage-policies.sql');
   for(const p of ['202610180001_szakipiac_import_stabilization.sql','202610180002_deleted_import_recovery.sql'])file(b,peer,'supabase/migrations/'+p);
   // Use the captured hosted ACL unchanged; test the minimum TRUNCATE proposal separately.
-  sql(b,"insert into storage.buckets(id,name,public) values('project-videos','project-videos',false);");
+  sql(b,"insert into storage.buckets(id,name,public,file_size_limit) values('project-videos','project-videos',false,104857600);");
+  for(const [stack,repo] of [[a,source],[b,peer]]){
+   const tables=JSON.parse(fs.readFileSync(path.join(repo,'tests/hosted-schema-provenance.json'))).tables;
+   const revokes=fs.readFileSync(path.join(repo,'docs/proposals/revoke-browser-truncate.sql'),'utf8').split('\n').filter(line=>line.startsWith('REVOKE TRUNCATE')&&tables.some(table=>line.includes('public."'+table+'"')));
+   sql(stack,'begin;'+revokes.join('\n')+'commit;');
+  }
   for(const stack of [a,b]){
    const log=fs.openSync(path.join(stack.dir,'edge.log'),'w');
-   const child=spawn('supabase',['functions','serve','--no-verify-jwt','--env-file',stack.env,'--workdir',stack.dir],{stdio:['ignore',log,log]});servers.push(child);
+   const child=spawn('supabase',['functions','serve','--env-file',stack.env,'--workdir',stack.dir],{stdio:['ignore',log,log]});servers.push(child);
   }
   await ready(a,'send-quote-to-epitesnaplo');await ready(b,'claim-szakipiac-import');
   command('docker',['network','create','issue8-handoff']);
@@ -135,7 +140,7 @@ const b=prepare('issue8-naplo',55321,peer,['create-szakipiac-import','claim-szak
    const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=','base64');
    const headers={apikey:b.keys.ANON_KEY,Authorization:'Bearer '+ownerB.token,'Content-Type':'image/png'};
    const uploaded=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/project-videos/${object}`,{method:'POST',headers,body:bytes});assert.equal(uploaded.status,200,await uploaded.text());
-   const own=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/authenticated/project-videos/${object}`,{headers});assert.equal(own.status,200,await own.text());
+   const own=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/authenticated/project-videos/${object}`,{headers});assert.equal(own.status,200);assert.deepEqual(Buffer.from(await own.arrayBuffer()),bytes);
    const foreign=await fetch(`http://127.0.0.1:${b.port}/storage/v1/object/authenticated/project-videos/${object}`,{headers:{...headers,Authorization:'Bearer '+otherB.token}});assert.notEqual(foreign.status,200);
   });
   let link;
