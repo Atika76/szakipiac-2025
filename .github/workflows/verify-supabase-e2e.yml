@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: Atika76/Epites-Naplo
-          ref: 20e4b6fbf1754d489aad770215a0c58016aec8de
+          ref: fa7780b474f98fdec02d00bf66a49063de0a275a
           path: peer-naplo
           persist-credentials: false
       - uses: actions/setup-node@v4
