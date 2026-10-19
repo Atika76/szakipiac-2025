@@ -1,13 +1,41 @@
 // Runs after the hosted-schema integration suite, on disposable PostgreSQL 17 only.
-const fs=require('node:fs');const {sql,check,as,owner,other,assert}=require('./pg-helper.cjs');
+const fs=require('node:fs');const {sql,sqlError,check,as,owner,other,assert}=require('./pg-helper.cjs');
 const tables=JSON.parse(fs.readFileSync('tests/hosted-schema-provenance.json')).tables;
 const naplo=tables.includes('projects');
+check('SQLSTATE assertion rejects syntax errors as intentional migration interruption',()=>{
+ const malformed="do $ begin raise exception 'injected migration interruption'; end $;";
+ assert.throws(()=>sqlError(malformed,'P0001','injected migration interruption'),{code:'ERR_ASSERTION'});
+ sqlError(malformed,'42601','syntax error');
+});
+const captured=JSON.parse(fs.readFileSync('tests/hosted-default-acl.json'));
+const browserRoles=['anon','authenticated'],creators=['postgres','supabase_admin'];
+const aclTables=[...new Set(captured.public_tables.map(row=>row.table_name))];
+// Unrelated tables are ACL-only placeholders, NOT a claim to model their schema.
+// This lets us execute the exact complete proposals, rather than filter their SQL.
+for(const table of aclTables)if(sql(`select to_regclass('public."${table}"')`)==='')sql(`create table public."${table}"(id int);`);
+sql('create role supabase_admin nologin;');
+for(const row of captured.public_tables)sql(`grant truncate on public."${row.table_name}" to "${row.grantee}";`);
+for(const row of captured.defaults)sql(`alter default privileges for role "${row.creator}" ${row.scope==='GLOBAL'?'':'in schema public'} grant ${row.privilege_type} on tables to "${row.grantee}"${row.is_grantable?' with grant option':''};`);
+const defaultRows=()=>JSON.parse(sql(`select coalesce(jsonb_agg(to_jsonb(x) order by creator,scope,grantee,privilege_type),'[]') from (
+ select pg_get_userbyid(d.defaclrole) as creator,case when d.defaclnamespace=0 then 'GLOBAL' else n.nspname end as scope,
+ case when a.grantee=0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end as grantee,a.privilege_type,a.is_grantable
+ from pg_default_acl d left join pg_namespace n on n.oid=d.defaclnamespace cross join lateral aclexplode(d.defaclacl) a
+ where pg_get_userbyid(d.defaclrole) in ('postgres','supabase_admin') and d.defaclobjtype='r' and (d.defaclnamespace=0 or n.nspname='public'))x;`));
+const normalized=rows=>rows.map(row=>JSON.stringify([row.creator,row.scope,row.grantee,row.privilege_type,row.is_grantable])).sort();
+const otherDefaults=rows=>normalized(rows.filter(row=>!(browserRoles.includes(row.grantee)&&row.privilege_type==='TRUNCATE')));
 const rights=()=>JSON.parse(sql(`select jsonb_agg(jsonb_build_array(c.relname,r.rolname,p.name,has_table_privilege(r.oid,c.oid,p.name)) order by c.relname,r.rolname,p.name)
- from pg_class c join pg_namespace n on n.oid=c.relnamespace cross join pg_roles r cross join (values ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('REFERENCES'),('TRIGGER'),('MAINTAIN')) p(name)
- where n.nspname='public' and c.relkind='r' and r.rolname in ('anon','authenticated','service_role');`));
-const before=rights();
-check('captured live fixture reproduces direct browser TRUNCATE grants',()=>{
- const table=naplo?'projects':'ajanlatok';for(const role of ['anon','authenticated'])assert.equal(sql(`select has_table_privilege('${role}','public.${table}','TRUNCATE')`),'t');
+ from pg_class c join pg_namespace n on n.oid=c.relnamespace cross join pg_roles r cross join (values ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('REFERENCES'),('TRIGGER'),('MAINTAIN'),('TRUNCATE')) p(name)
+ where n.nspname='public' and c.relkind='r' and r.rolname in ('anon','authenticated','service_role') and not(p.name='TRUNCATE' and r.rolname in ('anon','authenticated'));`));
+const before=rights(),defaultsBefore=defaultRows();
+check('both creators reproduce captured GLOBAL/public default ACLs; GLOBAL is absent',()=>{
+ assert.deepEqual(normalized(defaultsBefore),normalized(captured.defaults));
+ for(const creator of creators){
+  assert.equal(defaultsBefore.filter(row=>row.creator===creator&&row.scope==='GLOBAL').length,0);
+  for(const role of browserRoles)assert.ok(defaultsBefore.some(row=>row.creator===creator&&row.scope==='public'&&row.grantee===role&&row.privilege_type==='TRUNCATE'));
+ }
+});
+check('all captured public tables reproduce exact direct browser TRUNCATE grants',()=>{
+ for(const table of aclTables)for(const role of browserRoles)assert.equal(sql(`select has_table_privilege('${role}','public."${table}"','TRUNCATE')`),captured.public_tables.some(row=>row.table_name===table&&row.grantee===role)?'t':'f');
 });
 // Demonstrate the RLS bypass on a synthetic table, never on hosted data.
 sql(`create table public.test_truncate_probe(id int);alter table public.test_truncate_probe enable row level security;
@@ -16,23 +44,46 @@ check('TRUNCATE bypasses RLS on synthetic disposable table',()=>{
  assert.equal(sql('set role anon;select count(*) from public.test_truncate_probe'),'0');
  sql('set role anon;truncate public.test_truncate_probe;');assert.equal(sql('select count(*) from public.test_truncate_probe'),'0');
 });
-sql('drop table public.test_truncate_probe;create role supabase_admin nologin;');
-for(const creator of ['postgres','supabase_admin'])sql(`alter default privileges for role ${creator} in schema public grant truncate on tables to anon,authenticated;`);
-const proposal=fs.readFileSync('docs/proposals/revoke-browser-truncate.sql','utf8')+'\n'+fs.readFileSync('docs/proposals/revoke-platform-default-truncate.sql','utf8');
-// The proposal inventories all live public tables. This fixture models only the
-// affected subset: execute its matching statements plus both creator defaults.
-const statements=proposal.split('\n').filter(line=>line.startsWith('ALTER DEFAULT')||(line.startsWith('REVOKE TRUNCATE')&&tables.some(t=>line.includes('public."'+t+'"'))));
-sql('begin;'+statements.join('\n')+'commit;');sql('begin;'+statements.join('\n')+'commit;');
-check('minimum proposal removes TRUNCATE and is repeatable',()=>{
- for(const t of tables)for(const role of ['anon','authenticated'])assert.equal(sql(`select has_table_privilege('${role}','public."${t}"','TRUNCATE')`),'f');
- assert.deepEqual(rights(),before,'CRUD, REFERENCES, TRIGGER, MAINTAIN or service role changed');
-});
-check('new tables from both creator roles no longer inherit TRUNCATE',()=>{
- for(const creator of ['postgres','supabase_admin']){
-  sql(`grant create on schema public to ${creator};set role ${creator};create table public.test_default_${creator}(id int);`);
-  for(const role of ['anon','authenticated'])assert.equal(sql(`select has_table_privilege('${role}','public.test_default_${creator}','TRUNCATE')`),'f');
-  sql(`drop table public.test_default_${creator};`);
+sql('drop table public.test_truncate_probe;');
+const browserProposal=fs.readFileSync('docs/proposals/revoke-browser-truncate.sql','utf8');
+const platformProposal=fs.readFileSync('docs/proposals/revoke-platform-default-truncate.sql','utf8');
+check('new tables under BOTH creators inherit the captured broad defaults BEFORE the proposals',()=>{
+ for(const creator of creators){
+  sql(`grant create on schema public to ${creator};set role ${creator};create table public.test_default_before(id int);`);
+  for(const role of browserRoles)assert.equal(sql(`select has_table_privilege('${role}','public.test_default_before','TRUNCATE')`),'t');
+  sql('drop table public.test_default_before;');
  }
+});
+// Real hosted postgres is NOT a platform operator. This local superuser only
+// models the separately authorized platform script; the boundary is tested below.
+sql(browserProposal);sql(platformProposal);sql(browserProposal);sql(platformProposal);
+check('exact repeatable proposals remove TRUNCATE from ALL inventoried public tables only',()=>{
+ for(const table of aclTables)for(const role of browserRoles)assert.equal(sql(`select has_table_privilege('${role}','public."${table}"','TRUNCATE')`),'f');
+ assert.deepEqual(rights(),before,'CRUD/other grants or service_role TRUNCATE changed');
+ assert.deepEqual(otherDefaults(defaultRows()),otherDefaults(defaultsBefore),'Non-TRUNCATE defaults changed');
+});
+check('new public tables under BOTH creators lose browser TRUNCATE but preserve all other defaults',()=>{
+ for(const creator of creators){
+  sql(`set role ${creator};create table public.test_default_after(id int);`);
+  for(const role of browserRoles)assert.equal(sql(`select has_table_privilege('${role}','public.test_default_after','TRUNCATE')`),'f');
+  for(const row of captured.defaults.filter(row=>row.creator===creator&&!(browserRoles.includes(row.grantee)&&row.privilege_type==='TRUNCATE')))
+   assert.equal(sql(`select has_table_privilege('${row.grantee}','public.test_default_after','${row.privilege_type}')`),'t');
+  sql('drop table public.test_default_after;');
+ }
+});
+check('adversarial GLOBAL grants survive schema REVOKE; BOTH proposals refuse them atomically',()=>{
+ for(const creator of creators){
+  sql(`alter default privileges for role ${creator} grant truncate on tables to anon,authenticated;
+   alter default privileges for role ${creator} in schema public revoke truncate on tables from anon,authenticated;
+   set role ${creator};create table public.test_global_default(id int);`);
+  for(const role of browserRoles)assert.equal(sql(`select has_table_privilege('${role}','public.test_global_default','TRUNCATE')`),'t');
+  sql('drop table public.test_global_default;');
+  const prior=normalized(defaultRows());
+  sqlError(creator==='postgres'?browserProposal:platformProposal,'P0001','Global TRUNCATE default requires separate review for '+creator);
+  assert.deepEqual(normalized(defaultRows()),prior);assert.deepEqual(rights(),before);
+  sql(`alter default privileges for role ${creator} revoke truncate on tables from anon,authenticated;`);
+ }
+ assert.deepEqual(otherDefaults(defaultRows()),otherDefaults(defaultsBefore));
 });
 if(naplo){
  const id='f1111111-1111-4111-8111-111111111111';
@@ -63,12 +114,11 @@ if(naplo){
  });
 }
 check('captured permission rollback restores exactly the original modeled table rights',()=>{
- const restore=(fs.readFileSync('docs/proposals/restore-browser-truncate-snapshot.sql','utf8')+'\n'+fs.readFileSync('docs/proposals/restore-platform-default-truncate-snapshot.sql','utf8')).split('\n').filter(line=>line.startsWith('ALTER DEFAULT')||(line.startsWith('GRANT TRUNCATE')&&tables.some(t=>line.includes('public."'+t+'"'))));
- sql('begin;'+restore.join('\n')+'commit;');
- for(const table of tables){
-  const original=fs.readFileSync('tests/hosted-schema.sql','utf8');
-  for(const role of ['anon','authenticated'])assert.equal(sql(`select has_table_privilege('${role}','public."${table}"','TRUNCATE')`),original.includes('GRANT TRUNCATE ON public."'+table+'" TO "'+role+'";')?'t':'f');
- }
+ sql(fs.readFileSync('docs/proposals/restore-browser-truncate-snapshot.sql','utf8'));
+ sql(fs.readFileSync('docs/proposals/restore-platform-default-truncate-snapshot.sql','utf8'));
+ for(const table of aclTables)for(const role of browserRoles)
+  assert.equal(sql(`select has_table_privilege('${role}','public."${table}"','TRUNCATE')`),captured.public_tables.some(row=>row.table_name===table&&row.grantee===role)?'t':'f');
+ assert.deepEqual(normalized(defaultRows()),normalized(defaultsBefore),'Restore changed default scope or privileges');
  assert.deepEqual(rights(),before);
 });
 check('non-superuser owner can change own defaults but cannot change platform defaults',()=>{
