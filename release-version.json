@@ -1,5 +1,5 @@
 {
-  "release": "proplus-v3-188-20261022-owner-actions1",
+  "release": "proplus-v3-188-20261022-transfer-help1",
   "work_items": 188,
   "source_sha256": "dbfd66b842f76c2843958611329dbdbf2ca5173b6854f93bce7a14bf4c991c30",
   "status": "beta",
@@ -12,7 +12,8 @@
     "print-only URL wrap; saved source URLs unchanged",
     "specific EVOSZ 2013 norms and manufacturer material examples; saved quote snapshots unchanged",
     "own quotes by default with optional admin list",
-    "preserve disabled business controls across login; verify actual deleted rows"
+    "preserve disabled business controls across login; verify actual deleted rows",
+    "optional diary handoff guidance and visible same-email registration link"
   ],
   "base_work_items": 188,
   "additional_documented_work_variants": 9,

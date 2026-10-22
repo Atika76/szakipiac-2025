@@ -528,6 +528,14 @@
             <button id="btnRefreshSaved" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold text-sm">Frissítés</button>
           </div>
 
+          <div id="naploTransferHelp" class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+            <p class="font-extrabold">Folytatás az Építési Naplóban – választható</p>
+            <p class="mt-2">Az <b>„Átadás az Építési Naplóba”</b> gomb a saját, ügyfél által elfogadott ajánlatodból naplóprojekt létrehozásához visz át. Ott vezetheted a napi munkát és a fényképeket.</p>
+            <p class="mt-2">Ehhez <b>külön Építési Napló-fiók</b> szükséges, a SzakiPiacban használt <b>ugyanazzal az e-mail-címmel</b>. Ha már van ilyen fiókod, nem kell újra regisztrálnod.</p>
+            <a id="naploRegistrationLink" href="https://epitesi-naplo.eu/" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 rounded-lg border border-emerald-700 bg-white px-3 py-2 font-extrabold underline">Építési Napló – regisztráció / belépés ↗</a>
+            <p class="mt-2 text-xs">A megnyíló főoldalon válaszd a „Regisztráció”, majd új fióknál az „Új regisztráció” gombot. Ezután térj vissza az ajánlatodhoz. Az átadást a Naplóban külön jóváhagyod; a két program önálló marad.</p>
+            <p class="mt-2 text-xs">A részletes PRO+ munkaváltozat átadása még nem elérhető. SzakiPiac-ajánlatot Napló-fiók nélkül is készíthetsz.</p>
+          </div>
           <label id="savedQuoteScopeControls" class="hidden block mb-3 text-sm font-bold">Ajánlatlista
             <select id="savedQuoteScope" class="w-full mt-1 p-2 rounded-xl border">
               <option value="own">Saját ajánlataim</option>
@@ -1351,7 +1359,7 @@ async function loadSaved() {
             <div class="saved-quote-actions">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
               <button data-share="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlathoz nem készíthető új ügyféllink. Új ajánlatverzióhoz készíts másolatot."' : detailedBudget ? 'disabled title="A részletes munkaváltozat ügyfélelfogadása és naplóátadása még nincs bekötve. JSON és PDF menthető."' : ""} data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Ügyfélnek küldhető link</button>
-              <button data-epitesnaplo="${r.id}" ${importDisabled ? `disabled title="${escapeHtml(importTitle)}"` : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Munka indítása / Napló</button>
+              <button data-epitesnaplo="${r.id}" ${importDisabled ? `disabled title="${escapeHtml(importTitle)}"` : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Átadás az Építési Naplóba</button>
               <button data-del="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlat az ügyfélelfogadás megőrzése miatt nem törölhető."' : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">${status === "accepted" ? "Védett – elfogadva" : "Töröl"}</button>
             </div>
       </div>
