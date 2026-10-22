@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022-sourced1';
+const CACHE_NAME = 'szakipiac-360-proplus-v3-20261022-owner-actions1';
 
 const APP_SHELL_URLS = [
   '/',

@@ -1,5 +1,5 @@
 {
-  "release": "proplus-v3-188-20261022-sourced1",
+  "release": "proplus-v3-188-20261022-owner-actions1",
   "work_items": 188,
   "source_sha256": "dbfd66b842f76c2843958611329dbdbf2ca5173b6854f93bce7a14bf4c991c30",
   "status": "beta",
@@ -10,7 +10,9 @@
   },
   "patches": [
     "print-only URL wrap; saved source URLs unchanged",
-    "specific EVOSZ 2013 norms and manufacturer material examples; saved quote snapshots unchanged"
+    "specific EVOSZ 2013 norms and manufacturer material examples; saved quote snapshots unchanged",
+    "own quotes by default with optional admin list",
+    "preserve disabled business controls across login; verify actual deleted rows"
   ],
   "base_work_items": 188,
   "additional_documented_work_variants": 9,
@@ -20,6 +22,6 @@
   "missing_material_prices": 50,
   "original_unfilled_norm_slots": 30,
   "documented_specific_norms": 6,
-  "node_tests": "174/174",
+  "node_tests": "184/184",
   "sourced_ui_tests": "desktop1440/mobile390 with real Supabase save/reload"
 }
