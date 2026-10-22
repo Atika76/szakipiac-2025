@@ -731,6 +731,9 @@ const QUICK = {
 ========================= */
 let items = [];
 let currentQuoteId = null;
+let parentQuoteId = null;
+let quoteContextEpoch = 0;
+function detachQuoteVersion() { parentQuoteId = currentQuoteId || parentQuoteId; currentQuoteId = null; quoteContextEpoch++; }
 let quoteSavePromise = null;
 const DEFAULT_ROW = () => ({
   name: "",
@@ -1002,6 +1005,9 @@ function payloadNow() {
 }
 
 function applyPayload(p) {
+  if (window.SzakiPiacBuilding && window.SzakiPiacBuildingCatalog) {
+    p = window.SzakiPiacBuilding.validatePayload(p, window.SzakiPiacBuildingCatalog);
+  }
   $("project_name").value = p?.project_name ?? "";
   $("currency").value = p?.currency ?? "HUF";
 
@@ -1045,8 +1051,8 @@ function importJson(file) {
   r.onload = () => {
     try {
       const p = JSON.parse(r.result);
-      currentQuoteId = null;
       applyPayload(p);
+      currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
       toast("Import kész ✅");
     } catch {
       toast("Hibás JSON!", "error");
@@ -1209,12 +1215,21 @@ async function persistQuoteToSupabase() {
   const session = await refreshSession();
   if (!session) return toast("Mentéshez jelentkezz be!", "error");
 
+  const savingId = currentQuoteId;
+  const epoch = quoteContextEpoch;
+  if (savingId) {
+    const { data: stored, error: stateError } = await supa.from("ajanlatok").select("quote_status").eq("id", savingId).single();
+    if (stateError) return toast(stateError.message, "error");
+    if (stored.quote_status !== "draft") return toast("Ez az ajánlat már kiküldött vagy lezárt. A Másolat készítése gombbal készíts új verziót.", "error");
+  }
+  if (epoch !== quoteContextEpoch || savingId !== currentQuoteId) return;
   const t = totals();
   const payload = payloadNow();
 
   const row = {
     user_id: session.user.id,
     user_email: session.user.email,
+    parent_quote_id: parentQuoteId,
 
     project_name: payload.project_name,
     client_name: payload.client.name,
@@ -1240,13 +1255,14 @@ async function persistQuoteToSupabase() {
   const updateRow = { ...row };
   delete updateRow.user_id;
   delete updateRow.user_email;
-  const query = currentQuoteId
-    ? supa.from("ajanlatok").update(updateRow).eq("id", currentQuoteId).select("id").single()
+  delete updateRow.parent_quote_id;
+  const query = savingId
+    ? supa.from("ajanlatok").update(updateRow).eq("id", savingId).select("id").single()
     : supa.from("ajanlatok").insert([row]).select("id").single();
   const { data, error } = await query;
   if (error) return toast("Mentési hiba: " + error.message, "error");
 
-  currentQuoteId = data?.id || currentQuoteId;
+  if (epoch === quoteContextEpoch && currentQuoteId === savingId) currentQuoteId = data?.id || currentQuoteId;
 
   toast(currentQuoteId ? "Ajánlat mentve, duplikálás nélkül ✅" : "Mentve ✅");
   await loadSaved();
@@ -1291,7 +1307,8 @@ async function loadSaved() {
     const status = r.quote_status || "draft";
     const statusLabels = { draft: "Piszkozat", sent: "Elküldve", viewed: "Megtekintve", accepted: "Elfogadva", rejected: "Elutasítva", expired: "Lejárt" };
     const statusColors = { accepted: "bg-emerald-100 text-emerald-800", rejected: "bg-red-100 text-red-800", expired: "bg-amber-100 text-amber-800", viewed: "bg-blue-100 text-blue-800", sent: "bg-indigo-100 text-indigo-800", draft: "bg-slate-200 text-slate-700" };
-    const importDisabled = status !== "accepted";
+    const detailedBudget = !!r.payload?.building_budget?.enabled;
+    const importDisabled = status !== "accepted" || detailedBudget;
     const number = r.quote_number || r.payload?.quote_meta?.number || "";
     return `
       <div class="border rounded-2xl p-3 bg-gray-50 min-w-0">
@@ -1304,11 +1321,11 @@ async function loadSaved() {
             </div>
             ${owner}
           </div>
-            <div class="mt-2 font-extrabold text-green-700">${fmtMoney(r.total_gross, r.currency)}</div>
+            <div class="mt-2 font-extrabold text-green-700">${detailedBudget ? "Ismert részadat: " : ""}${fmtMoney(r.total_gross, r.currency)}</div>
             <div class="saved-quote-actions">
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
-              <button data-share="${r.id}" data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold text-sm">Ügyfélnek küldhető link</button>
-              <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Projektbe / Naplóba</button>
+              <button data-share="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlathoz nem készíthető új ügyféllink. Új ajánlatverzióhoz készíts másolatot."' : detailedBudget ? 'disabled title="A részletes munkaváltozat ügyfélelfogadása és naplóátadása még nincs bekötve. JSON és PDF menthető."' : ""} data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Ügyfélnek küldhető link</button>
+              <button data-epitesnaplo="${r.id}" ${importDisabled ? "disabled title=\"Csak az ügyfél által elfogadott ajánlat adható át.\"" : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Munka indítása / Napló</button>
               <button data-del="${r.id}" class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-extrabold text-sm">Töröl</button>
             </div>
       </div>
@@ -1388,12 +1405,18 @@ async function sendQuoteToEpitesNaplo(id) {
 }
 
 async function loadOne(id) {
-  const { data, error } = await supa.from("ajanlatok").select("payload, quote_number, quote_status").eq("id", id).single();
+  const { data, error } = await supa.from("ajanlatok").select("payload, quote_number, quote_status,parent_quote_id").eq("id", id).single();
   if (error) return toast("Betöltés hiba: " + error.message, "error");
   if (!data?.payload) return toast("Nincs payload!", "error");
 
+  try {
+    applyPayload(data.payload);
+  } catch {
+    return toast("Hibás mentett ajánlat; a jelenlegi munka változatlan maradt.", "error");
+  }
+  quoteContextEpoch++;
+  parentQuoteId = data.parent_quote_id || null;
   currentQuoteId = id;
-  applyPayload(data.payload);
   if ($("quote_number") && data.quote_number) $("quote_number").value = data.quote_number;
   if ($("quote_status")) $("quote_status").value = data.quote_status || "draft";
   toast("Betöltve ✅");
@@ -1476,7 +1499,7 @@ function resetAll() {
   $("quote_intro").value = "";
   $("quote_scope").value = "";
   $("quote_notes").value = "Ez előzetes költségbecslés, nem végleges vállalási ár. A végleges ajánlat helyszíni felmérés, műszaki egyeztetés és szakemberi jóváhagyás után adható.";
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
   window.__guidedQuoteCalculations = [];
   if ($("quote_number") && window.SzakiPiacQuoteWorkshop) {
     $("quote_number").value = `SZP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${String(Date.now()).slice(-4)}`;
@@ -1492,7 +1515,7 @@ function resetAll() {
 }
 
 function exampleItems() {
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
   items = [
     { name: "Csemperagasztó (25kg)", type: "anyag", qty: 6, unit: "zsák", mat_unit_price: 4200, lab_unit_price: 0, hours: 0, selected:false },
     { name: "Fugázóanyag", type: "anyag", qty: 3, unit: "csomag", mat_unit_price: 2600, lab_unit_price: 0, hours: 0, selected:false },
@@ -1563,10 +1586,27 @@ function pdfPro() {
     margin: 0.25,
     filename: `ajanlat_${Date.now()}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+    // Render the same printable layout on phones and desktop. The viewport and
+    // scroll offset of the editor must not clip the offscreen PDF container.
+    html2canvas: { scale: 2, backgroundColor: '#ffffff', windowWidth: 1280, scrollX: 0, scrollY: 0 },
+    pagebreak: { mode: ['css', 'legacy'], avoid: ['#print_items tr', '#printArea .pdf-totals'] },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
-  html2pdf().set(opt).from(el).save();
+  const printable = el.cloneNode(true);
+  printable.style.width = '100%';
+  printable.style.maxWidth = 'none';
+  printable.style.marginTop = '0';
+  printable.style.padding = '16px';
+  printable.querySelectorAll('.md\\:grid-cols-2').forEach(grid => {
+    grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+  });
+  printable.querySelector('#p_sum_gross_total').closest('.border').classList.add('pdf-totals');
+  return html2pdf().set(opt).from(printable).toContainer().then(function () {
+    // html2pdf's viewport-sized, overflow:hidden overlay clips its A4 container
+    // on a phone. Set the geometry before html2canvas measures and clones it.
+    Object.assign(this.prop.overlay.style, { overflow: 'visible', width: '1280px', right: 'auto' });
+    Object.assign(this.prop.container.style, { left: '0', right: 'auto', margin: '0' });
+  }).save();
 }
 
 /* =========================
@@ -1579,7 +1619,7 @@ function privacyHardClear() {
   $("client_phone").value = "";
   $("client_city").value = "";
   $("client_address").value = "";
-  currentQuoteId = null;
+  currentQuoteId = null; parentQuoteId = null; quoteContextEpoch++;
 }
 
 /* =========================
@@ -1650,6 +1690,12 @@ boot();
 </script>
 <script src="arakalkulator-pro.js"></script>
 <script src="ajanlat-muhely.js"></script>
+<link rel="stylesheet" href="epulet-koltsegvetes.css">
+<script src="epulet-teteladatok.js"></script>
+<script src="epulet-szamitas.js"></script>
+<script src="epulet-gyorsajanlat-mag.js"></script>
+<script src="epulet-adatfeltoltes.js"></script>
+<script src="epulet-koltsegvetes.js"></script>
 
 </body>
 </html>

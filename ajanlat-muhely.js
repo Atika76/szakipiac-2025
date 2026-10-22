@@ -6,6 +6,23 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
+  function validateGuidedCalculations(payload) {
+    const rows=Array.isArray(payload?.guided_calculations)?payload.guided_calculations:(payload?.guided_calculation?[payload.guided_calculation]:[]);
+    if(payload?.guided_calculations!=null&&!Array.isArray(payload.guided_calculations))throw Error('Hibás automatikus anyagkimutatás.');
+    if(rows.length>1000)throw Error('Túl sok automatikus anyagkimutatás.');
+    for(const row of rows){
+      if(!row||typeof row!=='object'||Array.isArray(row))throw Error('Hibás anyagkimutatási sor.');
+      for(const key of ['id','title','warning'])if(row[key]!=null&&typeof row[key]!=='string')throw Error('Hibás anyagkimutatási szöveg: '+key);
+      if(row.materials!=null&&(!Array.isArray(row.materials)||row.materials.length>1000))throw Error('Hibás anyagkimutatási anyaglista.');
+      for(const item of row.materials||[]){
+        if(!item||typeof item!=='object'||Array.isArray(item))throw Error('Hibás anyagkimutatási anyag.');
+        for(const key of ['name','unit','note'])if(item[key]!=null&&typeof item[key]!=='string')throw Error('Hibás anyagszöveg: '+key);
+        if(!['number','string'].includes(typeof item.qty)||!Number.isFinite(Number(String(item.qty).replace(',','.')))||Number(String(item.qty).replace(',','.'))<0)throw Error('Hibás anyagkimutatási mennyiség.');
+      }
+    }
+    return rows;
+  }
+
   const round = (value, digits = 2) => {
     const p = 10 ** digits;
     return Math.round((Number(value) || 0) * p) / p;
@@ -303,7 +320,7 @@
     }
     byId("quote_number").value = newNumber();
     duplicate.addEventListener("click", () => {
-      currentQuoteId = null;
+      detachQuoteVersion();
       byId("quote_number").value = newNumber();
       byId("quote_status").value = "draft";
       calcAndRender();
@@ -339,6 +356,7 @@
     };
     const oldApply = window.applyPayload;
     window.applyPayload = function (payload) {
+      const calculations=validateGuidedCalculations(payload); // Before any editor mutation.
       oldApply(payload);
       const quote = payload?.quote_meta || {};
       byId("quote_number").value = quote.number || newNumber();
@@ -349,16 +367,15 @@
       byId("contractor_name").value = quote.contractor?.name || "";
       byId("contractor_tax").value = quote.contractor?.tax_number || "";
       byId("contractor_address").value = quote.contractor?.address || "";
-      window.__guidedQuoteCalculations = Array.isArray(payload?.guided_calculations)
-        ? payload.guided_calculations
-        : (payload?.guided_calculation ? [payload.guided_calculation] : []);
+      window.__guidedQuoteCalculations = calculations;
       renderProfessional();
     };
 
     function renderProfessional() {
+      const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
       const calculations = window.__guidedQuoteCalculations || [];
       materialBox.classList.toggle("hidden", !calculations.length);
-      materialBox.innerHTML = calculations.length ? `<div><h3 class="font-black text-cyan-950">Automatikus anyagkimutatás</h3><p class="text-xs text-cyan-800">Munkánként külön látható. Rendelés előtt ellenőrizd a gyártói kiadósságot, csomagméretet és műszaki tervet.</p></div><div class="mt-3 space-y-3">${calculations.map(result => `<div class="rounded-xl bg-white p-3"><div class="flex items-start justify-between gap-3"><div class="font-black text-cyan-950">${result.title || "Számított munka"}</div><button type="button" data-remove-guided="${result.id || ""}" class="no-print text-xs font-black text-red-600">Számítás törlése</button></div><div class="mt-2 grid gap-1 text-sm sm:grid-cols-2">${(result.materials || []).map(item => `<div><b>${item.name}:</b> ${item.qty.toLocaleString("hu-HU")} ${item.unit}${item.note ? `<div class="text-xs text-amber-700">${item.note}</div>` : ""}</div>`).join("")}</div>${result.warning ? `<div class="mt-2 rounded-lg bg-amber-100 p-2 text-xs font-bold text-amber-950">${result.warning}</div>` : ""}</div>`).join("")}</div>` : "";
+      materialBox.innerHTML = calculations.length ? `<div><h3 class="font-black text-cyan-950">Automatikus anyagkimutatás</h3><p class="text-xs text-cyan-800">Munkánként külön látható. Rendelés előtt ellenőrizd a gyártói kiadósságot, csomagméretet és műszaki tervet.</p></div><div class="mt-3 space-y-3">${calculations.map(result => `<div class="rounded-xl bg-white p-3"><div class="flex items-start justify-between gap-3"><div class="font-black text-cyan-950">${escape(result.title || "Számított munka")}</div><button type="button" data-remove-guided="${escape(result.id || "")}" class="no-print text-xs font-black text-red-600">Számítás törlése</button></div><div class="mt-2 grid gap-1 text-sm sm:grid-cols-2">${(result.materials || []).map(item => `<div><b>${escape(item.name)}:</b> ${escape(item.qty.toLocaleString("hu-HU"))} ${escape(item.unit)}${item.note ? `<div class="text-xs text-amber-700">${escape(item.note)}</div>` : ""}</div>`).join("")}</div>${result.warning ? `<div class="mt-2 rounded-lg bg-amber-100 p-2 text-xs font-bold text-amber-950">${escape(result.warning)}</div>` : ""}</div>`).join("")}</div>` : "";
       materialBox.querySelectorAll("[data-remove-guided]").forEach(button => button.addEventListener("click", () => {
         const id = button.dataset.removeGuided;
         window.__guidedQuoteCalculations = calculations.filter(result => String(result.id || "") !== id);
@@ -371,8 +388,7 @@
       const valid = new Date(); valid.setDate(valid.getDate() + days);
       byId("print_quote_validity").textContent = `${valid.toLocaleDateString("hu-HU")} (${days} nap)`;
       printMaterial.classList.toggle("hidden", !calculations.length);
-      printMaterial.innerHTML = calculations.length ? `<div class="font-bold mb-2">Tájékoztató anyagkimutatás</div>${calculations.map(result => `<div class="mb-3"><b>${result.title}</b><div class="mt-1 grid grid-cols-2 gap-x-6 gap-y-1">${(result.materials || []).map(item => `<div class="flex justify-between gap-3"><span>${item.name}</span><b>${item.qty.toLocaleString("hu-HU")} ${item.unit}</b></div>`).join("")}</div>${result.warning ? `<p class="mt-1 text-xs text-amber-800">${result.warning}</p>` : ""}</div>`).join("")}` : "";
-      const escape = value => String(value || "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+      printMaterial.innerHTML = calculations.length ? `<div class="font-bold mb-2">Tájékoztató anyagkimutatás</div>${calculations.map(result => `<div class="mb-3"><b>${escape(result.title)}</b><div class="mt-1 grid grid-cols-2 gap-x-6 gap-y-1">${(result.materials || []).map(item => `<div class="flex justify-between gap-3"><span>${escape(item.name)}</span><b>${escape(item.qty.toLocaleString("hu-HU"))} ${escape(item.unit)}</b></div>`).join("")}</div>${result.warning ? `<p class="mt-1 text-xs text-amber-800">${escape(result.warning)}</p>` : ""}</div>`).join("")}` : "";
       byId("print_contractor").innerHTML = [byId("contractor_name").value, byId("contractor_tax").value ? `Adószám: ${byId("contractor_tax").value}` : "", byId("contractor_address").value].filter(Boolean).map(value => `<div>${escape(value)}</div>`).join("");
       printTerms.innerHTML = `<div class="font-bold mb-2">Ajánlati és fizetési feltételek</div><div><b>Fizetés:</b> ${escape(byId("quote_payment_terms").value || "—")}</div><div><b>Előleg:</b> ${positive(byId("quote_deposit").value)}%</div><div><b>Érvényesség:</b> ${days} nap</div>`;
     }
@@ -384,5 +400,5 @@
     renderProfessional();
   }
 
-  return { templates: TEMPLATES, calculateTemplate, mount };
+  return { templates: TEMPLATES, calculateTemplate, validateGuidedCalculations, mount };
 });

@@ -1,0 +1,47 @@
+.building-box { margin:1rem 0; padding:1rem; border:1px solid #a5b4fc; border-radius:1rem; background:#f8fafc; color:#172554; }
+.building-box h2,.building-box h3 { font-weight:800; margin:.7rem 0; }
+.building-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:.65rem; margin:.7rem 0; }
+.building-box label { display:block; font-size:.8rem; font-weight:700; min-width:0; }
+.building-box input,.building-box select,.building-box textarea { display:block; width:100%; min-width:0; min-height:44px; padding:.55rem; border:1px solid #94a3b8; border-radius:.45rem; background:white; color:#0f172a; font-weight:400; }
+.building-box button { min-height:44px; padding:.5rem .8rem; border-radius:.5rem; background:#3730a3; color:white; font-weight:700; margin:.2rem; }
+.building-box button.secondary { background:#e2e8f0; color:#172554; }
+.building-box button:disabled { opacity:.45; cursor:not-allowed; }
+.building-warning { background:#fef3c7; color:#78350f; padding:.7rem; border-radius:.5rem; margin:.7rem 0; overflow-wrap:anywhere; }
+.building-table-wrap { overflow:auto; max-width:100%; }
+.building-table { border-collapse:collapse; width:100%; font-size:.85rem; }
+.building-table th,.building-table td { text-align:left; border-bottom:1px solid #cbd5e1; padding:.55rem; vertical-align:top; overflow-wrap:anywhere; }
+.building-table small { display:block; }
+.building-phases { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:.3rem; margin:.7rem 0; font-size:.8rem; }
+.building-phases div { border:1px solid #cbd5e1; border-radius:.4rem; padding:.4rem; }
+.building-phases .active-phase { background:#e0e7ff; }
+.building-catalog-list { max-height:300px; overflow:auto; }
+.building-catalog-list li { display:flex; gap:.7rem; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding:.4rem; }
+.building-catalog-list span { min-width:0; overflow-wrap:anywhere; }
+#buildingPrint { font-size:11px; line-height:1.35; overflow-wrap:anywhere; }
+#buildingPrint table { width:100%; table-layout:fixed; border-collapse:collapse; }
+#buildingPrint td,#buildingPrint th { border:1px solid #cbd5e1; padding:5px; vertical-align:top; overflow-wrap:anywhere; }
+#buildingPrint tr { break-inside:avoid; page-break-inside:avoid; }
+#buildingPrint h2 { margin:15px 0 5px; font-weight:bold; font-size:15px; }
+.building-print-phase { break-inside:avoid; page-break-inside:avoid; margin:10px 0; }
+.building-print-phase h3 { font-weight:bold; padding:5px; background:#eef2ff; }
+.building-muted { color:#475569; font-size:.8rem; }
+.building-component-card { border:1px solid #94a3b8; border-radius:.6rem; padding:.8rem; margin:.8rem 0; min-width:0; }
+.building-component-card legend { font-weight:800; padding:0 .4rem; }
+.building-wide { grid-column:1/-1; min-width:0; }
+#buildingLibraries { min-width:0; overflow-wrap:anywhere; }
+#buildingLibraries select { max-width:100%; }
+.building-component-report { width:100%; border-collapse:collapse; table-layout:fixed; font-size:.8rem; }
+.building-component-report th,.building-component-report td { border:1px solid #cbd5e1; padding:.5rem; vertical-align:top; overflow-wrap:anywhere; }
+#buildingMaterials .building-component-report { min-width:620px; }
+#buildingPrint .building-component-report { min-width:0; font-size:11px; }
+@media(max-width:600px) { .building-box { padding:.7rem; } .building-table { min-width:560px; } .building-catalog-list li { align-items:start; } }
+@media print { #buildingPanel { display:none !important; } #buildingPrint[hidden] { display:none !important; } }
+
+/* Gyorsajánlat: a részletes PRO+ szerkesztőbe integrálva */
+.building-quick{margin:.8rem 0 1.2rem;padding:1rem;background:#fff;border:2px solid #4f46e5;border-radius:.9rem;}
+.building-quick h3{font-size:1.2rem;margin-top:0;}
+.building-quick [hidden]{display:none!important;}
+.building-quick-preview{background:#eff6ff;border-radius:.65rem;padding:.7rem;margin:.7rem 0;overflow-wrap:anywhere;}
+.building-quick-preview strong,#quickOverall strong{color:#9a3412;}
+#quickOverall{border-top:1px solid #c7d2fe;margin:.7rem 0;padding-top:.7rem;}
+@media(max-width:600px){.building-quick{padding:.65rem;}.building-quick .building-wide{grid-column:1/-1;}}

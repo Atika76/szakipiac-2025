@@ -145,6 +145,7 @@
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <label class="block"><span class="text-sm font-bold">Projekt neve</span><input id="projectName" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Pl. Kovács család lakásfelújítás"></label>
+            <label class="block"><span class="text-sm font-bold">Kapcsolt árajánlat</span><select id="linkedQuoteId" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3"><option value="">Nincs kapcsolt ajánlat</option></select><span class="text-xs">Naplóindításhoz elfogadott ajánlat szükséges.</span></label>
             <label class="block"><span class="text-sm font-bold">Megrendelő</span><input id="clientName" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Ügyfél neve"></label>
             <label class="block"><span class="text-sm font-bold">Telefon / e-mail</span><input id="clientContact" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="+36... / email"></label>
             <label class="block"><span class="text-sm font-bold">Helyszín</span><input id="location" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" placeholder="Város, cím"></label>
@@ -572,6 +573,10 @@ const TEMPLATE_CATALOG = {
   facade: [["homlokzat-eps",160,"homlokzat"],["jarulekos-gep",10,"bontas"],["jarulekos-hulladek",4,"bontas"]]
 };
 
+let cloudProject = { id: null, revision: null, owner: null, pending: null, unconfirmed: null };
+let linkedQuotes = [];
+function resetCloudProject() { cloudProject = { id: null, revision: null, owner: null, pending: null, unconfirmed: null }; }
+
 let state = {
   project: {},
   phases: [],
@@ -714,6 +719,9 @@ function ancillaryCosts() {
 }
 
 function applyTemplate(key) {
+  resetCloudProject();
+  state.source_quote_id = null;
+  if ($("linkedQuoteId")) $("linkedQuoteId").value = "";
   const tpl = PROJECT_TEMPLATES[key] || PROJECT_TEMPLATES.completeFlat;
   state.project.name = tpl.name;
   state.project.description = tpl.description;
@@ -1077,7 +1085,7 @@ function renderLocalSaveStatus() {
 
 function saveLocal() {
   readProjectForm();
-  const safeState = { ...state, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
+  const safeState = { ...state, cloud_project: { id: cloudProject.id, revision: cloudProject.revision, owner: cloudProject.owner, unconfirmed: cloudProject.unconfirmed || null }, photos: [], saved_at: new Date().toISOString(), source_type: "browser_local" };
   localStorage.setItem(LOCAL_KEY, JSON.stringify(safeState));
   renderLocalSaveStatus();
   toast("Projekt mentve a böngészőbe ✅");
@@ -1088,10 +1096,14 @@ function loadLocal() {
   if (!raw) return toast("Nincs mentett projekt ebben a böngészőben.", "info");
   try {
     const loaded = JSON.parse(raw);
+    resetCloudProject();
+    Object.assign(cloudProject, loaded.cloud_project || {});
+    cloudProject.pending = null;
     state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...loaded, photos: [] };
     writeProjectForm();
     renderAll();
     renderLocalSaveStatus();
+    syncLinkedQuote();
     toast("Böngészős mentés betöltve ✅");
   } catch (e) {
     toast("A böngészős mentés nem olvasható.", "error");
@@ -1124,9 +1136,13 @@ function importJson(file) {
   reader.onload = () => {
     try {
       const loaded = JSON.parse(reader.result);
+      resetCloudProject();
+      delete loaded.cloud_project;
+      delete loaded.source_quote_id;
       state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...loaded, photos: [] };
       writeProjectForm();
       renderAll();
+      syncLinkedQuote();
       toast("JSON projekt importálva ✅");
     } catch (e) {
       toast("Nem sikerült beolvasni a JSON fájlt.", "error");
@@ -1188,42 +1204,75 @@ function normalizeProjectStateForSave() {
   };
 }
 
+async function loadLinkedQuotes() {
+  const session = await refreshSession();
+  if (!session) return;
+  const { data, error } = await supa.from("ajanlatok").select("id,project_name,quote_number,quote_status,user_id").order("created_at", { ascending: false });
+  if (error) return toast("Ajánlatkapcsolatok nem tölthetők be: " + error.message, "error");
+  linkedQuotes = data || [];
+  const select = $("linkedQuoteId");
+  select.innerHTML = '<option value="">Nincs kapcsolt ajánlat</option>' + linkedQuotes.map(q => `<option value="${escapeAttr(q.id)}">${escapeHtml(q.quote_number || q.project_name || q.id)} (${escapeHtml(q.quote_status)})</option>`).join("");
+  syncLinkedQuote();
+}
+function syncLinkedQuote() {
+  if (!$("linkedQuoteId")) return;
+  $("linkedQuoteId").value = state.source_quote_id || "";
+  const accepted = linkedQuotes.some(q => q.id === state.source_quote_id && q.quote_status === "accepted");
+  $("btnSaveAndOpenEpitesNaplo").disabled = !accepted;
+  $("btnSaveAndOpenEpitesNaplo").textContent = "🏗️ Mentés + Munka indítása";
+}
 async function saveSupabase(options = {}) {
-  readProjectForm();
-  try {
-    if (!supa) return toast("A Supabase könyvtár nem töltődött be.", "error");
-    const session = await refreshSession();
-    if (!session) return toast("Supabase mentéshez előbb jelentkezz be a SzakiPiac oldalon.", "info");
-
-    const t = totals();
-    const payload = normalizeProjectStateForSave();
-    const row = {
-      user_id: session.user.id,
-      user_email: session.user.email,
-      project_name: state.project.name || "Névtelen kivitelezési projekt",
-      client_name: state.project.clientName || "",
-      location: state.project.location || "",
-      total_gross: Math.round(t.gross),
-      status: "draft",
-      payload
-    };
-    const { data, error } = await supa
-      .from("kivitelezes_projektek")
-      .insert([row])
-      .select("id")
-      .single();
-    if (error) throw error;
-    toast("Projekt mentve Supabase-ba ✅");
-    await loadSavedProjects();
-
-    if (options.openEpitesNaplo && data?.id) {
-      await sendKivitelezesToEpitesNaplo(data.id);
-    }
-    return data?.id || null;
-  } catch (e) {
-    toast("Supabase mentési hiba: " + (e.message || e), "error");
-    return null;
+  const context = cloudProject;
+  function rejectWrite(error) {
+    // Only explicit transactional PostgreSQL validation/permission rejections
+    // release the request. Network, gateway, timeout and unknown errors remain
+    // ambiguous. Keep the project ID/revision so retries cannot create copies.
+    if (/^(?:22[0-9A-Z]{3}|23[0-9A-Z]{3}|P0001|42501)$/.test(error.code || "")) context.unconfirmed = null;
+    throw error;
   }
+  if (context.pending) {
+    const id = await context.pending;
+    if (options.openEpitesNaplo && id && context === cloudProject) await sendKivitelezesToEpitesNaplo(id);
+    return id;
+  }
+  readProjectForm();
+  const payload = JSON.parse(JSON.stringify(normalizeProjectStateForSave()));
+  const row = { project_name: state.project.name || "Névtelen kivitelezési projekt", client_name: state.project.clientName || "",
+    location: state.project.location || "", total_gross: Math.round(totals().gross), payload, source_quote_id: state.source_quote_id || null };
+  context.pending = (async () => {
+    try {
+      if (!supa) throw new Error("A Supabase könyvtár nem töltődött be.");
+      const session = await refreshSession();
+      if (!session) throw new Error("Supabase mentéshez jelentkezz be.");
+      if (context.owner && context.owner !== session.user.id) throw new Error("Másik fiók projektje. Töltsd be újra a saját projektedet.");
+      context.id ||= crypto.randomUUID();
+      context.owner = session.user.id;
+      // Retain an ambiguous request until its exact write is acknowledged. If
+      // the user edited after the failure, recover first, then save the edits
+      // against the recovered revision instead of overwriting an unknown one.
+      if (context.unconfirmed) {
+        const { data: recovered, error: recoveryError } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
+        if (recoveryError) rejectWrite(recoveryError);
+        if (!recovered?.id || !Number.isInteger(recovered.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
+        context.revision = recovered.revision;
+        context.unconfirmed = null;
+      }
+      context.unconfirmed = { p_id: context.id, p_revision: context.revision, p_row: row };
+      const { data, error } = await supa.rpc("save_kivitelezes_project_v2", context.unconfirmed);
+      if (error) rejectWrite(error);
+      if (!data?.id || !Number.isInteger(data.revision)) throw new Error("Hiányzó mentési visszaigazolás.");
+      context.revision = data.revision;
+      context.unconfirmed = null;
+      if (context === cloudProject) toast("Projekt mentve, új másolat nélkül ✅");
+      await loadSavedProjects();
+      return data.id;
+    } catch (e) { toast("Supabase mentési hiba: " + (e.message || e), "error"); return null; }
+  })();
+  try {
+    const id = await context.pending;
+    if (options.openEpitesNaplo && id && context === cloudProject) await sendKivitelezesToEpitesNaplo(id);
+    return id;
+  } finally { context.pending = null; }
 }
 
 async function loadSavedProjects() {
@@ -1294,10 +1343,13 @@ async function loadSavedProjects() {
 
 async function loadSavedProject(id) {
   try {
-    const { data, error } = await supa.from("kivitelezes_projektek").select("payload").eq("id", id).single();
+    const { data, error } = await supa.from("kivitelezes_projektek").select("id,payload,revision,user_id,source_quote_id").eq("id", id).single();
     if (error) throw error;
     if (!data?.payload) return toast("Ehhez a mentéshez nincs projektadat.", "error");
-    state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...data.payload, photos: [] };
+    resetCloudProject();
+    Object.assign(cloudProject, { id: data.id, revision: data.revision, owner: (await refreshSession())?.user.id });
+    state = { project: {}, phases: [], items: [], subs: [], checks: {}, photos: [], ...data.payload, photos: [], source_quote_id: data.source_quote_id };
+    syncLinkedQuote();
     writeProjectForm();
     renderAll();
     toast("Supabase mentés betöltve ✅");
@@ -1312,6 +1364,7 @@ async function deleteSavedProject(id) {
   try {
     const { error } = await supa.from("kivitelezes_projektek").delete().eq("id", id);
     if (error) throw error;
+    if (cloudProject.id === id) resetCloudProject();
     toast("Supabase mentés törölve ✅");
     await loadSavedProjects();
   } catch (e) {
@@ -1348,12 +1401,79 @@ function makePdf() {
     margin: [8, 8, 8, 8],
     filename: projectName.replace(/[^a-z0-9áéíóöőúüű]+/gi, "-") + "-kivitelezespro.pdf",
     image: { type: "jpeg", quality: 0.92 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+    pagebreak: { mode: ["css", "legacy"], avoid: ["tr", ".phase-row", "#photoGrid figure"] }
   };
   toast("PDF készül...", "info");
-  html2pdf().set(opt).from($("pdfArea")).save();
+  const source = $("pdfArea");
+  const printable = source.cloneNode(true);
+  const fields = source.querySelectorAll('input, select, textarea');
+  printable.querySelectorAll('input, select, textarea').forEach((field, index) => {
+    const original = fields[index];
+    const text = document.createElement('div');
+    text.className = field.className;
+    text.textContent = original.type === 'checkbox' ? (original.checked ? '✓' : '☐')
+      : original.tagName === 'SELECT' ? (original.selectedOptions[0]?.textContent || '')
+      : original.value;
+    Object.assign(text.style, { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', minWidth: '0', height: 'auto' });
+    field.replaceWith(text);
+  });
+  printable.querySelectorAll('.no-print').forEach(el => el.remove());
+  printable.querySelectorAll('.print-only').forEach(el => { el.style.display = 'block'; });
+  printable.querySelectorAll('table').forEach(table => {
+    Object.assign(table.style, { minWidth: '0', width: '100%', tableLayout: 'fixed' });
+    table.querySelectorAll('th, td').forEach(cell => {
+      Object.assign(cell.style, { padding: '6px', fontSize: '11px', whiteSpace: 'normal', overflowWrap: 'anywhere' });
+    });
+    table.querySelectorAll('td > div').forEach(value => {
+      Object.assign(value.style, { minWidth: '0', width: '100%', padding: '4px' });
+    });
+  });
+  const photos = printable.querySelector('#photoGrid');
+  if (photos) {
+    photos.style.display = 'block';
+    photos.querySelectorAll('figure').forEach(figure => {
+      Object.assign(figure.style, { display: 'block', width: '50%', marginRight: '0' });
+    });
+  }
+  printable.querySelectorAll('#summaryBox .text-2xl').forEach(value => {
+    Object.assign(value.style, { fontSize: '18px', lineHeight: '1.3', overflowWrap: 'anywhere' });
+  });
+  // Freeze the PDF's grid layout independently from the editor's screen size.
+  printable.querySelectorAll('[class]').forEach(el => {
+    for (const breakpoint of ['sm', 'md', 'lg', 'xl']) {
+      const grid = [...el.classList].find(name => new RegExp('^' + breakpoint + ':grid-cols-\\d+$').test(name));
+      if (grid) el.style.gridTemplateColumns = `repeat(${grid.split('-').pop()}, minmax(0, 1fr))`;
+    }
+  });
+  printable.querySelectorAll('.phase-row').forEach(row => {
+    row.style.gridTemplateColumns = '40px minmax(150px,1.25fr) minmax(140px,1fr) minmax(125px,.85fr) 80px 44px';
+    row.querySelectorAll('.phase-name, .phase-trade, .phase-status, .phase-days').forEach(el => { el.style.gridColumn = 'auto'; });
+    row.querySelectorAll('.phase-note').forEach(el => { el.style.gridColumn = '2 / 6'; });
+    row.querySelectorAll('.delete-phase').forEach(el => el.remove());
+  });
+  return html2pdf().set(opt).from(printable).toContainer().then(function () {
+    Object.assign(this.prop.overlay.style, { overflow: 'visible', width: '1280px', right: 'auto' });
+    Object.assign(this.prop.container.style, { left: '0', right: 'auto', margin: '0' });
+    // The library's break calculation uses viewport coordinates. Measure photos
+    // relative to the export container so scrolling cannot split a photo.
+    const container = this.prop.container;
+    const pageHeight = this.prop.pageSize.inner.px.height;
+    container.querySelectorAll('#photoGrid figure').forEach(figure => {
+      const rect = figure.getBoundingClientRect();
+      const top = rect.top - container.getBoundingClientRect().top;
+      const bottom = top + rect.height;
+      const offset = top % pageHeight;
+      const crossesPage = Math.floor(top / pageHeight) !== Math.floor((bottom - 1) / pageHeight);
+      const padding = crossesPage ? pageHeight - offset + 24 : Math.max(0, 24 - offset);
+      if (rect.height < pageHeight && padding > 0) {
+        const spacer = document.createElement('div');
+        spacer.style.height = padding + 'px';
+        figure.before(spacer);
+      }
+    });
+  }).save();
 }
 
 function handlePhotos(files) {
@@ -1379,6 +1499,7 @@ function bindEvents() {
     $(id).addEventListener("input", () => { readProjectForm(); renderStats(); renderSummary(); });
   });
 
+  $("linkedQuoteId").addEventListener("change", () => { state.source_quote_id = $("linkedQuoteId").value || null; syncLinkedQuote(); });
   $("btnApplyTemplate").addEventListener("click", () => applyTemplate($("templateSelect").value));
   $("btnNewProject").addEventListener("click", () => applyTemplate($("templateSelect").value));
   $("btnDemo").addEventListener("click", () => {
@@ -1417,6 +1538,7 @@ async function bootPage() {
   await loadPriceCatalog();
   applyTemplate("completeFlat");
   renderLocalSaveStatus();
+  await loadLinkedQuotes();
   await loadSavedProjects();
   await applyUsageGate();
 }

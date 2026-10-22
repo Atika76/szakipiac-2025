@@ -30,40 +30,6 @@ function safeText(value: unknown, max = 500) {
   return String(value ?? "").trim().slice(0, max);
 }
 
-function num(value: unknown) {
-  const parsed = Number(value || 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function splitContact(raw: unknown) {
-  const value = safeText(raw, 240);
-  const emailMatch = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const email = emailMatch?.[0] || "";
-  const phone = value.replace(email, "").replace(/[\/|,;]/g, " ").trim();
-  return { email, phone };
-}
-
-function buildKivitelezesItems(payload: any) {
-  const items = Array.isArray(payload?.items) ? payload.items : [];
-  return items.map((item: any) => {
-    const qty = num(item.qty) || 1;
-    const material = num(item.material);
-    const labor = num(item.labor);
-    return {
-      name: safeText(item.name || "Tétel", 180),
-      type: material > 0 && labor <= 0 ? "anyag" : labor > 0 ? "munka" : "egyeb",
-      trade: safeText(item.trade || "", 80),
-      qty,
-      unit: safeText(item.unit || "db", 40),
-      material,
-      labor,
-      material_total: qty * material,
-      labor_total: qty * labor,
-      total: qty * (material + labor),
-    };
-  });
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   if (req.method !== "POST") return json(req, { ok: false, error: "Csak POST kérés engedélyezett." }, 200);
@@ -109,101 +75,50 @@ serve(async (req) => {
     const hasBundle = sourceEntitlement?.plan === "bundle"
       && (!sourceEntitlement.expires_at || new Date(sourceEntitlement.expires_at).getTime() >= Date.now());
 
-    if (quoteId) {
-      const { data: quote, error: quoteError } = await admin
-        .from("ajanlatok")
-        .select("*")
-        .eq("id", quoteId)
-        .maybeSingle();
-
-      if (quoteError) return json(req, { ok: false, error: "Ajánlat lekérési hiba: " + quoteError.message }, 200);
-      if (!quote) return json(req, { ok: false, error: "Nem található ez az ajánlat." }, 200);
-
-      const ownsQuote =
-        String(quote.user_id || "") === userData.user.id ||
-        String(quote.user_email || "").toLowerCase() === userEmail;
-
-      if (!ownsQuote && userEmail !== adminEmail) {
-        return json(req, { ok: false, error: "Ezt az ajánlatot nem küldheted át." }, 200);
-      }
-      if (quote.quote_status !== "accepted" || !quote.accepted_at) {
-        return json(req, { ok: false, error: "Csak az ügyfél által online elfogadott ajánlat adható át az Építési Naplóba." }, 200);
-      }
-
-      importBody = {
-        source_quote_id: quote.id,
-        source_status: quote.quote_status,
-        accepted_at: quote.accepted_at,
-        quote_number: quote.quote_number,
-        project_name: quote.project_name,
-        client_name: quote.client_name,
-        client_email: quote.client_email,
-        client_phone: quote.client_phone,
-        client_city: quote.client_city,
-        client_address: quote.client_address,
-        quote_total_gross: quote.total_gross,
-        payload: quote.payload || {},
-      };
-    }
-
+    // The accepted quote RECORD is the version and canonical idempotency key.
+    // Planning data never replaces its price, client, or quote items.
+    let resolvedQuoteId = quoteId;
+    let preparation: any = null;
     if (kivitelezesProjectId) {
-      const { data: projectRow, error: projectError } = await admin
-        .from("kivitelezes_projektek")
-        .select("*")
-        .eq("id", kivitelezesProjectId)
-        .maybeSingle();
-
-      if (projectError) return json(req, { ok: false, error: "KivitelezésPRO projekt lekérési hiba: " + projectError.message }, 200);
-      if (!projectRow) return json(req, { ok: false, error: "Nem található ez a KivitelezésPRO projekt." }, 200);
-
-      const ownsProject =
-        String(projectRow.user_id || "") === userData.user.id ||
-        String(projectRow.user_email || "").toLowerCase() === userEmail;
-
-      if (!ownsProject && userEmail !== adminEmail) {
-        return json(req, { ok: false, error: "Ezt a KivitelezésPRO projektet nem küldheted át." }, 200);
+      const { data: plan, error: planError } = await admin.from("kivitelezes_projektek")
+        .select("*").eq("id", kivitelezesProjectId).maybeSingle();
+      if (planError || !plan) return json(req, { ok: false, error: "Nem található a kivitelezési projekt." }, 404);
+      if (plan.user_id !== userData.user.id && userEmail !== adminEmail) return json(req, { ok: false, error: "Nincs jogosultság a projekthez." }, 403);
+      if (!plan.source_quote_id || (quoteId && quoteId !== plan.source_quote_id)) {
+        return json(req, { ok: false, error: "Kapcsolj a projekthez egy elfogadott ajánlatot." }, 409);
       }
-
-      const payload = projectRow.payload || {};
-      const project = payload.project || {};
-      const contact = splitContact(project.clientContact || "");
-      const items = buildKivitelezesItems(payload);
-      const totals = payload.totals || {};
-      const location = safeText(project.location || projectRow.location || "", 500);
-
-      importBody = {
-        source_quote_id: `kivitelezes_projektek:${projectRow.id}`,
-        project_name: projectRow.project_name || project.name || "KivitelezésPRO projekt",
-        client_name: projectRow.client_name || project.clientName || "",
-        client_email: contact.email,
-        client_phone: contact.phone,
-        client_city: location,
-        client_address: "",
-        quote_total_gross: projectRow.total_gross || totals.gross || 0,
-        payload: {
-          ...payload,
-          source_type: "kivitelezes_pro",
-          project_name: projectRow.project_name || project.name || "KivitelezésPRO projekt",
-          client: {
-            name: projectRow.client_name || project.clientName || "",
-            email: contact.email,
-            phone: contact.phone,
-            city: location,
-            address: "",
-          },
-          totals: {
-            ...totals,
-            grossTotal: totals.gross || projectRow.total_gross || 0,
-            materialTotal: items.reduce((sum: number, item: any) => sum + num(item.material_total), 0),
-            laborTotal: items.reduce((sum: number, item: any) => sum + num(item.labor_total), 0),
-            vatAmount: totals.vat || 0,
-          },
-          items,
-        },
-      };
-      importBody.source_status = "kivitelezes_pro";
+      resolvedQuoteId = plan.source_quote_id;
+      preparation = { project_id: plan.id, phases: plan.payload?.phases || [], subs: plan.payload?.subs || [], checks: plan.payload?.checks || {} };
     }
-
+    const { data: quote, error: quoteError } = await admin.from("ajanlatok").select("*").eq("id", resolvedQuoteId).maybeSingle();
+    if (quoteError || !quote) return json(req, { ok: false, error: "Nem található az ajánlatverzió." }, 404);
+    if (quote.user_id !== userData.user.id && userEmail !== adminEmail) return json(req, { ok: false, error: "Ezt az ajánlatot nem küldheted át." }, 403);
+    const buildingEnabled = quote.payload?.building_budget?.enabled;
+    if (buildingEnabled !== undefined && buildingEnabled !== null && buildingEnabled !== false) {
+      return json(req, { ok: false, error: "A részletes költségvetési munkaváltozat naplóátadása még nem támogatott." }, 409);
+    }
+    if (quote.quote_status !== "accepted" || !quote.accepted_at) {
+      return json(req, { ok: false, error: "Csak az ügyfél által online elfogadott ajánlatverzió adható át." }, 409);
+    }
+    const { data: ownerData, error: ownerError } = await admin.auth.admin.getUserById(quote.user_id);
+    const ownerEmail = ownerData?.user?.email?.toLowerCase();
+    if (ownerError || !ownerEmail) return json(req, { ok: false, error: "Az ajánlat tulajdonosa nem igazolható." }, 409);
+    importBody = {
+      protocol_version: 2,
+      source_quote_id: quote.id,
+      source_status: quote.quote_status,
+      accepted_at: quote.accepted_at,
+      owner_email: ownerEmail,
+      quote_number: quote.quote_number,
+      project_name: quote.project_name,
+      client_name: quote.client_name,
+      client_email: quote.client_email,
+      client_phone: quote.client_phone,
+      client_city: quote.client_city,
+      client_address: quote.client_address,
+      quote_total_gross: quote.total_gross,
+      payload: { ...quote.payload, preparation },
+    };
     if (!importBody) return json(req, { ok: false, error: "Nincs átadható adat." }, 200);
     if (hasBundle) {
       const currentPayload = importBody.payload && typeof importBody.payload === "object"
@@ -238,14 +153,14 @@ serve(async (req) => {
       }, 200);
     }
 
-    if (quoteId) {
+    if (resolvedQuoteId) {
       const { error: markError } = await admin
         .from("ajanlatok")
         .update({
           import_requested_at: new Date().toISOString(),
           import_request_id: safeText(result?.request_id || "", 200) || null,
         })
-        .eq("id", quoteId);
+        .eq("id", resolvedQuoteId);
       if (markError) console.error("Az importjelölés nem sikerült", markError);
     }
 

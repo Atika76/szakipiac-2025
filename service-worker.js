@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-360-v5-20260718';
+const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022';
 
 const APP_SHELL_URLS = [
   '/',
@@ -6,6 +6,12 @@ const APP_SHELL_URLS = [
   '/szakipiac-360-tools.js',
   '/arakalkulator-pro.js',
   '/ajanlat-muhely.js',
+  '/epulet-koltsegvetes.css',
+  '/epulet-teteladatok.js',
+  '/epulet-szamitas.js',
+  '/epulet-gyorsajanlat-mag.js',
+  '/epulet-adatfeltoltes.js',
+  '/epulet-koltsegvetes.js',
   '/kalkulator.html',
   '/kivitelezes-pro.html',
   '/icon-192.png',
