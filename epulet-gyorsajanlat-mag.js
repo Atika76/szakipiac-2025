@@ -125,26 +125,27 @@
     let row=E.fromCatalog(def);
     row.qty=m.quantity;
     row.budget.quantity_source=m.source;
-    if(catalog.component_templates?.[def.id]) {
-      row=E.applyComponentTemplate(row,catalog);
+    if(catalog.component_templates?.[def.id] || def.budget_defaults?.components) {
+      if(catalog.component_templates?.[def.id])row=E.applyComponentTemplate(row,catalog);
       row.budget.components=row.budget.components.map(c=>{
         const materialId=c.material_id||MATERIAL_LINKS[def.id]?.[c.id];
         if(!materialId)return c;
         const material=(materials||[]).find(x=>x.id===materialId);
         if(!material)return c;
         if(material.unit!==c.unit||material.basis_unit!==row.unit)throw Error('Nem egyezik az anyagkatalógus és a sablon egysége: '+c.name);
-        return {...c,material_id:materialId,waste_percent:material.waste_percent,rounding:material.rounding,use_geometry_waste:false,
+        const quantityLocked=c.quantity_locked_to_work===true;
+        return {...c,name:typeof material.product_name==='string'?material.product_name:c.name,material_id:materialId,waste_percent:material.waste_percent,rounding:material.rounding,use_geometry_waste:false,
           // Only sourced catalog values replace the material's saved snapshot;
           // never overwrite the template's documented geometric quantity with null.
           unit_price:material.unit_price,price_kind:material.price_kind,
           source:material.source,updated:material.updated,
           manufacturer:material.manufacturer||c.manufacturer,
           supplier:material.supplier||c.supplier,
-          per_unit:material.per_unit??c.per_unit,
-          quantity_source:material.per_unit!=null?(material.quantity_source||''):c.quantity_source,
-          quantity_updated:material.per_unit!=null?material.quantity_updated:c.quantity_updated,
+          per_unit:quantityLocked?c.per_unit:material.per_unit??c.per_unit,
+          quantity_source:!quantityLocked&&material.per_unit!=null?(material.quantity_source||''):c.quantity_source,
+          quantity_updated:!quantityLocked&&material.per_unit!=null?material.quantity_updated:c.quantity_updated,
           applicability:material.applicability||c.applicability,
-          ...Object.fromEntries(['quantity_kind','order_multiple','minimum_order'].map(key=>[key,material[key]??c[key]]).filter(([,value])=>value!=null))
+          ...Object.fromEntries(['quantity_kind','order_multiple','minimum_order'].map(key=>[key,key==='quantity_kind'&&quantityLocked?c[key]:material[key]??c[key]]).filter(([,value])=>value!=null))
         };
       });
     }

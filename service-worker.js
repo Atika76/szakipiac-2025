@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022-pdfwrap';
+const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022-sourced1';
 
 const APP_SHELL_URLS = [
   '/',
@@ -8,6 +8,7 @@ const APP_SHELL_URLS = [
   '/ajanlat-muhely.js',
   '/epulet-koltsegvetes.css',
   '/epulet-teteladatok.js',
+  '/epulet-forrasolt-adatok.js',
   '/epulet-szamitas.js',
   '/epulet-gyorsajanlat-mag.js',
   '/epulet-adatfeltoltes.js',

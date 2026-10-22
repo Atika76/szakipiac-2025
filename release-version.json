@@ -1,5 +1,5 @@
 {
-  "release": "proplus-v3-188-20261022-pdfwrap",
+  "release": "proplus-v3-188-20261022-sourced1",
   "work_items": 188,
   "source_sha256": "dbfd66b842f76c2843958611329dbdbf2ca5173b6854f93bce7a14bf4c991c30",
   "status": "beta",
@@ -9,6 +9,17 @@
     "hosted_smoke": "29/29"
   },
   "patches": [
-    "print-only URL wrap; saved source URLs unchanged"
-  ]
+    "print-only URL wrap; saved source URLs unchanged",
+    "specific EVOSZ 2013 norms and manufacturer material examples; saved quote snapshots unchanged"
+  ],
+  "base_work_items": 188,
+  "additional_documented_work_variants": 9,
+  "material_count": 70,
+  "manufacturer_list_prices": 12,
+  "conditional_supplier_references": 8,
+  "missing_material_prices": 50,
+  "original_unfilled_norm_slots": 30,
+  "documented_specific_norms": 6,
+  "node_tests": "174/174",
+  "sourced_ui_tests": "desktop1440/mobile390 with real Supabase save/reload"
 }

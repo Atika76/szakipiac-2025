@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const E = window.SzakiPiacBuilding, base = window.SzakiPiacBuildingCatalog, Q = window.SzakiPiacQuickQuote, D = window.SzakiPiacDataIntake;
+  const E = window.SzakiPiacBuilding, base = window.SzakiPiacBuildingCatalog, Q = window.SzakiPiacQuickQuote, D = window.SzakiPiacDataIntake, sourced = window.SzakiPiacSourcedData;
   if (!E || !base || !Q || !D || typeof items === 'undefined') return;
   const $b = id => document.getElementById(id), esc = escapeHtml;
   const state = { enabled:false, settings:E.defaults(), geometry:E.sampleGeometry(), custom_catalog:[], is_sample:false,registry_version:null,material_catalog:null,norm_catalog:null,rate_reference:null };
@@ -16,7 +16,7 @@
   const run = fn => { try { $b('buildingError').textContent = ''; return fn(); } catch (error) { fail(error); } };
   const field = (id,label,value,type='number') => `<label>${esc(label)}<input id="${id}" type="${type}" ${type==='number'?'min="0" step="any"':''} value="${esc(String(value ?? ''))}"></label>`;
   function catalog() {
-    const rows = new Map(base.rows.map(r => [r.id, {...r}]));
+    const rows = new Map([...base.rows,...(sourced?.work_variants||[])].map(r => [r.id, {...r}]));
     const mapping = {szerkezet:'alap',festo:'festes',acs:'teto',vakolas:'vakolat',burkolo:'burkolat',laminalt:'burkolat'};
     for (const row of window.SzakiPiacPriceCatalog?.all() || []) {
       const trade = mapping[row.szakag] || row.szakag;
@@ -25,9 +25,17 @@
     }
     state.custom_catalog.forEach(r => rows.set(r.id, r)); return [...rows.values()];
   }
-  function snapshot() { const s={schema_version:1,...E.copy(state)};for(const k of ['registry_version','material_catalog','norm_catalog','rate_reference'])if(s[k]==null)delete s[k];return s; }
-  const materials=()=>state.material_catalog??base.material_catalog;
-  const norms=()=>state.norm_catalog??base.norm_catalog;
+  function snapshot() {
+    const s={schema_version:1,...E.copy(state)};
+    if(sourced){
+      const usedVariants=(sourced.work_variants||[]).filter(def=>named().some(row=>row.budget?.id===def.id));
+      s.custom_catalog=[...new Map([...usedVariants,...s.custom_catalog].map(row=>[row.id,E.copy(row)])).values()];
+      s.registry_version=1;s.material_catalog=E.copy(materials());s.norm_catalog=E.copy(norms());
+    }
+    for(const k of ['registry_version','material_catalog','norm_catalog','rate_reference'])if(s[k]==null)delete s[k];return s;
+  }
+  const materials=()=>state.material_catalog??sourced?.material_catalog??base.material_catalog;
+  const norms=()=>state.norm_catalog??sourced?.norm_catalog??base.norm_catalog;
   function saveRegistry(kind,entry){
     const key=kind==='material'?'material_catalog':'norm_catalog',next=E.copy(kind==='material'?materials():norms()),index=next.findIndex(r=>r.id===entry.id);
     if(index<0)next.push(entry);else next[index]=entry;
@@ -81,6 +89,7 @@
         <p class="building-muted">Az ajánlatban a „Részletek” gombbal ellenőrizheted a normaidőt, anyagösszetevőket és forrásokat.</p>
         <div id="quickOverall" aria-live="polite"></div>
         <div id="quickDataQuality" class="building-warning" aria-live="polite"></div>
+        ${sourced?`<p id="buildingSourcedNotice" class="building-muted">${esc(sourced.notice)} A gyártói listaárak szállítás nélkül értendők; a feltételes referenciaárak külön ellenőrzést igényelnek. Az ÉVOSZ-normák forráséve 2013.</p>`:''}
         <details><summary>Anyagárak és fajlagosok kötegelt betöltése – szakmailag ellenőrzött CSV</summary>
           <p class="building-muted">A 70 anyaghoz készül üres sablon. A beszállító nettó árait és a gyártói fajlagosokat az anyagazonosító, név és egység változtatása nélkül lehet beolvasni. Kötelező a forrás és dátum, fajlagosnál a rétegvastagság/alkalmazás is. A CSV-ből származó adat <b>felhasználói rögzítés</b>, nem automatikusan ellenőrzött piaci ár. A régi ajánlatpillanatképek nem változnak.</p>
           <button id="quickMaterialTemplate" type="button" class="secondary">70 anyagos kitöltő CSV letöltése</button>
