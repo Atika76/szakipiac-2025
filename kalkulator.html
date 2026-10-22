@@ -528,14 +528,21 @@
             <button id="btnRefreshSaved" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold text-sm">Frissítés</button>
           </div>
 
-          <div id="naploTransferHelp" class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-            <p class="font-extrabold">Folytatás az Építési Naplóban – választható</p>
+          <details id="naploTransferHelp" open class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+            <summary class="font-extrabold cursor-pointer">Építési Napló – első átadás és segítség</summary>
             <p class="mt-2">Az <b>„Átadás az Építési Naplóba”</b> gomb a saját, ügyfél által elfogadott ajánlatodból naplóprojekt létrehozásához visz át. Ott vezetheted a napi munkát és a fényképeket.</p>
             <p class="mt-2">Ehhez <b>külön Építési Napló-fiók</b> szükséges, a SzakiPiacban használt <b>ugyanazzal az e-mail-címmel</b>. Ha már van ilyen fiókod, nem kell újra regisztrálnod.</p>
             <a id="naploRegistrationLink" href="https://epitesi-naplo.eu/" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 rounded-lg border border-emerald-700 bg-white px-3 py-2 font-extrabold underline">Építési Napló – regisztráció / belépés ↗</a>
-            <p class="mt-2 text-xs">A megnyíló főoldalon válaszd a „Regisztráció”, majd új fióknál az „Új regisztráció” gombot. Ezután térj vissza az ajánlatodhoz. Az átadást a Naplóban külön jóváhagyod; a két program önálló marad.</p>
+            <p class="mt-2 text-xs">A megnyíló főoldalon válaszd a „Regisztráció”, majd új fióknál az „Új regisztráció” gombot. Ezután térj vissza az ajánlatodhoz. A megfelelő Napló-fiókba belépve az átadás után a projekt automatikusan megnyílik; a két program önálló marad.</p>
             <p class="mt-2 text-xs">A részletes PRO+ munkaváltozat átadása még nem elérhető. SzakiPiac-ajánlatot Napló-fiók nélkül is készíthetsz.</p>
-          </div>
+          </details>
+          <label class="block mb-3 text-sm font-bold">Ajánlatok állapota
+            <select id="savedArchiveView" class="w-full mt-1 p-2 rounded-xl border">
+              <option value="active">Aktív ajánlatok</option>
+              <option value="archived">Archivált ajánlatok</option>
+              <option value="all">Aktív és archivált ajánlatok</option>
+            </select>
+          </label>
           <label id="savedQuoteScopeControls" class="hidden block mb-3 text-sm font-bold">Ajánlatlista
             <select id="savedQuoteScope" class="w-full mt-1 p-2 rounded-xl border">
               <option value="own">Saját ajánlataim</option>
@@ -1307,18 +1314,28 @@ async function loadSaved() {
 
   const isAdmin = session.user.email === ADMIN_EMAIL;
   const showAll = isAdmin && $("savedQuoteScope")?.value === "all";
+  const archiveView = $("savedArchiveView")?.value || "active";
   $("savedQuoteScopeControls")?.classList.toggle("hidden", !isAdmin);
   note.classList.toggle("hidden", !isAdmin);
   note.textContent = showAll
     ? "Adminisztrációs nézet: más felhasználók ajánlatai is látszanak. Naplóba átadni csak a saját ajánlatodat tudod."
-    : "Saját ajánlataid látszanak. Az elfogadott ajánlatok a megőrzött ügyfélelfogadás miatt nem törölhetők.";
+    : "Saját ajánlataid látszanak. Az elfogadott ajánlatot archiválhatod: eltűnik az aktív listából, de az elfogadása és a naplóprojekt megmarad.";
+
+  const help = $("naploTransferHelp");
+  if (help && typeof help.open === "boolean" && help.dataset.checkedUser !== session.user.id) {
+    const { data: previousTransfers, error: historyError } = await supa.from("ajanlatok").select("id").eq("user_id", session.user.id).not("import_requested_at", "is", null).limit(1);
+    help.open = !!historyError || !previousTransfers?.length;
+    if (!historyError) help.dataset.checkedUser = session.user.id;
+  }
 
   list.innerHTML = `<div class="loader"></div>`;
 
   let savedQuery = supa
     .from("ajanlatok")
-    .select("id, user_id, created_at, project_name, client_name, total_gross, currency, user_email, quote_number, quote_status, valid_until, accepted_at, payload");
+    .select("id, user_id, created_at, project_name, client_name, total_gross, currency, user_email, quote_number, quote_status, valid_until, accepted_at, archived_at, payload");
   if (!showAll) savedQuery = savedQuery.eq("user_id", session.user.id);
+  if (archiveView === "active") savedQuery = savedQuery.is("archived_at", null);
+  else if (archiveView === "archived") savedQuery = savedQuery.not("archived_at", "is", null);
   const { data, error } = await savedQuery
     .order("created_at", { ascending: false })
     .limit(30);
@@ -1329,7 +1346,7 @@ async function loadSaved() {
   }
 
   if (!data || !data.length) {
-    list.innerHTML = `<div class="text-gray-500">Nincs mentett ajánlat.</div>`;
+    list.innerHTML = `<div class="text-gray-500">${archiveView === "archived" ? "Nincs archivált ajánlat." : archiveView === "active" ? "Nincs aktív ajánlat. A korábbiakat az Archivált ajánlatok nézetben találod." : "Nincs mentett ajánlat."}</div>`;
     return;
   }
 
@@ -1352,6 +1369,7 @@ async function loadSaved() {
             <div class="mt-1 flex flex-wrap items-center gap-2">
               ${number ? `<span class="text-xs text-gray-500">${escapeHtml(number)}</span>` : ""}
               <span class="rounded-full px-2 py-1 text-xs font-extrabold ${statusColors[status] || statusColors.draft}">${statusLabels[status] || escapeHtml(status)}</span>
+              ${r.archived_at ? '<span class="text-xs font-bold text-slate-600">Archivált</span>' : ""}
             </div>
             ${owner}
           </div>
@@ -1360,6 +1378,7 @@ async function loadSaved() {
               <button data-load="${r.id}" class="px-3 py-1.5 rounded-xl bg-white border hover:bg-gray-100 font-extrabold text-sm">Betölt</button>
               <button data-share="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlathoz nem készíthető új ügyféllink. Új ajánlatverzióhoz készíts másolatot."' : detailedBudget ? 'disabled title="A részletes munkaváltozat ügyfélelfogadása és naplóátadása még nincs bekötve. JSON és PDF menthető."' : ""} data-valid-days="${Number(r.payload?.quote_meta?.valid_days) || 30}" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Ügyfélnek küldhető link</button>
               <button data-epitesnaplo="${r.id}" ${importDisabled ? `disabled title="${escapeHtml(importTitle)}"` : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">Átadás az Építési Naplóba</button>
+              <button data-archive="${r.id}" data-archived="${r.archived_at ? "1" : "0"}" ${!ownQuote ? 'disabled title="Csak a saját ajánlatodat archiválhatod."' : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl border border-slate-400 bg-white text-slate-800 hover:bg-slate-100 disabled:opacity-45 font-extrabold text-sm">${r.archived_at ? "Vissza az aktívakhoz" : "Archiválás"}</button>
               <button data-del="${r.id}" ${status === "accepted" ? 'disabled title="Az elfogadott ajánlat az ügyfélelfogadás megőrzése miatt nem törölhető."' : ""} class="saved-quote-action-wide px-3 py-1.5 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45 font-extrabold text-sm">${status === "accepted" ? "Védett – elfogadva" : "Töröl"}</button>
             </div>
       </div>
@@ -1374,6 +1393,24 @@ async function loadSaved() {
   });
   list.querySelectorAll("button[data-share]").forEach(btn => {
     btn.addEventListener("click", async () => shareQuoteWithClient(btn.dataset.share, Number(btn.dataset.validDays) || 30));
+  });
+  list.querySelectorAll("button[data-archive]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (btn.disabled) return;
+      const archive = btn.dataset.archived !== "1";
+      if (archive && !confirm("Archiválod az ajánlatot? Az ajánlat, az ügyfélelfogadás és a naplóprojekt megmarad. Később visszateheted az aktív listába.")) return;
+      const latest = await refreshSession();
+      if (!latest) return toast("Archiváláshoz jelentkezz be!", "error");
+      btn.disabled = true;
+      try {
+        const { data: changed, error: archiveError } = await supa.from("ajanlatok").update({ archived_at: archive ? new Date().toISOString() : null }).eq("id", btn.dataset.archive).eq("user_id", latest.user.id).select("id,archived_at");
+        if (archiveError || !changed?.some(row => row.id === btn.dataset.archive)) return toast("Az archiválás nem sikerült: " + (archiveError?.message || "nincs módosítható saját ajánlat"), "error");
+        toast(archive ? "Archiválva. Az ajánlat az Archivált ajánlatok nézetben elérhető." : "Az ajánlat visszakerült az aktív listába.");
+        await loadSaved();
+      } catch (error) {
+        toast("Az archiválás nem sikerült: " + (error.message || error), "error");
+      } finally { btn.disabled = false; }
+    });
   });
 
   list.querySelectorAll("button[data-del]").forEach(btn => {
@@ -1437,6 +1474,8 @@ async function sendQuoteToEpitesNaplo(id) {
   }
 
   toast("Import link elkészült ✅", "ok");
+  const help = $("naploTransferHelp");
+  if (help) help.open = false;
   window.open(data.import_url, "_blank", "noopener,noreferrer");
 }
 
@@ -1702,6 +1741,7 @@ async function boot() {
   $("btnGenerateQuoteText").onclick = generateQuoteText;
   $("btnRefreshSaved").onclick = loadSaved;
   $("savedQuoteScope").onchange = loadSaved;
+  $("savedArchiveView").onchange = loadSaved;
 
   $("btnClearClient").onclick = clearClientFields;
 

@@ -1,5 +1,5 @@
 {
-  "release": "proplus-v3-188-20261022-transfer-help1",
+  "release": "proplus-v3-188-20261022-archive1",
   "work_items": 188,
   "source_sha256": "dbfd66b842f76c2843958611329dbdbf2ca5173b6854f93bce7a14bf4c991c30",
   "status": "beta",
@@ -13,7 +13,9 @@
     "specific EVOSZ 2013 norms and manufacturer material examples; saved quote snapshots unchanged",
     "own quotes by default with optional admin list",
     "preserve disabled business controls across login; verify actual deleted rows",
-    "optional diary handoff guidance and visible same-email registration link"
+    "optional diary handoff guidance and visible same-email registration link",
+    "archive and restore own quotes without changing accepted content or deleting diary projects",
+    "collapse first-handoff guidance after a previous transfer"
   ],
   "base_work_items": 188,
   "additional_documented_work_variants": 9,
@@ -23,6 +25,6 @@
   "missing_material_prices": 50,
   "original_unfilled_norm_slots": 30,
   "documented_specific_norms": 6,
-  "node_tests": "184/184",
+  "node_tests": "191/191",
   "sourced_ui_tests": "desktop1440/mobile390 with real Supabase save/reload"
 }
