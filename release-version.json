@@ -1,5 +1,5 @@
 {
-  "release": "proplus-v3-188-normbinding-github-prep-20261022",
+  "release": "proplus-v3-188-20261022-pdfwrap",
   "work_items": 188,
   "source_sha256": "dbfd66b842f76c2843958611329dbdbf2ca5173b6854f93bce7a14bf4c991c30",
   "status": "beta",
@@ -7,5 +7,8 @@
     "szakipiac": "9/9",
     "epitesi_naplo": "7/7",
     "hosted_smoke": "29/29"
-  }
+  },
+  "patches": [
+    "print-only URL wrap; saved source URLs unchanged"
+  ]
 }

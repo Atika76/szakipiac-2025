@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022';
+const CACHE_NAME = 'szakipiac-360-proplus-v3-normbinding-20261022-pdfwrap';
 
 const APP_SHELL_URLS = [
   '/',

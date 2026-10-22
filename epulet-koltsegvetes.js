@@ -319,6 +319,14 @@
     if(printRows.length)printRows[0]=printRows[0].replace('<section class="building-print-phase">',`<section class="building-print-phase"><h2>Részletes szakági költségvetés</h2><p>${esc(warning)}</p>`);
     const materials=materialMarkup(),materialPrint=materials?materials.replace('<section class="building-print-phase">','<section class="building-print-phase"><h2>Anyagszükséglet</h2>'):'';
     print.innerHTML=`${printRows.join('')}${materialPrint}<section class="building-print-phase"><h2>Összesítés – ismert költségek</h2>${$b('buildingSummary').innerHTML}<p>Óradíjak rezsit tartalmaznak: ${state.settings.rate_includes_overhead==null?'nincs meghatározva (régi beállítás)':state.settings.rate_includes_overhead?'igen – nincs külön rezsi':'nem'}. Közös rezsióradíj: ${esc(amount(state.settings.rate))} Ft/óra.</p>${state.rate_reference?`<p>Óradíj-referencia: ${esc(amount(state.rate_reference.rate))} Ft/óra; ajánlott minimális nettó építőipari rezsióradíj; ${esc(state.rate_reference.valid_from)}-tól; ${esc(state.rate_reference.source)}. A tényleges óradíj soronként fent látható.</p>`:''}<p>Minden további szakág és hiányzó adat részletezendő. ${esc(E.geometry(state.geometry).notice)}</p></section>`;
+    // html2canvas does not reliably lay out overflow-wrap:anywhere URLs.
+    // Add explicit break opportunities to printable text only. Payloads,
+    // catalog sources, JSON and CSV retain their original URL bytes.
+    const sourceTextNodes=document.createTreeWalker(print,NodeFilter.SHOW_TEXT);
+    while(sourceTextNodes.nextNode()){
+      const textNode=sourceTextNodes.currentNode;
+      textNode.nodeValue=textNode.nodeValue.replace(/https?:\/\/[^\s]+/g,url=>Array.from(url).map((ch,i)=>ch+((i+1)%14===0?'\u200b':'')).join(''));
+    }
     for(const id of ['sum_net_total','sum_gross_total','p_sum_net_total','p_sum_gross_total']) if(!t.complete)$b(id).textContent=money(id.includes('gross')?t.gross:t.net)+' (részadat)';
   }
   const oldTotals=window.totals, oldRow=window.rowNet, oldCalc=window.calcAndRender, oldRender=window.renderItems, oldPayload=window.payloadNow, oldApply=window.applyPayload;
