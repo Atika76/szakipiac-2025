@@ -1,0 +1,86 @@
+name: PRO+ isolated verification
+on:
+  push:
+    branches: [main, 'fix/proplus-**']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: proplus-verification-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: issue8-local-test
+          POSTGRES_DB: issue8_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: issue8-local-test
+      PGDATABASE: issue8_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tests/*.test.cjs
+      - run: node tests/postgres-integration.cjs
+      - run: node tests/building-postgres.cjs
+      - run: node tests/building-share-postgres.cjs
+      - run: node tests/components-postgres.cjs
+      - run: node tests/resources-postgres.cjs
+      - run: node tests/quickquote-postgres.cjs
+      - run: node tests/order-rules-postgres.cjs
+      - run: node tests/quote-archive-postgres.cjs
+
+  hosted-schema:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: issue8-local-test
+          POSTGRES_DB: issue8_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: issue8-local-test
+      PGDATABASE: issue8_test
+      ISSUE8_SCHEMA: hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tests/postgres-integration.cjs
+      - run: node tests/building-postgres.cjs
+      - run: node tests/building-share-postgres.cjs
+      - run: node tests/components-postgres.cjs
+      - run: node tests/resources-postgres.cjs
+      - run: node tests/quickquote-postgres.cjs
+      - run: node tests/order-rules-postgres.cjs
+      - run: node tests/quote-archive-postgres.cjs
+      - run: node tests/hosted-security.cjs
+      - run: node tests/backup-restore.cjs
+        env:
+          ISSUE8_RESTORE_TEST: synthetic-only
+          PG_CONTAINER: ${{ job.services.postgres.id }}

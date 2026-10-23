@@ -1,0 +1,14 @@
+-- Hosted storage policies; requires genuine Supabase Storage schema.
+CREATE POLICY "Bejelentkezett felhasznalok tolthetnek fel reklam kepet" ON "storage"."objects" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ((bucket_id = 'reklam-kepek'::text));
+CREATE POLICY "Bejelentkezett felhasznalok tolthetnek fel reklamot" ON "storage"."objects" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ((bucket_id = 'reklam-kepek'::text));
+CREATE POLICY "Bejelentkezett felhasználók képeket tölthetnek fel" ON "storage"."objects" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ((bucket_id = 'hirdetes-kepek'::text));
+CREATE POLICY "Mindenki lathatja a reklam kepeket" ON "storage"."objects" AS PERMISSIVE FOR SELECT TO PUBLIC USING ((bucket_id = 'reklam-kepek'::text));
+CREATE POLICY "Mindenki láthatja a képeket" ON "storage"."objects" AS PERMISSIVE FOR SELECT TO PUBLIC USING ((bucket_id = 'hirdetes-kepek'::text));
+CREATE POLICY "Saját képek törlése 1l9nclb_0" ON "storage"."objects" AS PERMISSIVE FOR DELETE TO "authenticated" USING (((bucket_id = 'hirdetes-kepek'::text) AND (auth.uid() = ((storage.foldername(name))[1])::uuid)));
+CREATE POLICY "hirdetes_kepek_public_read" ON "storage"."objects" AS PERMISSIVE FOR SELECT TO PUBLIC USING ((bucket_id = 'hirdetes-kepek'::text));
+CREATE POLICY "hirdetes_kepek_user_delete" ON "storage"."objects" AS PERMISSIVE FOR DELETE TO "authenticated" USING (((bucket_id = 'hirdetes-kepek'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+CREATE POLICY "hirdetes_kepek_user_delete_own_folder" ON "storage"."objects" AS PERMISSIVE FOR DELETE TO "authenticated" USING (((bucket_id = 'hirdetes-kepek'::text) AND (is_szakipiac_admin() OR ((storage.foldername(name))[1] = (auth.uid())::text))));
+CREATE POLICY "hirdetes_kepek_user_insert_own_folder" ON "storage"."objects" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK (((bucket_id = 'hirdetes-kepek'::text) AND (is_szakipiac_admin() OR ((storage.foldername(name))[1] = (auth.uid())::text))));
+CREATE POLICY "hirdetes_kepek_user_update" ON "storage"."objects" AS PERMISSIVE FOR UPDATE TO "authenticated" USING (((bucket_id = 'hirdetes-kepek'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))) WITH CHECK (((bucket_id = 'hirdetes-kepek'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+CREATE POLICY "hirdetes_kepek_user_update_own_folder" ON "storage"."objects" AS PERMISSIVE FOR UPDATE TO "authenticated" USING (((bucket_id = 'hirdetes-kepek'::text) AND (is_szakipiac_admin() OR ((storage.foldername(name))[1] = (auth.uid())::text)))) WITH CHECK (((bucket_id = 'hirdetes-kepek'::text) AND (is_szakipiac_admin() OR ((storage.foldername(name))[1] = (auth.uid())::text))));
+CREATE POLICY "hirdetes_kepek_user_upload" ON "storage"."objects" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK (((bucket_id = 'hirdetes-kepek'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
