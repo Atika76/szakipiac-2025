@@ -1,0 +1,15 @@
+{
+  "baseCommit": "196847470203eacb8f3f08c7633f918ff3931596",
+  "material_catalog": {
+    "length": 70,
+    "sha256": "17739f99eceb704493f11da1608b24b68764e7c19b599ecb435bfd407267c06e"
+  },
+  "norm_catalog": {
+    "length": 36,
+    "sha256": "32bd4c1b5e6076f3b3831980f1391db64e9afa2d7303a2ba7c9bc4534b33e59f"
+  },
+  "work_variants": {
+    "length": 9,
+    "sha256": "1e6d9cc193ae036d6baf1e167ab556f89c4cf728fadc236758385ffec2ce162c"
+  }
+}

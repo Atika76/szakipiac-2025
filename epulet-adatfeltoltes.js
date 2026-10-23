@@ -33,6 +33,12 @@ function template(materials){
  if(!Array.isArray(materials))throw Error('Anyagkatalógus szükséges.');
  return sep([HEADERS,...materials.map(m=>[m.id,m.name,m.unit,m.basis_unit,'','','','','','',''])]);
 }
+// Price-only maintenance file: leave all recipe/yield columns blank so a future
+// price update cannot accidentally overwrite a layer's technical quantities.
+function priceList(materials){
+ if(!Array.isArray(materials))throw Error('Anyagkatalógus szükséges.');
+ return sep([HEADERS,...materials.filter(m=>m.unit_price!=null).map(m=>[m.id,m.name,m.unit,m.basis_unit,m.unit_price,m.source||'',m.updated||'','','','',''])]);
+}
 function date(value){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
  const x=new Date(value+'T00:00:00Z');return Number.isFinite(x.getTime())&&x.toISOString().slice(0,10)===value;
@@ -54,14 +60,18 @@ function importMaterialData(text,materials,E){
   const next=updated.get(id);
   if(rawPrice!==''){
    if(!pSource.trim()||!date(pDate))throw Error('Az új nettó anyagárhoz árforrás és valós dátum kötelező: '+id);
-   next.unit_price=num(rawPrice,E,'Nettó ár');next.price_kind='user';next.source=pSource.trim();next.updated=pDate;prices++;
+   const price=num(rawPrice,E,'Nettó ár');
+   if(price!==old.unit_price&&pSource.trim()===(old.source||'').trim()&&pDate===old.updated)throw Error('Megváltozott árhoz frissítsd az árforrást vagy az ellenőrzés dátumát: '+id);
+   if(price!==old.unit_price||pSource.trim()!==(old.source||'').trim()||pDate!==old.updated){
+    next.unit_price=price;next.price_kind='user';next.source=pSource.trim();next.updated=pDate;prices++;
+   }
   }else if(pSource||pDate)throw Error('Ár nélkül ne adj meg árforrást vagy dátumot: '+id);
   if(rawRatio!==''){
    if(!qSource.trim()||!date(qDate)||!conditions.trim())throw Error('A fajlagoshoz forrás, valós dátum és alkalmazási feltételek kötelezők: '+id);
    next.per_unit=num(rawRatio,E,'Fajlagos');next.quantity_kind='user';next.quantity_source=qSource.trim();next.quantity_updated=qDate;next.applicability=conditions.trim();ratios++;
   }else if(qSource||qDate||conditions)throw Error('Fajlagos nélkül ne adj meg új fajlagosforrást/feltételt: '+id);
  }
- if(!prices&&!ratios)throw Error('A CSV nem tartalmaz kitöltött árat vagy fajlagost.');
+ if(!prices&&!ratios)throw Error('A CSV nem tartalmaz módosított árat vagy kitöltött fajlagost.');
  return {entries:E.registry([...updated.values()],'material'),prices,ratios};
 }
 function audit(rows,materials,norms){
@@ -75,5 +85,5 @@ function audit(rows,materials,norms){
   }).length
  };
 }
-return {HEADERS,template,importMaterialData,audit};
+return {HEADERS,template,priceList,importMaterialData,audit};
 });

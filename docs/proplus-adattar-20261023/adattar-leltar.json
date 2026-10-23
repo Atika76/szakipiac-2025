@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "checked_at": "2026-10-23",
+  "totalMaterials": 95,
+  "missingPrices": 53,
+  "missingRatios": 62,
+  "totalNormSlots": 45,
+  "missingNormSlots": 30,
+  "totalWorkItems": 221,
+  "missingWorkNorms": 206,
+  "addedWorkVariants": 24,
+  "addedMaterialRecords": 25,
+  "addedManufacturerNorms": 9,
+  "documentedNorms": 15,
+  "positivePrices": 36,
+  "includedCostReferences": 6,
+  "verifiedPositivePrices": 28,
+  "conditionalPositivePrices": 8
+}

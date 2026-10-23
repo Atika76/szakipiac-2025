@@ -91,15 +91,17 @@
         <div id="quickDataQuality" class="building-warning" aria-live="polite"></div>
         ${sourced?`<p id="buildingSourcedNotice" class="building-muted">${esc(sourced.notice)} A gyártói listaárak szállítás nélkül értendők; a feltételes referenciaárak külön ellenőrzést igényelnek. Az ÉVOSZ-normák forráséve 2013.</p>`:''}
         <details><summary>Anyagárak és fajlagosok kötegelt betöltése – szakmailag ellenőrzött CSV</summary>
-          <p class="building-muted">A 70 anyaghoz készül üres sablon. A beszállító nettó árait és a gyártói fajlagosokat az anyagazonosító, név és egység változtatása nélkül lehet beolvasni. Kötelező a forrás és dátum, fajlagosnál a rétegvastagság/alkalmazás is. A CSV-ből származó adat <b>felhasználói rögzítés</b>, nem automatikusan ellenőrzött piaci ár. A régi ajánlatpillanatképek nem változnak.</p>
-          <button id="quickMaterialTemplate" type="button" class="secondary">70 anyagos kitöltő CSV letöltése</button>
+          <p class="building-muted">Az üres sablon az aktuális anyagkatalógushoz készül. A beszállító nettó árait és a gyártói fajlagosokat az anyagazonosító, név és egység változtatása nélkül lehet beolvasni. Kötelező a forrás és dátum, fajlagosnál a rétegvastagság/alkalmazás is. A CSV-ből származó adat <b>felhasználói rögzítés</b>, nem automatikusan ellenőrzött piaci ár. A régi ajánlatpillanatképek nem változnak.</p>
+          <button id="quickMaterialTemplate" type="button" class="secondary">Üres anyagadat-CSV letöltése</button>
+          <button id="quickPriceList" type="button" class="secondary">Aktuális árlista CSV – későbbi frissítéshez</button>
+          <p class="building-muted">Az árlista a már ismert nettó árakat, forrásukat és dátumukat tartalmazza. Például 2027-ben vagy 2028-ban csak a változó sorokat módosítsd, friss forrással és dátummal, majd itt olvasd vissza. A fajlagosok nem módosulnak, a meglévő ajánlatsorok megtartják a korábbi árukat. A csomagárban foglalt kötőanyag 0 Ft-os külön költsége nem önálló ingyenes termékár; más beszerzési feltételnél az egész csomagot ellenőrizd.</p>
           <label>Forrásolt anyagár/fajlagos CSV beolvasása<input id="quickMaterialImport" type="file" accept=".csv,text/csv"></label>
         </details>
         <details><summary>Normaidők tömeges betöltése – forrással ellátott saját CSV</summary>
-          <p class="building-muted">A 188 munkatételhez üres Excel-kompatibilis sablon készül. Csak forrással, dátummal és munkafolyamat-azonosítóval alátámasztott, jogszerűen felhasználható normaidőt tölts be. Semmilyen TERC-norma nincs a fájlban.</p>
+          <p class="building-muted">Az eredeti 188 munkatételhez és a külön munkaváltozatokhoz üres Excel-kompatibilis sablon készül. Csak forrással, dátummal és munkafolyamat-azonosítóval alátámasztott, jogszerűen felhasználható normaidőt tölts be. Semmilyen TERC-norma nincs a fájlban.</p>
           <button id="quickNormTemplate" type="button" class="secondary">Normaidő-sablon CSV letöltése</button>
           <label>Kitöltött normaidő CSV beolvasása<input id="quickNormImport" type="file" accept=".csv,text/csv"></label>
-          <p class="building-muted">A betöltés újrahasználható norma-adattárat frissít; a már mentett ajánlatsorok normája nem módosul automatikusan. Az újonnan kiválasztott munkatételeknél azonosító és egység alapján alkalmazzuk.</p>
+          <p class="building-muted">A betöltés újrahasználható norma-adattárat frissít; a már mentett ajánlatsorok normája nem módosul automatikusan. Az újonnan kiválasztott munkatételeknél azonosító, pontos munkatételnév, szakág és egység egyezésekor alkalmazzuk.</p>
         </details>
         <p class="building-muted">Hivatalos 2026-os <b>ajánlott legkisebb</b> nettó rezsióradíj: <b>7 830 Ft/óra</b> (2026.07.16-tól). <a href="https://njt.jog.gov.hu/jogszabaly/2026-4-20-9J" target="_blank" rel="noopener noreferrer">Jogszabály</a>. Az új részletes ajánlat ezt kapja kiinduló értéknek, a mentett régi ajánlatok óradíját nem módosítjuk.</p>
       </section>
@@ -443,7 +445,11 @@
   });
   $b('quickMaterialTemplate').onclick=()=>run(()=>{
     const text=D.template(materials()),url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
-    a.href=url;a.download='szakipiac-anyagar-fajlagos-70-anyag-SABLON.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    a.href=url;a.download='szakipiac-anyagar-fajlagos-'+materials().length+'-anyag-SABLON.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+  $b('quickPriceList').onclick=()=>run(()=>{
+    const text=D.priceList(materials()),url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+    a.href=url;a.download='szakipiac-netto-arlista-'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   });
   $b('quickMaterialImport').onchange=async event=>{
     const field=event.target,file=field.files?.[0];if(!file)return;

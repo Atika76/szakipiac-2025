@@ -1,0 +1,142 @@
+[
+  {
+    "name": "porotherm-price-20260401",
+    "url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/brochures/Porotherm_arjegyzek_297x210_2026_aprilis_1_tol_web.pdf",
+    "resolved_url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/brochures/Porotherm_arjegyzek_297x210_2026_aprilis_1_tol_web.pdf",
+    "file": "porotherm-price-20260401.pdf",
+    "sha256": "82ab31082d5a043b90c98cd7f01ed57ce10d561712e79a117e5a356cd9f328a1",
+    "bytes": 2460260,
+    "checked_at": "2026-10-23",
+    "pages": 19
+  },
+  {
+    "name": "cemix-price-20261001",
+    "url": "https://www.cemix.hu/Pricelists,%20catalogues,%20SampleBooks,%20leaflets/Cemix_Arjegyzek_2026_okt.pdf",
+    "resolved_url": "https://www.cemix.hu/Pricelists,%20catalogues,%20SampleBooks,%20leaflets/Cemix_Arjegyzek_2026_okt.pdf",
+    "file": "cemix-price-20261001.pdf",
+    "sha256": "f4a1a025296251852ae73705575faf02e84d9953bac2847a9b18734a68c5a3bb",
+    "bytes": 4855021,
+    "checked_at": "2026-10-23",
+    "pages": 17
+  },
+  {
+    "name": "cemix-documents",
+    "url": "https://www.cemix.hu/hu/Tamogatas/Termekdokumentumok",
+    "resolved_url": "https://www.cemix.hu/hu/Tamogatas/Termekdokumentumok",
+    "file": "cemix-documents.html",
+    "sha256": "a37e36fafd6ff0c51ca41659c4c78a8cc953e2be930fd5a1b0877dc03fd11f44",
+    "bytes": 1165621,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "wienerberger-catalogs",
+    "url": "https://www.wienerberger.hu/letoltesek/prospektusok.html",
+    "resolved_url": "https://www.wienerberger.hu/letoltesek/prospektusok.html",
+    "file": "wienerberger-catalogs.html",
+    "sha256": "cd246c2a76a894a9bfc85d0957a9e850ae4974b1bdaeb753a0a86d057f3d799f",
+    "bytes": 139302,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "porotherm-10-neo-20250121",
+    "url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2010%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "resolved_url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2010%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "file": "porotherm-10-neo-20250121.pdf",
+    "sha256": "809765c0d06de749ea00834375ea41c7e521eb9d8aea0ecca3d1a43cac957452",
+    "bytes": 224327,
+    "checked_at": "2026-10-23",
+    "pages": 1
+  },
+  {
+    "name": "porotherm-25-neo-20250121",
+    "url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2025%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "resolved_url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2025%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "file": "porotherm-25-neo-20250121.pdf",
+    "sha256": "3decfa161e622aa798c6efab77ee5675888117fd7f3861cf18f37367ea587a5d",
+    "bytes": 244375,
+    "checked_at": "2026-10-23",
+    "pages": 1
+  },
+  {
+    "name": "porotherm-30-neo-20250121",
+    "url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2030%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "resolved_url": "https://www.wienerberger.hu/content/dam/wienerberger/hungary/marketing/documents-magazines/technical/technical-product-info-sheet/wall/2025-adatlapok/PTH%2030%20N%2BF%20neo%2020250121%20term%C3%A9kadatlap.pdf",
+    "file": "porotherm-30-neo-20250121.pdf",
+    "sha256": "0d813e2c7e71eac2f44691b88a42ea9f086a304c7650057645ab63ae80030edc",
+    "bytes": 227727,
+    "checked_at": "2026-10-23",
+    "pages": 1
+  },
+  {
+    "name": "cemix-mp501",
+    "url": "https://www.cemix.hu/hu/p/2000-Homlokzati-alapvakolatok--guzolok/2021-MP-501-I",
+    "resolved_url": "https://www.cemix.hu/hu/p/2000-Homlokzati-alapvakolatok--guzolok/2021-MP-501-I",
+    "file": "cemix-mp501.html",
+    "sha256": "8f35d9d482280e1fe73d2917acf0a176abfdf30bbd33413138d3ddf55381a005",
+    "bytes": 232276,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-premium",
+    "url": "https://www.cemix.hu/hu/p/2000-Homlokzati-alapvakolatok--guzolok/2012-PREMIUM",
+    "resolved_url": "https://www.cemix.hu/hu/p/2000-Homlokzati-alapvakolatok--guzolok/2012-PREMIUM",
+    "file": "cemix-premium.html",
+    "sha256": "5c9b265766caf39b0ac6cb03210e0a105d1633a5a763872d3dc4dafce795a9f0",
+    "bytes": 234633,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-renti",
+    "url": "https://www.cemix.hu/hu/p/2100-Felujito-vakolatok/2110-RENTI",
+    "resolved_url": "https://www.cemix.hu/hu/p/2100-Felujito-vakolatok/2110-RENTI",
+    "file": "cemix-renti.html",
+    "sha256": "031328b5d0b5d1308d65a2bf5598af4c3bf8b5a76b6c3befec1222f4bf757ef5",
+    "bytes": 238906,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-nivobond",
+    "url": "https://www.cemix.hu/hu/p/5500-Aljzatkiegyenlitok/5511-NIVOBOND-3-15",
+    "resolved_url": "https://www.cemix.hu/hu/p/5500-Aljzatkiegyenlitok/5511-NIVOBOND-3-15",
+    "file": "cemix-nivobond.html",
+    "sha256": "8973ef1120c53b32e9214d2c69a3982003651e95d247cc72768a7a54e9925f23",
+    "bytes": 217218,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-nivosp",
+    "url": "https://www.cemix.hu/hu/p/5500-Aljzatkiegyenlitok/5570-NIVO-SP-0-20",
+    "resolved_url": "https://www.cemix.hu/hu/p/5500-Aljzatkiegyenlitok/5570-NIVO-SP-0-20",
+    "file": "cemix-nivosp.html",
+    "sha256": "7fedf743d215d22547455f1d79c3227e9d687917a77aaa1e4ebe7b18883c2958",
+    "bytes": 217574,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-kontaktb",
+    "url": "https://www.cemix.hu/hu/p/8000-Alapozok-burkolashoz/8040-KONTAKT-B-PLUS",
+    "resolved_url": "https://www.cemix.hu/hu/p/8000-Alapozok-burkolashoz/8040-KONTAKT-B-PLUS",
+    "file": "cemix-kontaktb.html",
+    "sha256": "776ad65d871b30ea9b3e70b0245cb440dba9853043e8e3e6a9bbe3ff9e2337da",
+    "bytes": 221314,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-flexm",
+    "url": "https://www.cemix.hu/hu/p/8200-Csemperagasztok/8223-FLEX-M",
+    "resolved_url": "https://www.cemix.hu/hu/p/8200-Csemperagasztok/8223-FLEX-M",
+    "file": "cemix-flexm.html",
+    "sha256": "ae02091a06d3e551d42ca9abfb828d0f2d67aba91a79b10fe582040f4bd7e367",
+    "bytes": 224770,
+    "checked_at": "2026-10-23"
+  },
+  {
+    "name": "cemix-styro",
+    "url": "https://www.cemix.hu/hu/p/2200-Rendszerragasztok/2222-STYROKLEBER-EXTRA",
+    "resolved_url": "https://www.cemix.hu/hu/p/2200-Rendszerragasztok/2222-STYROKLEBER-EXTRA",
+    "file": "cemix-styro.html",
+    "sha256": "ad049b3ac17ef94613ac25adaf02aea251879047fa28589a7b2dc3e45ea96fbc",
+    "bytes": 242533,
+    "checked_at": "2026-10-23"
+  }
+]
