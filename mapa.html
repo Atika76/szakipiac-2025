@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SzakiPiac 360 térkép</title>
-  <meta name="description" content="SzakiPiac hirdetések térképen. Keresd meg a szakembereket város szerint, és nézd meg a kapcsolódó hirdetéseket egy helyen." />
+  <title>Szakemberkeresés térképen, város szerint | SzakiPiac</title>
+  <meta name="description" content="Böngészd a SzakiPiac hirdetéseit térképen. Szűrj városra és szakmára, majd nézd meg az adott hirdetés részleteit és kapcsolatfelvételi lehetőségét." />
   <link rel="canonical" href="https://szakipiac-2025.hu/mapa.html" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -14,6 +14,12 @@
     #map { min-height: 70vh; }
     .ad-card.active { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,.12); }
   </style>
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <meta property="og:title" content="Szakemberkeresés térképen, város szerint | SzakiPiac" />
+  <meta property="og:description" content="Böngészd a SzakiPiac hirdetéseit térképen. Szűrj városra és szakmára, majd nézd meg az adott hirdetés részleteit és kapcsolatfelvételi lehetőségét." />
+  <meta property="og:url" content="https://szakipiac-2025.hu/mapa.html" />
+  <meta name="twitter:title" content="Szakemberkeresés térképen, város szerint | SzakiPiac" />
+  <meta name="twitter:description" content="Böngészd a SzakiPiac hirdetéseit térképen. Szűrj városra és szakmára, majd nézd meg az adott hirdetés részleteit és kapcsolatfelvételi lehetőségét." />
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="sticky top-0 z-20 bg-white border-b border-slate-200">
@@ -21,7 +27,7 @@
       <div class="flex items-center gap-3">
         <img src="logo.png" alt="SzakiPiac" class="w-10 h-10 rounded" />
         <div>
-          <div class="text-xl font-bold">SzakiPiac térkép</div>
+          <h1 class="text-xl font-bold">Szakemberkeresés térképen</h1>
           <div class="text-sm text-slate-500">Csak a SzakiPiac hirdetései</div>
         </div>
       </div>

@@ -1,0 +1,7 @@
+.seo-guide{font:17px/1.65 system-ui,-apple-system,Segoe UI,sans-serif;color:#1e293b;background:#f8fafc;margin:0}
+.seo-guide *{box-sizing:border-box}.seo-guide header,.seo-guide main,.seo-guide footer{max-width:1100px;margin:auto;padding:24px}
+.seo-guide nav{display:flex;gap:18px;flex-wrap:wrap}.seo-guide a{color:#166534;text-underline-offset:3px}.seo-guide h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.2}
+.seo-guide section{background:white;padding:24px;border:1px solid #e2e8f0;border-radius:18px;margin:24px 0;scroll-margin-top:20px}
+.seo-guide .seo-trades{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:18px}.seo-guide .seo-trades section{margin:0}
+.seo-guide .seo-button{display:inline-block;background:#166534;color:white;padding:12px 18px;border-radius:10px;font-weight:700;text-decoration:none}
+.seo-guide a:focus-visible{outline:3px solid #f59e0b;outline-offset:4px}.seo-guide p,.seo-guide li{overflow-wrap:anywhere}
