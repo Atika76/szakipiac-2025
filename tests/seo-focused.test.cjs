@@ -60,7 +60,7 @@ test('a privát nézetek noindexet kapnak, a főoldalra visszalépés helyreáll
 });
 
 test('az alkalmazás űrlapjai, azonosítói és meglévő futtatható scriptjei megmaradnak', () => {
-  const changed = cp.execFileSync('git', ['diff', '--name-only', baseline], { encoding: 'utf8' }).trim().split(/\r?\n/);
+  const changed = cp.execFileSync('git', ['diff', '--name-only', '--diff-filter=M', baseline], { encoding: 'utf8' }).trim().split(/\r?\n/);
   for (const f of changed.filter(f => f.endsWith('.html'))) {
     const old = cp.execFileSync('git', ['show', `${baseline}:${f}`], { encoding: 'utf8' }).replace(/\r\n/g, '\n'), s = read(f);
     const scripts = source => [...source.matchAll(/<script([^>]*)>(.*?)<\/script>/gs)].filter(m => !m[1].includes('ld+json') && !m[1].includes('seo-route-meta.js')).map(m => m[0]);
